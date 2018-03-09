@@ -14,8 +14,8 @@ def get_data(file_name, interval_name, interval_api):
 	
 	try:
 		print("IO: Looking For Existing Data...")
-		frame_old = pandas.read_csv(file_name)
-		start_time = frame_old.iloc[-1]["Open Time"]
+		frame_old = pandas.read_csv(file_name).set_index("Open Time")
+		start_time = frame_old.index[-2]
 		print("Found!")
 	except:
 		print("WARN: No Existing Data Found!")
@@ -32,24 +32,22 @@ def get_data(file_name, interval_name, interval_api):
 				"Close", "Volume", "Close Time", "Quote Asset Volume",
 				"Number Trades", "Taker Base Asset Volume", "Take Quote Asset Volume", "Ignore"
 			]
-		)
-		try:
-			frame_old
-			frame = pandas.concat([frame, frame_old]).drop_duplicates(subset="Open Time").sort_values(by=["Open Time"]).reset_index(drop=True)
-		except:
-			frame_old = None
+		).set_index("Open Time")
 		print("Success!")
 	except:
 		print("ERROR: Failed API Call!")
 		sys.exit()
 
+	if start_time != "1 Dec, 2017":
+		frame = pandas.concat([frame, frame_old]).drop_duplicates(["Open Time"])
+
 	try:
 		print("IO: Writing " + interval_name + " Interval Data to " + file_name)
-		frame.to_csv(file_name, index=False)
+		frame.to_csv(file_name)
 		print("Success!")
 	except:
 		print("ERROR: Failed Writing to File!")
 		sys.exit()
 	
 get_data("data_minute.csv", "30-Minute", Client.KLINE_INTERVAL_30MINUTE)
-get_data("data_hour.csv", "1-Hour", Client.KLINE_INTERVAL_1HOUR)
+#get_data("data_hour.csv", "1-Hour", Client.KLINE_INTERVAL_1HOUR)
