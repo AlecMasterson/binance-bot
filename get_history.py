@@ -62,8 +62,8 @@ def get_data(fileName, intervalAPI):
 			# Acquire data in 3 day intervals to not overload the API.
 			curEnd = min(startTime + 259200000, endTime)
 
-			formatStart = str(datetime.date.fromtimestamp(startTime / 1e3))
-			formatEnd = str(datetime.date.fromtimestamp(curEnd / 1e3))
+			formatStart = str(datetime.datetime.fromtimestamp(startTime / 1e3))
+			formatEnd = str(datetime.datetime.fromtimestamp(curEnd / 1e3))
 			print('\tStart Time: ' + formatStart + '\tEnd Time: ' + formatEnd)
 
 			df = combine_frames(
