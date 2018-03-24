@@ -8,8 +8,30 @@ from bayes_opt import BayesianOptimization
 
 def backtest(df, trading, args):
 	try:
-		# TODO: Insert your own bot here...
-		# Follow the specification detailed in the README file.
+		for index, row in df.iterrows():
+			if index > math.floor(args['arc'])-1:
+				section = df[index-math.floor(args['arc']):index]
+				line = np.poly1d(np.polyfit(section['Close Time'], section['Close'], 2))
+
+				if line.c[0] < 0 and row['Close'] < df.iloc[index-math.floor(args['arc'])]['Close'] and line.c[0] < float(args['thin'] * -1/100000000000000000):
+					if row['Close'] < df.iloc[index-1]['Close']:
+						trading = helpers.buy(trading, row['Close Time'], row['Close'], 1.0)
+					if row['Close'] > df.iloc[index-1]['Close'] and helpers.predict_change(trading, row['Close'], 1.0, args):
+						trading = helpers.sell(trading, row['Close Time'], row['Close'], 1.0)
+
+					# Additional Plotting
+					#plot_x = np.linspace(section.iloc[0]['time'], section.iloc[len(section.index)-1]['time'])
+					#plt.plot(pandas.to_datetime(plot_x, unit='ms'), line(plot_x))
+
+				if line.c[0] > 0 and row['Close'] > df.iloc[index-math.floor(args['arc'])]['Close'] and line.c[0] > float(args['thin'] * 1/100000000000000000):
+					if row['Close'] < df.iloc[index-1]['Close']:
+						trading = helpers.buy(trading, row['Close Time'], row['Close'], 1.0)
+					if row['Close'] > df.iloc[index-1]['Close'] and helpers.predict_change(trading, row['Close'], 1.0, args):
+						trading = helpers.sell(trading, row['Close Time'], row['Close'], 1.0)
+
+					# Additional Plotting
+					#plot_x = np.linspace(section.iloc[0]['time'], section.iloc[len(section.index)-1]['time'])
+					#plt.plot(pandas.to_datetime(plot_x, unit='ms'), line(plot_x))
 	except:
 		print('ERROR: Unknown Error!')
 		sys.exit()
