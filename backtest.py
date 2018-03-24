@@ -1,130 +1,95 @@
-import pandas, sys, math
-import matplotlib.pyplot as plt
+import sys, pandas, math, helpers
 import numpy as np
+from bayes_opt import BayesianOptimization
 
-def round_down(x):
-	return float(math.floor(x * 1000) / 1000)
+# ------------------------------------------------------------------------------
+# MAIN FUNCTION
+# ------------------------------------------------------------------------------
 
-def buy(trading, row):
-	return trading.append(
-		{
-			"Type": "buy",
-			"Close Time": row["Close Time"],
-			"Close": row["Close"],
-			"BTC": trading.iloc[-1]["BTC"] - round_down(trading.iloc[-1]["BTC"]),
-			"ETH": trading.iloc[-1]["ETH"] + (round_down(trading.iloc[-1]["BTC"]) / row["Close"])*0.999
-		}, ignore_index=True
-	)
-
-def sell(trading, row):
-	return trading.append(
-		{
-			"Type": "sell",
-			"Close Time": row["Close Time"],
-			"Close": row["Close"],
-			"BTC": trading.iloc[-1]["BTC"] + (round_down(trading.iloc[-1]["ETH"]) * row["Close"])*0.999,
-			"ETH": trading.iloc[-1]["ETH"] - round_down(trading.iloc[-1]["ETH"])
-		}, ignore_index=True
-	)
-
-def predict_sell(trading, val, args):
-	change = trading.iloc[len(trading.index) - 2]["BTC"] / (trading.iloc[-1]["BTC"] + (round_down(trading.iloc[-1]["ETH"]) * val)*0.999)
-	if change < args["low"] or change > args["hi"]:
-		return True
-	return False
-
-def backtest(file_name, interval_name, args):
-
-	# --------------------------------------------------------------------------
-	# SETUP
-	# --------------------------------------------------------------------------
-
-	print("\nPROC: Back-Test " + interval_name + " Interval Data...\n")
-
+def backtest(df, trading, args):
 	try:
-		print("IO: Looking For Existing Data...")
-		df = pandas.read_csv(file_name)
-		print("Found!")
+		# Insert your own bot here.
 	except:
-		print("ERROR: No Existing Data Found!")
+		print('ERROR: Unknown Error!')
+
+	# --------------------------------------------------------------------------
+	# SAVE BACKTEST TRADING DATA
+	# --------------------------------------------------------------------------
+
+	# Save the trading-data obtained from backtesting.
+	# Use analyze.py following the specification in the README file to obtain info.
+	try:
+		print('IO: Writing Back-Testing Results to backtest_results.csv')
+		trading.to_csv(
+			'backtest_results.csv',
+			columns=[
+				'type', 'time', 'price', 'quantity', 'btc', 'eth'
+			], index=False
+		)
+		print('Success!')
+	except:
+		print('ERROR: Failed Writing to File!')
 		sys.exit()
 
-	trading = pandas.DataFrame(
-		data={"Type": "sell", "Close Time": 0, "Close": 0, "BTC": 0.04, "ETH": 0.0},
-		index=[0]
+	return 0
+
+# ------------------------------------------------------------------------------
+# SETUP
+# ------------------------------------------------------------------------------
+
+print('\nPROC: Back-Test Historical Data\n')
+
+# Test for valid command usage.
+if len(sys.argv) is not 2:
+	print('ERROR: Command Usage -> \'python3 backtest.py <price-data>\'')
+	sys.exit()
+
+# Get the price-data file used for testing.
+try:
+	print('IO: Looking For Price Data...')
+	df = pandas.read_csv(sys.argv[1])
+	print('Found!')
+except:
+	print('ERROR: No Price Data Found!')
+	sys.exit()
+
+# Create DataFrame to store trading data during testing.
+# Follow the specification detailed in the README file.
+trading = pandas.DataFrame(
+	data={
+		'type': 'start', 'time': 0,
+		'price': 0, 'quantity': 1.0,
+		'btc': 0.05, 'eth': 0.0
+	}, index=[0]
+)
+
+# ------------------------------------------------------------------------------
+# RUN
+# ------------------------------------------------------------------------------
+
+# Customize with constants returned from BayesianOptimization.
+args = {'arc': 7.4907, 'thin': 2.0637, 'hi': 1.0011, 'low': 0.9944}
+
+backtest(df, trading, args)
+
+print('\nPROC: Done!')
+
+# ------------------------------------------------------------------------------
+# BAYESIAN OPTIMIZATION
+# ------------------------------------------------------------------------------
+
+# Change to True if you would like to optimize the constants in args.
+# The bo object initialization needs altering based on your bot.
+# Follow specification in the README file.
+if False:
+	print ('\nPROC: Optimizing...\n')
+	bo = BayesianOptimization(
+		lambda arc, thin, low, hi: backtest(
+			df, trading, {'arc': arc, 'thin': thin, 'low': low, 'hi': hi}
+		), {
+			'arc': (3, 9), 'thin': (0, 9),
+			'low': (0.985, 0.999), 'hi': (1.0001, 1.01)
+		}
 	)
-
-	# --------------------------------------------------------------------------
-	# ANALYSIS
-	# --------------------------------------------------------------------------
-
-	for index, row in df.iterrows():
-		if index > 2:
-			section = df[index-3:index]
-			line = np.poly1d(np.polyfit(section["Close Time"], section["Close"], 2))
-
-			if line.c[0] < 0 and row["Close"] < df.iloc[index-3]["Close"] and line.c[0] < float(args["thin"] * -1/100000000000000000):
-				if row["Close"] < df.iloc[index-1]["Close"] and trading.iloc[-1]["Type"] is "sell":
-					trading = buy(trading, row)
-				if row["Close"] > df.iloc[index-1]["Close"] and trading.iloc[-1]["Type"] is "buy" and predict_sell(trading, row["Close"], args):
-					trading = sell(trading, row)
-
-				# Additional Plotting
-				plot_x = np.linspace(section.iloc[0]["Close Time"], section.iloc[len(section.index)-1]["Close Time"])
-				plt.plot(pandas.to_datetime(plot_x, unit="ms"), line(plot_x))
-
-			if line.c[0] > 0 and row["Close"] > df.iloc[index-3]["Close"] and line.c[0] > float(args["thin"] * 1/100000000000000000):
-				if row["Close"] < df.iloc[index-1]["Close"] and trading.iloc[-1]["Type"] is "sell":
-					trading = buy(trading, row)
-				if row["Close"] > df.iloc[index-1]["Close"] and trading.iloc[-1]["Type"] is "buy" and predict_sell(trading, row["Close"], args):
-					trading = sell(trading, row)
-
-				# Additional Plotting
-				plot_x = np.linspace(section.iloc[0]["Close Time"], section.iloc[len(section.index)-1]["Close Time"])
-				plt.plot(pandas.to_datetime(plot_x, unit="ms"), line(plot_x))
-
-	# --------------------------------------------------------------------------
-	# SAVE ANALYSIS
-	# --------------------------------------------------------------------------
-
-	try:
-		print("IO: Writing " + interval_name + " Back-Tested Data to backtest_" + interval_name + ".csv")
-		trading.to_csv("backtest_" + interval_name + ".csv", columns=["Type", "Close Time", "Close", "BTC", "ETH"], index=False)
-		print("Success!")
-	except:
-		print("ERROR: Failed Writing to File!")
-		sys.exit()
-
-	# --------------------------------------------------------------------------
-	# RESULTS
-	# --------------------------------------------------------------------------
-
-	print("\nRESULTS...\n")
-	print("BTC: "+str(trading.iloc[-1]["BTC"])+"\nETH: "+str(trading.iloc[-1]["ETH"]))
-	final = trading.iloc[-1]["BTC"] + (trading.iloc[-1]["ETH"] * trading.iloc[-1]["Close"])
-	print("Final in BTC: "+str(final)+"\nPercent Increase: "+str(final/0.04))
-
-	# --------------------------------------------------------------------------
-	# PLOTTING
-	# --------------------------------------------------------------------------
-
-	df["Close Time"] = pandas.to_datetime(df["Close Time"], unit="ms")
-	trading["Close Time"] = pandas.to_datetime(trading["Close Time"], unit="ms")
-
-	bought = pandas.DataFrame(columns=["Close Time", "Close"])
-	sold = pandas.DataFrame(columns=["Close Time", "Close"])
-	for index, row in trading.iloc[1:].iterrows():
-		if row["Type"] is "buy":
-			bought = bought.append(row, ignore_index=True)
-		else:
-			sold = sold.append(row, ignore_index=True)
-
-	x, y = bought.as_matrix(["Close Time", "Close"]).T
-	a, b = sold.as_matrix(["Close Time", "Close"]).T
-
-	plt.plot(df["Close Time"], df["Close"], linestyle="dashed")
-	plt.scatter(x, y, color="red")
-	plt.scatter(a, b, color="green")
-	plt.show()
-
-backtest("data_hour.csv", "1-Hour", {"thin": 2, "low": 0.998, "hi": 1.05})
+	bo.maximize(init_points=10, n_iter=500, kappa=2)
+	print('INFO: Optimized Constants\n\t' + bo.res['max'])
