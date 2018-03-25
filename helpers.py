@@ -1,4 +1,4 @@
-import sys, math
+import pandas, sys, math
 
 # Round down x to the nearest 0.001 (Binance Trade Minimum)
 def round_down(x):
@@ -34,6 +34,10 @@ def sell(trading, time, price, quantity):
 		}, ignore_index=True
 	)
 
+# Return combined wallet total of BTC and ETH in the form of BTC
+def combined_total(row):
+	return row['btc'] + (row['eth'] * row['price'])
+
 # Return True if potential gain/loss of selling is outside the bounds
 # TODO: Unsure if function works properly when quantity isn't always 1.0
 def predict_change(trading, price, quantity, args):
@@ -45,34 +49,3 @@ def predict_change(trading, price, quantity, args):
 	if change < args['low'] or change > args['hi']:
 		return True
 	return False
-
-# Return combined wallet total of BTC and ETH in the form of BTC
-def combined_total(row):
-	return row['btc'] + (row['eth'] * row['price'])
-
-# Get the price-data file used for testing.
-def get_price_data(fileName):
-	try:
-		print('IO: Looking For Price Data...')
-		df = pandas.read_csv(fileName)
-		print('Found!')
-		return df
-	except:
-		print('ERROR: No Price Data Found!')
-		sys.exit()
-
-# Save the trading-data obtained from backtesting.
-# Use analyze.py following the specification in the README file to obtain info.
-def save_trading_data(trading):
-	try:
-		print('IO: Writing Back-Testing Results to backtest_results.csv')
-		trading.to_csv(
-			'backtest_results.csv',
-			columns=[
-				'type', 'time', 'price', 'quantity', 'btc', 'eth'
-			], index=False
-		)
-		print('Success!')
-	except:
-		print('ERROR: Failed Writing to File!')
-		sys.exit()
