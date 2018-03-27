@@ -6,6 +6,8 @@ def round_down(x):
 
 # Buy ETH with a 0.1% fee using quantity percentage of available BTC
 def buy(trading, time, price, quantity):
+	if round_down(trading.iloc[-1]['btc'] * quantity) == 0.0:
+		return trading
 	return trading.append(
 		{
 			'type': 'buy', 'time': time,
@@ -21,6 +23,8 @@ def buy(trading, time, price, quantity):
 
 # Sell BTC with a 0.1% fee using quantity percentage of available ETH
 def sell(trading, time, price, quantity):
+	if round_down(trading.iloc[-1]['eth'] * quantity) == 0.0:
+		return trading
 	return trading.append(
 		{
 			'type': 'sell', 'time': time,
