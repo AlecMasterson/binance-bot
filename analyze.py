@@ -70,6 +70,8 @@ if len(tradeData.index) == 1:
 startDate = to_datetime(priceData.iloc[0]['Open Time'])
 endDate = to_datetime(priceData.iloc[-1]['Open Time'])
 
+# TODO: Adjust tradeData start index after structure change.
+
 # Get the start/end wallet values and the % change.
 startWallet = total_wallet(tradeData.iloc[1])
 endWallet = total_wallet(tradeData.iloc[-1])
@@ -113,6 +115,8 @@ weekData = pandas.DataFrame(weeks)
 # This section goes through our 'tradeData' to populate our DataFrame.
 # Please refer to above description this DataFrame structure.
 
+# TODO: Adjust tradeData start index after structure change.
+
 for index, row in tradeData.iterrows():
 	if index > 0:
 		week = get_week(weekData, to_datetime(row['time']))
@@ -146,6 +150,7 @@ print(
 	'%.5f%% ROI Over %s, hours' %
 	(walletChange, str(endDate-startDate))
 )
+print('%.5f%% Estimated Daily ROI' % (walletChange/(endDate-startDate).days))
 print('%.5f%% Average Weekly ROI\n' % averagePercentChange)
 
 print('PROC: Done!\n')
