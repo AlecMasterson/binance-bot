@@ -49,14 +49,20 @@ Trade Data is created by your unique bot and stored in a CSV file for later anal
 Below is a detailed description of each of the implemented file.
 
 #### [get_history.py](https://github.com/AlecMasterson/binance-bot/blob/master/get_history.py)
+This script will obtain Historical Data from Binance to be used in backtesting.
+```
+python3 get_history.py <output-file> [start-date]
+```
+- 'output-file' is the CSV file your data will be saved to. Please include .csv
+- 'start-date' is an optional date (in milliseconds) that you want to get data from.
 - Load current saved data from existing CSV file, if any.
 - Query the Binance API for data points from last saved timestamp to the current time.
   - If no saved data was loaded, use "1 Dec, 2017" as the default start time.
-- Save all data to a CSV.
 
 #### [analyze.py](https://github.com/AlecMasterson/binance-bot/blob/master/analyze.py)
+This script will analyze your backtesting results.
 ```
 python3 analyze.py <price-data> <trade-data>
 ```
-- <price-data> is the CSV file created from [get_history.py](https://github.com/AlecMasterson/binance-bot/blob/master/get_history.py)
-- <trade-data> is the CSV file created from your unique bot that contains all trades made during backtesting.
+- 'price-data' is the CSV file created from [get_history.py](https://github.com/AlecMasterson/binance-bot/blob/master/get_history.py)
+- 'trade-data' is the CSV file created from your unique bot that contains all trades made during backtesting.
