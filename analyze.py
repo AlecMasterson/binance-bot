@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 # Convert a millisecond time to a datetime object
 def to_datetime(milli):
-	return datetime.fromtimestamp(milli / 1e3)
+	return datetime.fromtimestamp(milli / 1e3).replace(second=0)
 
 # Get the next Saturday after 'curDate'
 def next_saturday(curDate):
@@ -75,7 +75,7 @@ endDate = to_datetime(priceData.iloc[-1]['Open Time'])
 # Get the start/end wallet values and the % change.
 startWallet = total_wallet(tradeData.iloc[1])
 endWallet = total_wallet(tradeData.iloc[-1])
-walletChange = endWallet / startWallet * 100
+walletChange = (endWallet / startWallet * 100) - 100
 
 # ------------------------------------------------------------------------------
 # EMPTY DATAFRAME OF WEEKS TRADED
