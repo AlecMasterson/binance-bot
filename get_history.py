@@ -96,34 +96,36 @@ def get_data(coin, client, api):
 
 
 
-# ------------------------------------------------------------------------------
-# COMMAND USAGE VERIFICATION
-# ------------------------------------------------------------------------------
+if __name__ == "__main__":
 
-if len(sys.argv) > 1:
-	print('\nERROR: Command Usage -> \'python3 get_history.py\'\n')
-	sys.exit()
+	# --------------------------------------------------------------------------
+	# COMMAND USAGE VERIFICATION
+	# --------------------------------------------------------------------------
 
-print('\nPROC: Getting Historical Data')
+	if len(sys.argv) > 1:
+		print('\nERROR: Command Usage -> \'python3 get_history.py\'\n')
+		sys.exit()
 
-# ------------------------------------------------------------------------------
-# SETUP
-# ------------------------------------------------------------------------------
+	print('\nPROC: Getting Historical Data')
 
-try:
-	client = Client('', '')
-except:
-	print('ERROR: Could Not Connect to API Client!\n')
-	sys.exit()
+	# --------------------------------------------------------------------------
+	# SETUP
+	# --------------------------------------------------------------------------
 
-# Manually edit this for different time intervals.
-api = Client.KLINE_INTERVAL_1HOUR
+	try:
+		client = Client('', '')
+	except:
+		print('ERROR: Could Not Connect to API Client!\n')
+		sys.exit()
 
-# Manually edit this for different coin pairs.
-coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC']
-for coin in coins:
-	print('\nINFO: Getting Data for '+coin+' CoinPair')
-	get_data(coin, client, api)
-	print('\nINFO: Done Getting Data for '+coin+' CoinPair')
+	# Manually edit this for different time intervals.
+	api = Client.KLINE_INTERVAL_1HOUR
 
-print('\nPROC: Done!\n')
+	# Manually edit this for different coin pairs.
+	coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC']
+	for coin in coins:
+		print('\nINFO: Getting Data for '+coin+' CoinPair')
+		get_data(coin, client, api)
+		print('\nINFO: Done Getting Data for '+coin+' CoinPair')
+
+	print('\nPROC: Done!\n')
