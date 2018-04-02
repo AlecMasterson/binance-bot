@@ -31,7 +31,7 @@ def combine_frames(df, df2):
 # MAIN FUNCTION
 # ------------------------------------------------------------------------------
 
-def get_data(coin, api):
+def get_data(coin, client, api):
 
 	# --------------------------------------------------------------------------
 	# PREVIOUSLY STORED DATA
@@ -123,7 +123,7 @@ api = Client.KLINE_INTERVAL_1HOUR
 coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC']
 for coin in coins:
 	print('\nINFO: Getting Data for '+coin+' CoinPair')
-	get_data(coin, api)
+	get_data(coin, client, api)
 	print('\nINFO: Done Getting Data for '+coin+' CoinPair')
 
 print('\nPROC: Done!\n')
