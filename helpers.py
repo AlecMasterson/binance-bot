@@ -53,13 +53,3 @@ def predict_change(trading, price, quantity, args):
 	if change < args['low'] or change > args['hi']:
 		return True
 	return False
-
-def predict_change_2(trading, price, quantity, args):
-	change = trading.iloc[len(trading.index) - 2]['btc'] / (
-		trading.iloc[-1]['btc'] + (
-			round_down(trading.iloc[-1]['alt'] * quantity) * price
-		) * 0.999
-	)
-	if change < args['low']:
-		return True
-	return False
