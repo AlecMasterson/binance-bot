@@ -44,20 +44,17 @@ Trade Data is created by your unique bot and stored in a CSV file for later anal
 - Quantity is a float (0.0, 1.0] that represents what percent of your existing btc/eth wallet do you wish to buy/sell.
 - BTC and ETH represents how much your wallet contains of each coin after the trade occurred.
 
-## Files
-
-Below is a detailed description of each of the implemented file.
+# Files
 
 #### [get_history.py](https://github.com/AlecMasterson/binance-bot/blob/master/get_history.py)
-This script will obtain Historical Data from Binance to be used in backtesting.
+This automated script will obtain historical data from Binance to be used in backtesting. It will obtain data for (currently) five different coin-pairs.
 ```
-python3 get_history.py <output-file> [start-date]
+python3 get_history.py
 ```
-- 'output-file' is the CSV file your data will be saved to. Please include .csv
-- 'start-date' is an optional date (in milliseconds) that you want to get data from.
-- Load current saved data from existing CSV file, if any.
-- Query the Binance API for data points from last saved timestamp to the current time.
+- Loads currently saved data from existing CSV files, if any.
+- Queries the Binance API for data points from last saved timestamp to the current time.
   - If no saved data was loaded, use "1 Dec, 2017" as the default start time.
+- All data is stored inside the *./data/* directory with a name corresponding to the coin-pair.
 
 #### [analyze.py](https://github.com/AlecMasterson/binance-bot/blob/master/analyze.py)
 This script will analyze your backtesting results.
