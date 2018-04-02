@@ -1,18 +1,15 @@
 # Binance Bot
-
-This bot is used for the automation of trading cryptocurrencies on the Binance Exchange. Currently enabled for trading between ETH and BTC.
+This bot is used for the automation of trading cryptocurrencies on the Binance Exchange.
 
 The assumption is that you are using a Unix-Based system such as Linux or OSX, but it will work with Windows.
 
-### Requirements
-
+# Requirements
 - [Binance Account](https://www.binance.com/register.html) and [API Access](https://www.binance.com/userCenter/createApi.html)
 - [Python 3](https://www.python.org/downloads/)
 - [Python-Binance API](https://github.com/sammchardy/python-binance)
 - [Pandas](https://pandas.pydata.org)
 
-### Installation
-
+# Installation
 The installation guide here will use a package manager, [Pip](https://pip.pypa.io/en/stable/). This is an optional requirement, but very encouraged.
 
 ```
@@ -20,8 +17,7 @@ apt-get install python3-pip
 pip3 install python-binance pandas
 ```
 
-### Trade Data
-
+# Trade Data
 Trade Data is created by your unique bot and stored in a CSV file for later analysis. Follow the below Pandas.DataFrame column structure:
 
 **NOTE:** Each row in the DataFrame will represent a trade during backtesting.
@@ -87,11 +83,3 @@ api = Client.KLINE_INTERVAL_1HOUR
 # Manually edit this for different coin pairs.
 coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC']
 ```
-
-#### [analyze.py](https://github.com/AlecMasterson/binance-bot/blob/master/analyze.py)
-This script will analyze your backtesting results.
-```
-python3 analyze.py <price-data> <trade-data>
-```
-- 'price-data' is the CSV file created from [get_history.py](https://github.com/AlecMasterson/binance-bot/blob/master/get_history.py)
-- 'trade-data' is the CSV file created from your unique bot that contains all trades made during backtesting.
