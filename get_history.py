@@ -122,8 +122,8 @@ api = Client.KLINE_INTERVAL_1HOUR
 # Manually edit this for different coin pairs.
 coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC']
 for coin in coins:
-	print('\nINFO: Getting Data for '+coin+' Exchange')
+	print('\nINFO: Getting Data for '+coin+' CoinPair')
 	get_data(coin, api)
-	print('\nINFO: Done Getting Data for '+coin+' Exchange')
+	print('\nINFO: Done Getting Data for '+coin+' CoinPair')
 
 print('\nPROC: Done!\n')
