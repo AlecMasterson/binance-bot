@@ -1,13 +1,13 @@
 # Binance Bot
 This bot is used for the automation of trading cryptocurrencies on the Binance Exchange.
 
-The assumption is that you are using a Unix-Based system such as Linux or OSX, but it will work with Windows.
-
 # Requirements
 - [Binance Account](https://www.binance.com/register.html) and [API Access](https://www.binance.com/userCenter/createApi.html)
 - [Python 3](https://www.python.org/downloads/)
 - [Python-Binance API](https://github.com/sammchardy/python-binance)
 - [Pandas](https://pandas.pydata.org)
+
+The assumption is that you are using a Unix-Based system such as Linux or OSX, but it will work with Windows.
 
 # Installation
 The installation guide here will use a package manager, [Pip](https://pip.pypa.io/en/stable/). This is an optional requirement, but very encouraged.
