@@ -23,7 +23,7 @@ def get_week(weekData, date):
 
 # Return the total (in BTC) value of the wallet
 def total_wallet(trade):
-	return trade['btc'] + (trade['eth'] * trade['price'])
+	return trade['btc'] + (trade['alt'] * trade['price'])
 
 # ------------------------------------------------------------------------------
 # COMMAND USAGE VERIFICATION

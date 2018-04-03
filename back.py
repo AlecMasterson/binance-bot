@@ -1,7 +1,6 @@
 import sys, pandas, math, datetime, helpers, glob
 import numpy as np
 import matplotlib.pyplot as plt
-from bayes_opt import BayesianOptimization
 
 def get_min_max(frame):
 	return [min(frame['Close']), max(frame['Close'])]
@@ -21,8 +20,9 @@ def backtest(coin, args):
 	)
 
 	for index, row in coin.iterrows():
-		if index > 2:
-			section = coin[index-3:index]
+
+		if index > math.floor(args['arc'])-1:
+			section = coin[index-math.floor(args['arc']):index]
 			line = np.poly1d(
 				np.polyfit(section['Close Time'], section['Close'], 2)
 			)
@@ -46,77 +46,83 @@ def baye(coin, args):
 	return backtest(coin, args)[0]
 
 
+
 # ------------------------------------------------------------------------------
 
 
 
-args = {
-	'data/ADABTC.csv': {
-		'thinup': 9.8474, 'thindown': -9.2006, 'power': -20,
-		'low': 0.9871, 'hi': 1.0085
-	},
-	'data/BNBBTC.csv': {
-		'thinup': 9.99, 'thindown': -9.99, 'power': -21,
-		'low': 0.96, 'hi': 1.01
-	},
-	'data/ETHBTC.csv': {
-		'thinup': 5.5667, 'thindown': -7.8263, 'power': -17,
-		'low': 0.9701, 'hi': 1.0013
-	},
-	'data/LTCBTC.csv': {
-		'thinup': 9.1349, 'thindown': -7.5062, 'power': -18,
-		'low': 0.9822, 'hi': 1.0071
-	},
-	'data/XRPBTC.csv': {
-		'thinup': 8.3554, 'thindown': -5.1044, 'power': -20,
-		'low': 0.9647, 'hi': 1.0042
+if __name__ == "__main__":
+
+	args = {
+		'data/ADABTC.csv': {
+			'arc': 3, 'thinup': 9.8474, 'thindown': -9.2006, 'power': -20,
+			'low': 0.9871, 'hi': 1.0085
+		},
+		'data/BNBBTC.csv': {
+			'arc': 3, 'thinup': 7.9857, 'thindown': -1.3797, 'power': -18,
+			'low': 0.9609, 'hi': 1.0077
+		},
+		'data/EOSBTC.csv': {
+			'arc': 3, 'thinup': 9.4277, 'thindown': -5.4524, 'power': -19,
+			'low': 0.9750, 'hi': 1.0038
+		},
+		'data/ETHBTC.csv': {
+			'arc': 3, 'thinup': 5.5667, 'thindown': -7.8263, 'power': -17,
+			'low': 0.9701, 'hi': 1.0013
+		},
+		'data/LTCBTC.csv': {
+			'arc': 3, 'thinup': 9.1349, 'thindown': -7.5062, 'power': -18,
+			'low': 0.9822, 'hi': 1.0071
+		},
+		'data/XLMBTC.csv': {
+			'arc': 3, 'thinup': 5.7348, 'thindown': -8.4378, 'power': -21,
+			'low': 0.9873, 'hi': 1.0016
+		},
+		'data/XRPBTC.csv': {
+			'arc': 3, 'thinup': 8.3554, 'thindown': -5.1044, 'power': -20,
+			'low': 0.9647, 'hi': 1.0042
+		}
 	}
-}
 
-total = 0
-for fileName in glob.glob('data/*.csv'):
-	coin = pandas.read_csv(fileName)
-	# Only looking at BNB
-	if fileName != 'data/BNBBTC.csv': continue
-	print('INFO: Backtesting '+fileName)
+	total = 0
 
-	if fileName == 'data/BNBBTC.csv':
-		bo = BayesianOptimization(
-			lambda thinup, thindown, power, low, hi: baye(
-				coin.head(720), {
-					'thinup': thinup, 'thindown': thindown, 'power': power,
-					'low': low, 'hi': hi
-				}
-			), {
-				'thinup': (5.00, 9.99), 'thindown': (-9.99, -5.00), 'power': (-21, -16),
-				'low': (0.9600, 0.9900), 'hi': (1.0001, 1.0100)
-			}
-		)
-		print(bo.maximize(init_points=10, n_iter=15, kappa=10))
+	# Change to True to show plotting.
+	plot = False
+	for fileName in glob.glob('data/*.csv'):
+		#if fileName != 'data/BNBBTC.csv': continue
 
-	vals = backtest(coin, args[fileName])
-	print('\tFinished with '+str(vals[0])+' BTC')
-	total += vals[0]
+		print('INFO: Backtesting '+fileName)
+		coin = pandas.read_csv(fileName)
 
-	coinMinMax = get_min_max(coin)
-	for index, row in coin.iterrows():
-		coin.at[index, 'Close'] = (row['Close'] - coinMinMax[0]) / (coinMinMax[1] - coinMinMax[0])
+		vals = backtest(coin, args[fileName])
+		print('\tFinished with '+str(vals[0])+' BTC')
 
-	# Change to true to show plotting.
-	if False:
-		for index, row in vals[1].iterrows():
-			vals[1].at[index, 'price'] = (row['price'] - coinMinMax[0]) / (coinMinMax[1] - coinMinMax[0])
+		total += vals[0]
+		vals[1].to_csv('results/'+str(fileName.split('/')[1])+'.csv', index=False)
 
-		vals[1]['time'] = pandas.to_datetime(vals[1]['time'], unit='ms')
+		if plot:
+			# Uncomment if plotting more than one coin-pair
+			'''
+			coinMinMax = get_min_max(coin)
+			for index, row in coin.iterrows():
+				coin.at[index, 'Close'] = (row['Close'] - coinMinMax[0]) / (coinMinMax[1] - coinMinMax[0])
 
-		a, b = vals[1][vals[1].type == 'buy'].as_matrix(['time', 'price']).T
-		plt.scatter(a, b, color='red', s=10)
-		c, d = vals[1][vals[1].type == 'sell'].as_matrix(['time', 'price']).T
-		plt.scatter(c, d, color='green', s=10)
+			for index, row in vals[1].iterrows():
+				vals[1].at[index, 'price'] = (row['price'] - coinMinMax[0]) / (coinMinMax[1] - coinMinMax[0])
+			'''
+			vals[1]['time'] = pandas.to_datetime(vals[1]['time'], unit='ms')
 
-		coin['Close Time'] = pandas.to_datetime(coin['Close Time'], unit='ms')
-		plt.plot(coin['Close Time'], coin['Close'], color='pink', linestyle='dashed', label=fileName)
+			a, b = vals[1][vals[1].type == 'buy'].as_matrix(['time', 'price']).T
+			plt.scatter(a, b, color='red', s=10)
+			c, d = vals[1][vals[1].type == 'sell'].as_matrix(['time', 'price']).T
+			plt.scatter(c, d, color='green', s=10)
 
-print('\nFinal BTC: '+str(total))
-plt.legend()
-plt.show()
+			coin['Close Time'] = pandas.to_datetime(coin['Close Time'], unit='ms')
+			plt.plot(coin['Close Time'], coin['Close'], color='pink', linestyle='dashed', label=fileName)
+
+	print('\nFinal BTC: '+str(total))
+
+	# Change to True to show plotting.
+	if plot:
+		plt.legend()
+		plt.show()

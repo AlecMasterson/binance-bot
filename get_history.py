@@ -46,7 +46,7 @@ def get_data(coin, client, api):
 	except:
 		print('WARN: No Existing Data Found!')
 		# Use Dec 1, 2017 as a default start date.
-		startTime = 1512108000000
+		startTime = 1516428000000
 	endTime = int(round(time.time() * 1000))
 
 	# --------------------------------------------------------------------------
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 	api = Client.KLINE_INTERVAL_1HOUR
 
 	# Manually edit this for different coin pairs.
-	coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC']
+	coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC', 'EOSBTC', 'XLMBTC']
 	for coin in coins:
 		print('\nINFO: Getting Data for '+coin+' CoinPair')
 		get_data(coin, client, api)

@@ -1,4 +1,5 @@
 from bayes_opt import BayesianOptimization
+from back import baye
 import pandas, sys
 
 # ------------------------------------------------------------------------------
@@ -28,22 +29,20 @@ except:
 # ------------------------------------------------------------------------------
 
 try:
-	# TODO: Manually edit this to accommodate your unique bot.
-	# arg1... are the arguments that are passed into your function 'fun'.
-	# (0, 1) are the min/max of each argument's search area.
 	bo = BayesianOptimization(
-		lambda arg1, arg2, arg3: fun(
+		lambda arc, thinup, thindown, power, low, hi: baye(
 			data, {
-				'arg1': arg1, 'arg2': arg2, 'arg3': arg3
+				'arc': arc, 'thinup': thinup, 'thindown': thindown, 'power': power,
+				'low': low, 'hi': hi
 			}
 		), {
-			'arg1': (0, 1), 'arg2': (0, 1), 'arg3': (0, 1)
+			'arc': (3.0, 3.0), 'thinup': (1.00, 9.99), 'thindown': (-9.99, -1.00), 'power': (-22, -16),
+			'low': (0.9600, 0.9900), 'hi': (1.0001, 1.0100)
 		}
 	)
-
-	# TODO: Manually edit this to accommodate your unique bot.
-	bo.maximize(init_points=10, n_iter=15, kappa=2)
-except:
+	bo.maximize(init_points=100, n_iter=15, kappa=2)
+except Exception as e:
+	print(e)
 	print('\nERROR: Unknown Error During Optimization!\n')
 	sys.exit()
 
