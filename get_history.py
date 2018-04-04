@@ -5,7 +5,7 @@ import pandas, sys, time, datetime
 # HELPER FUNCTIONS
 # ------------------------------------------------------------------------------
 
-# Create a frame to store historical data from API
+# Create a pandas.DataFrame to store historical data from Binance API
 def create_frame(data):
 	return pandas.DataFrame(
 		data,
@@ -17,12 +17,12 @@ def create_frame(data):
 		]
 	)
 
-# Concat two similar pandas.DataFrame and maintain the correct order
+# Concat two similar pandas.DataFrame structures and maintain the correct order
 def combine_frames(df, df2):
 	return pandas.concat(
 		[df, df2]
 	).drop_duplicates(
-		subset='Open Time'
+		subset=['Open Time']
 	).sort_values(
 		by=['Open Time']
 	).reset_index(drop=True)
@@ -40,13 +40,13 @@ def get_data(coin, client, api):
 	df = create_frame(None)
 	try:
 		print('IO: Looking For Existing Data...')
-		df = combine_frames(df, pandas.read_csv('data/'+str(coin)+'.csv'))
+		df = combine_frames(df, pandas.read_csv('data_new/'+str(coin)+'.csv'))
 		startTime = df.iloc[-2]['Open Time']
-		print('Found!')
+		print('Found! Pulling New Historical Data...')
 	except:
-		print('WARN: No Existing Data Found!')
-		# Use Dec 1, 2017 as a default start date.
-		startTime = 1516428000000
+		print('WARN: No Existing Data Found! Pulling Historical Data...')
+		# Use Jan 20, 2018 as a default start date.
+		startTime = 1516406400000
 	endTime = int(round(time.time() * 1000))
 
 	# --------------------------------------------------------------------------
@@ -85,7 +85,7 @@ def get_data(coin, client, api):
 	# --------------------------------------------------------------------------
 
 	try:
-		df.to_csv('data/'+str(coin)+'.csv', index=False)
+		df.to_csv('data_new/'+str(coin)+'.csv', index=False)
 	except:
 		print('ERROR: Failed Writing to File!\n')
 		sys.exit()
@@ -122,7 +122,9 @@ if __name__ == "__main__":
 	api = Client.KLINE_INTERVAL_1HOUR
 
 	# Manually edit this for different coin pairs.
-	coins = ['ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC', 'EOSBTC', 'XLMBTC']
+	coins = [
+		'ETHBTC', 'BNBBTC', 'XRPBTC', 'LTCBTC', 'ADABTC', 'EOSBTC', 'XLMBTC'
+	]
 	for coin in coins:
 		print('\nINFO: Getting Data for '+coin+' CoinPair')
 		get_data(coin, client, api)
