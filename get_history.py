@@ -40,7 +40,7 @@ def get_data(coin, client, api):
 	df = create_frame(None)
 	try:
 		print('IO: Looking For Existing Data...')
-		df = combine_frames(df, pandas.read_csv('data_new/'+str(coin)+'.csv'))
+		df = combine_frames(df, pandas.read_csv('data/'+str(coin)+'.csv'))
 		startTime = df.iloc[-2]['Open Time']
 		print('Found! Pulling New Historical Data...')
 	except:
@@ -85,7 +85,7 @@ def get_data(coin, client, api):
 	# --------------------------------------------------------------------------
 
 	try:
-		df.to_csv('data_new/'+str(coin)+'.csv', index=False)
+		df.to_csv('data/'+str(coin)+'.csv', index=False)
 	except:
 		print('ERROR: Failed Writing to File!\n')
 		sys.exit()
