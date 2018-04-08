@@ -158,7 +158,7 @@ class TradingEnv(gym.Env):
         Returns:
             numpy.array: observation array.
         """
-        return np.concatenate([price for price in self._prices_history[-self._history_length:]] + [np.array([self._entry_price])])
+        return (np.array([price for price in self._prices_history[-self._history_length:]]) + np.array([self._entry_price]))
 
     @staticmethod
     def random_action_fun():

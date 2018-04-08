@@ -2,34 +2,32 @@
 The aim of this file is to give a standalone example of how an environment  runs.
 """
 
-import numpy as np
-from tgym.core import DataGenerator
-from tgym.envs import SpreadTrading
-from tgym.gens.deterministic import WavySignal
+import sys
+from os.path import dirname
+sys.path.append(dirname(sys.path[0]))
 
-generator = WavySignal(period_1=25, period_2=50, epsilon=-0.5)
+import numpy as np
+from trading_env.tenv.envs.trading_env import TradingEnv
+from trading_env.tenv.envs.gens.deterministic import SineSignal
+
+generator = SineSignal(period_1=3, period_2=5, epsilon=1, bias=0.0)
 
 episode_length = 200
 trading_fee = 0.2
 time_fee = 0
 # history_length number of historical states in the observation vector.
-history_length = 2
+history_length = 6
 
-environment = SpreadTrading(spread_coefficients=[1],
-                            data_generator=generator,
-                            trading_fee=trading_fee,
-                            time_fee=time_fee,
-                            history_length=history_length,
-                            episode_length=episode_length)
+environment = TradingEnv(data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length)
 
-environment.render()
+# environment.render()
 while True:
-    action = raw_input("Action: Buy (b) / Sell (s) / Hold (enter): ")
+    action = input("Action: Buy (b) / Sell (s) / Hold (enter): ")
     if action == 'b':
-        action = [0, 1, 0]
+        action = 'buy'
     elif action == 's':
-        action = [0, 0, 1]
+        action = 'sell'
     else:
-        action = [1, 0, 0]
-    environment.step(action)
-    environment.render()
+        action = 'hold'
+    print(environment.step(action))
+    # environment.render()
