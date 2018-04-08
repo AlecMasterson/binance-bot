@@ -16,7 +16,7 @@ SELL = np.array([0, 0, 1])
 
 class TradingEnv(gym.Env):
 
-    def __init__(self, data_generator, episode_length=(30*24), trading_fee=0.01, time_fee=0, history_length=2):
+    def __init__(self, data_generator, episode_length=(30 * 24), trading_fee=0.1, time_fee=0, history_length=2):
         """Initialisation function
 
         Args:
@@ -108,7 +108,7 @@ class TradingEnv(gym.Env):
     def _handle_close(self, evt):
         self._closed_plot = True
 
-    def render(self, savefig=False, filename='myfig'): #Stole this.... need to figure out... dunno what I want to do here
+    def render(self, savefig=False, filename='myfig'):        # Stole this.... need to figure out... dunno what I want to do here
         """Matlplotlib rendering of each step.
 
         Args:
