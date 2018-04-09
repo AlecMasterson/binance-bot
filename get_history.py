@@ -28,6 +28,8 @@ def load_file(fileName):
     return priceData
 
 
+# Update existing, or create new, price-data file.
+# coinPair - The coinPair to get data for
 def get_data(coinPair):
     try:
         df = create_frame(None)
@@ -54,8 +56,7 @@ def get_data(coinPair):
 
         df.to_csv('data/' + str(coinPair) + '.csv', index=False)
 
-    except Exception as e:
-        print(e)
+    except:
         print('ERROR: Unknown Error Getting Historical Data!')
         sys.exit()
 

@@ -8,22 +8,22 @@ def round_down(x):
 
 
 # Return the resulting BTC and ALT wallet values if you were to buy
-# btc - Current BTC wallet value
-# alt - Current ALT wallet value
 # price - Price at which to trade
 # fee - Percent fee for transaction
 # quantity - Percentage of BTC/ALT to trade with
-def predict_buy(btc, alt, price, fee, quantity):
+# btc - Current BTC wallet value
+# alt - Current ALT wallet value
+def predict_buy(price, fee, quantity, btc, alt):
     return {'btc': btc - round_down(btc * quantity), 'alt': alt + round_down(btc * quantity) / price * (1.0 - fee)}
 
 
 # Return the resulting BTC and ALT wallet values if you were to sell
-# btc - Current BTC wallet value
-# alt - Current ALT wallet value
 # price - Price at which to trade
 # fee - Percent fee for transaction
 # quantity - Percentage of BTC/ALT to trade with
-def predict_sell(btc, alt, price, fee, quantity):
+# btc - Current BTC wallet value
+# alt - Current ALT wallet value
+def predict_sell(price, fee, quantity, btc, alt):
     return {'alt': alt - round_down(alt * quantity), 'btc': btc + round_down(alt * quantity) * price * (1.0 - fee)}
 
 
@@ -43,7 +43,8 @@ def buy(trading, time, price, fee, quantity):
             'price': price,
             'quantity': quantity,
             'btc': trading.iloc[-1]['btc'] - round_down(trading.iloc[-1]['btc'] * quantity),
-            'alt': trading.iloc[-1]['alt'] + round_down(trading.iloc[-1]['btc'] * quantity) / price * (1.0 - fee)
+            'alt': trading.iloc[-1]['alt'] + round_down(trading.iloc[-1]['btc'] * quantity) / price * (1.0 - fee),
+            'fee': round_down(trading.iloc[-1]['btc'] * quantity) / price * fee
         },
         ignore_index=True)
 
@@ -63,8 +64,9 @@ def sell(trading, time, price, fee, quantity):
             'time': time,
             'price': price,
             'quantity': quantity,
-            'btc': trading.iloc[-1]['btc'] + round_down(trading.iloc[-1]['alt'] * quantity) / price * (1.0 - fee),
-            'alt': trading.iloc[-1]['alt'] - round_down(trading.iloc[-1]['alt'] * quantity)
+            'btc': trading.iloc[-1]['btc'] + round_down(trading.iloc[-1]['alt'] * quantity) * price * (1.0 - fee),
+            'alt': trading.iloc[-1]['alt'] - round_down(trading.iloc[-1]['alt'] * quantity),
+            'fee': round_down(trading.iloc[-1]['alt'] * quantity) / price * fee
         },
         ignore_index=True)
 
