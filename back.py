@@ -3,10 +3,18 @@ import matplotlib.pyplot as plt
 import sys, pandas, math, helpers
 
 
+# Return True if potential gain/loss of selling is outside the bounds
+def predict_change(trading, price, fee, quantity, args):
+    change = trading.iloc[len(trading.index) - 2]['btc'] / (trading.iloc[-1]['btc'] + (helpers.round_down(trading.iloc[-1]['alt'] * quantity) * price) * (1.0 - fee))
+    if change < args['low'] or change > args['hi']:
+        return True
+    return False
+
+
 def backtest(data, params):
 
     # Initialize the trading-data DataFrame with our starting BTC value.
-    trading = pandas.DataFrame(data={'type': 'start', 'time': 0, 'price': 0, 'quantity': 1.0, 'btc': 0.01, 'alt': 0.0}, index=[0])
+    trading = pandas.DataFrame(data={'type': 'start', 'time': 0, 'price': 0, 'fee': 0.0, 'quantity': 1.0, 'btc': 0.01, 'alt': 0.0}, index=[0])
 
     # Traverse through price-data row by row.
     for index, row in data.iterrows():
@@ -33,9 +41,9 @@ def backtest(data, params):
         # Buy if the current price is below the last price.
         # Sell if the current price is above the last price and a profit % decrease/increase is outside the bounds.
         if row['Close'] < section.iloc[-1]['Close']:
-            trading = helpers.buy(trading, row['Close Time'], row['Close'], 1.0)
-        elif row['Close'] > section.iloc[-1]['Close'] and helpers.predict_change(trading, row['Close'], 1.0, params):
-            trading = helpers.sell(trading, row['Close Time'], row['Close'], 1.0)
+            trading = helpers.buy(trading, row['Close Time'], row['Close'], 0.001, 1.0)
+        elif row['Close'] > section.iloc[-1]['Close'] and predict_change(trading, row['Close'], 0.001, 1.0, params):
+            trading = helpers.sell(trading, row['Close Time'], row['Close'], 0.001, 1.0)
 
     # Return both the final BTC and the trading-data.
     return [helpers.combined_total(trading.iloc[-1]), trading]
@@ -45,12 +53,6 @@ def backtest(data, params):
 def optimize(data, params):
     return backtest(data, params)[0]
 
-
-# ------------------------------------------------------------------------------
-
-# ------------------------------------------------------------------------------
-
-# ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
 
@@ -89,11 +91,11 @@ if __name__ == "__main__":
         results[1]['time'] = pandas.to_datetime(results[1]['time'], unit='ms')
         data['Close Time'] = pandas.to_datetime(data['Close Time'], unit='ms')
 
-        # Convert the buy/sell data points so they may be used in a scatter plot.
+        # Convert the buy/sell data selling so they may be used in a scatter plot.
         a, b = results[1][results[1].type == 'buy'].as_matrix(['time', 'price']).T
-        plt.scatter(a, b, color='red', s=10)
+        plt.scatter(a, b, color='red', s=14)
         c, d = results[1][results[1].type == 'sell'].as_matrix(['time', 'price']).T
-        plt.scatter(c, d, color='green', s=10)
+        plt.scatter(c, d, color='green', s=14)
 
         # Simply plot the price-data as a line graph.
         plt.plot(data['Close Time'], data['Close'], color='blue', linestyle='dashed')
