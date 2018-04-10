@@ -11,30 +11,26 @@ import time
 
 from trading_env.tenv.envs.trading_env import TradingEnv
 from trading_env.tenv.envs.gens.deterministic import SineSignal
-from trading_env.tenv.envs.gens.random import RandomWalk
+from trading_env.tenv.envs.gens.random import RandomCSV
+from trading_env.tenv.envs.gens.csvstream import CSVStreamer
 
-generator = RandomWalk(val=100, multiplier=22, bias=2)
-# generator = SineSignal(period_1=3, period_2=5, epsilon=1, bias=0.0)
+# generator = CSVStreamer('data/ADABTC.csv')
+generator = RandomCSV('data/ADABTC.csv')
 
-episode_length = 200
+episode_length = 10000
 trading_fee = 0.2
 time_fee = 0
-# history_length number of historical states in the observation vector.
 history_length = 6
+done = False
+renderwindr = 24 * 7
 
-environment = TradingEnv(data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length)
+environment = TradingEnv(
+    data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length)
 
-environment.render()
-while True:
-    # action = input("Action: Buy (b) / Sell (s) / Hold (enter): ")
-    # if action == 'b':
-    #     action = 'buy'
-    # elif action == 's':
-    #     action = 'sell'
-    # else:
-    #     action = 'hold'
+environment.render(window_size=renderwindr)
+while not done:
     action = np.random.choice(a=['buy', 'sell', 'hold'], size=1, p=[0.05, 0.05, 0.9])
-    print(action)
-    environment.step(action)
-    environment.render()
-    time.sleep(0.1)
+    # print(action)
+    _, _, done, _ = environment.step(action)
+    environment.render(window_size=renderwindr)
+    # time.sleep(0.001)
