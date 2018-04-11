@@ -135,8 +135,8 @@ class TradingEnv(gym.Env):
             self.w_btc = w_buy[0]
             self.w_alt = w_buy[1]
         elif action == 'sell':
-            w_prev = helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price)
             self._sell_price = self.open_history[-1]
+            w_prev = helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price)
             w_sell = helpers.sell_env(self.w_btc, self.w_alt, self._sell_price, self._trading_fee)
             self.w_btc = w_sell[0]
             self.w_alt = w_sell[1]
