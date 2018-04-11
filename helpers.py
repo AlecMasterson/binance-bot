@@ -90,6 +90,14 @@ def sell_env(btc, alt, price, fee):
 
 
 # Return combined wallet total of BTC and ALT in the form of BTC
+# btc - Current BTC wallet value
+# alt - Current ALT wallet value
+# price - Current price of the exchange
+def combined_total_env(btc, alt, price):
+    return btc + alt * price
+
+
+# Return combined wallet total of BTC and ALT in the form of BTC
 # values - A DataFrame entry from the trading-data DataFrame
 def combined_total(values):
     return values['btc'] + values['alt'] * values['price']
