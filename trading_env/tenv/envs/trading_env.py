@@ -130,17 +130,17 @@ class TradingEnv(gym.Env):
         info = {}
         reward = -self._time_fee
         if action == 'buy':
-            reward += 0
             self._buy_price = self.open_history[-1]
             w_buy = helpers.buy_env(self.w_btc, self.w_alt, self._buy_price, self._trading_fee)
             self.w_btc = w_buy[0]
             self.w_alt = w_buy[1]
         elif action == 'sell':
-            reward += 0
+            w_prev = helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price)
             self._sell_price = self.open_history[-1]
             w_sell = helpers.sell_env(self.w_btc, self.w_alt, self._sell_price, self._trading_fee)
             self.w_btc = w_sell[0]
             self.w_alt = w_sell[1]
+            reward += helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price) / w_prev - 1.0
 
         self.reward = reward
         self._total_reward += reward
