@@ -71,6 +71,24 @@ def sell(trading, time, price, fee, quantity):
         ignore_index=True)
 
 
+# Return an array with the new wallet values for BTC and ALT after submitting a buy order
+# btc - Current BTC wallet value
+# alt - Current ALT wallet value
+# price - Price at which to trade
+# fee - Percent fee for transaction
+def buy_env(btc, alt, price, fee):
+    return [btc - round_down(btc), alt + round_down(btc) / price * (1.0 - fee)]
+
+
+# Return an array with the new wallet values for BTC and ALT after submitting a sell order
+# btc - Current BTC wallet value
+# alt - Current ALT wallet value
+# price - Price at which to trade
+# fee - Percent fee for transaction
+def sell_env(btc, alt, price, fee):
+    return [btc + round_down(alt) * price * (1.0 - fee), alt - round_down(alt)]
+
+
 # Return combined wallet total of BTC and ALT in the form of BTC
 # values - A DataFrame entry from the trading-data DataFrame
 def combined_total(values):

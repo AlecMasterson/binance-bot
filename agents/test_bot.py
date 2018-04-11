@@ -18,14 +18,13 @@ from trading_env.tenv.envs.gens.csvstream import CSVStreamer
 generator = RandomCSV('data/ADABTC.csv')
 
 episode_length = 10000
-trading_fee = 0.2
+trading_fee = 0.001
 time_fee = 0
 history_length = 6
 done = False
 renderwindr = 24 * 7
 
-environment = TradingEnv(
-    data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length)
+environment = TradingEnv(data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length)
 
 environment.render(window_size=renderwindr)
 while not done:
