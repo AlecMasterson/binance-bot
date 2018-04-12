@@ -7,6 +7,7 @@ import seaborn as sns
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
+import helpers
 
 # plt.style.use('dark_background')
 sns.set_style(
@@ -27,15 +28,7 @@ sns.set_style(
         'ytick.direction': u'out'
     })
 sns.despine(offset=10, trim=True)
-mpl.rcParams.update({
-    "font.size": 10,
-    "axes.labelsize": 10,
-    "lines.linewidth": 1,
-    "lines.markersize": 8,
-    "figure.figsize": (13, 5),
-    "axes.xmargin": 0.1,
-    "axes.ymargin": 0.1
-})
+mpl.rcParams.update({"font.size": 10, "axes.labelsize": 10, "lines.linewidth": 1, "lines.markersize": 8, "figure.figsize": (13, 5), "axes.xmargin": 0.1, "axes.ymargin": 0.1})
 
 HOLD = np.array([1, 0, 0])
 BUY = np.array([0, 1, 0])
@@ -72,7 +65,7 @@ class TradingEnv(gym.Env):
         Returns:
             observation (numpy.array): observation of the state
         """
-        self.w_btc = 1
+        self.w_btc = 0.01
         self.w_alt = 0
         self._iteration = 0
         self._data_generator.rewind()
@@ -137,22 +130,22 @@ class TradingEnv(gym.Env):
         info = {}
         reward = -self._time_fee
         if action == 'buy':
-            reward += 0
             self._buy_price = self.open_history[-1]
+            w_buy = helpers.buy_env(self.w_btc, self.w_alt, self._buy_price, self._trading_fee)
+            self.w_btc = w_buy[0]
+            self.w_alt = w_buy[1]
         elif action == 'sell':
-            reward += 0
             self._sell_price = self.open_history[-1]
+            w_prev = helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price)
+            w_sell = helpers.sell_env(self.w_btc, self.w_alt, self._sell_price, self._trading_fee)
+            self.w_btc = w_sell[0]
+            self.w_alt = w_sell[1]
+            reward += helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price) / w_prev - 1.0
 
         self.reward = reward
         self._total_reward += reward
 
-        self.action_history.append({
-            'action': action,
-            'price': self.open_history[-1],
-            'iteration': self._iteration,
-            'reward': reward,
-            'total_reward': self._total_reward
-        })
+        self.action_history.append({'action': action, 'price': self.open_history[-1], 'iteration': self._iteration, 'reward': reward, 'total_reward': self._total_reward})
 
         # Game over logic
         try:
@@ -191,8 +184,7 @@ class TradingEnv(gym.Env):
             self._ax.scatter(self._iteration + 0.5, self.open_history[-1] + 0.03 * yrange, color='red', marker='v')
         elif (self._action == 'buy'):
             self._ax.scatter(self._iteration + 0.5, self.open_history[-1] - 0.03 * yrange, color='green', marker='^')
-        plt.suptitle('Iteration: {}, Total Reward: {}, Current Reward: {}, Current Price: {}, Action: {}'.format(
-            self._iteration, self._total_reward, self.reward, self.open_history[-1], self._action))
+        plt.suptitle('Iteration: {}, Total Reward: {}, Current Reward: {}, Current Price: {}, Action: {}'.format(self._iteration, self._total_reward, self.reward, self.open_history[-1], self._action))
         self._f.tight_layout()
         plt.xticks(range(self._iteration)[::5])
         plt.xlim([max(0, self._iteration - window_size), self._iteration + 0.5])
