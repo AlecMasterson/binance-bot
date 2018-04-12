@@ -57,7 +57,6 @@ class TradingEnv(gym.Env):
         self._episode_length = episode_length
         self.action_space = spaces.Discrete(3)
         self._history_length = history_length
-        self.reset()
 
     def reset(self):
         """Reset the trading environment. Reset rewards, data generator...
@@ -205,4 +204,5 @@ class TradingEnv(gym.Env):
         Returns:
             numpy.array: observation array.
         """
-        return (np.array([price for price in self.open_history[-self._history_length:]]) + np.array([self._buy_price]))
+        return np.array([helpers.combined_total_env(self.w_btc, self.w_alt,
+                                                    self.open_history[-1])])        #(np.array([price for price in self.open_history[-self._history_length:]]) + np.array([self._buy_price]))
