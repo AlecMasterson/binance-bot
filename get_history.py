@@ -29,14 +29,16 @@ def load_file(fileName):
 
 
 # Update existing, or create new, price-data file.
+# dir - The directory to read/write data from/to
+# api - The specific time interval API to use
 # coinPair - The coinPair to get data for
-def get_data(coinPair):
+def get_data(dir, api, coinPair):
     try:
         df = create_frame(None)
         client = Client('', '')
 
         try:
-            df = combine_frames(df, load_file('data/' + str(coinPair) + '.csv'))        # Load currently stored historical data for the coinPair.
+            df = combine_frames(df, load_file(dir + str(coinPair) + '.csv'))        # Load currently stored historical data for the coinPair.
             startTime = df.iloc[-2]['Open Time']        # Get the second to last timestamp (allow some overlap), if it exists.
         except:
             startTime = datetime.datetime(2018, 1, 20).timestamp() * 1000        # If no existing data was found, use "Jan 20, 2018" in milliseconds as a default start datetime.
@@ -49,12 +51,12 @@ def get_data(coinPair):
             formatEnd = str(datetime.datetime.fromtimestamp(curEnd / 1e3))
             print('\tStart Time: ' + formatStart + '\tEnd Time: ' + formatEnd)
 
-            df = combine_frames(df, create_frame(client.get_historical_klines(coinPair, Client.KLINE_INTERVAL_1HOUR, str(startTime), str(curEnd))))
+            df = combine_frames(df, create_frame(client.get_historical_klines(coinPair, api, str(startTime), str(curEnd))))
 
             startTime += 259200000        # Acquire data in 3 day intervals to not overload the API.
             time.sleep(3)        # Wait between API calls to not overload the API.
 
-        df.to_csv('data/' + str(coinPair) + '.csv', index=False)
+        df.to_csv(dir + str(coinPair) + '.csv', index=False)
 
     except:
         print('ERROR: Unknown Error Getting Historical Data!')
@@ -63,11 +65,28 @@ def get_data(coinPair):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 1:
-        print('ERROR: Command Usage -> \'python3 get_history.py <CoinPair 1> [CoinPair 2] ... [CoinPair N]\'')
-        sys.exit()
+    print('INFO: Command Usage -> \'python3 get_history.py [CoinPair 1] [CoinPair 2] ... [CoinPair N]\'\n')
 
-    for coinPair in sys.argv[1:]:
-        print('INFO: Getting Data for ' + coinPair + ' CoinPair')
-        get_data(coinPair)
-        print('INFO: Done Getting Data for ' + coinPair + ' CoinPair')
+    locations = [{
+        'dir': 'data_15_min/',
+        'api': Client.KLINE_INTERVAL_15MINUTE
+    }, {
+        'dir': 'data_30_min/',
+        'api': Client.KLINE_INTERVAL_30MINUTE
+    }, {
+        'dir': 'data_1_hour/',
+        'api': Client.KLINE_INTERVAL_1HOUR
+    }, {
+        'dir': 'data_2_hour/',
+        'api': Client.KLINE_INTERVAL_2HOUR
+    }]
+
+    coinPairs = sys.argv[1:]
+    for coinPair in ['ADAETH', 'BNBBTC', 'BNBETH', 'ETHBTC', 'XRPETH']:
+        if not coinPair in coinPairs: coinPairs.append(coinPair)
+
+    for location in locations:
+        for coinPair in coinPairs:
+            print('INFO: Getting Data for ' + coinPair + ' CoinPair in ' + location['dir'])
+            get_data(location['dir'], location['api'], coinPair)
+            print('INFO: Done Getting Data for ' + coinPair + ' CoinPair in ' + location['dir'])
