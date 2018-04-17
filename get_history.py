@@ -64,7 +64,7 @@ def get_data(coinPair):
 if __name__ == "__main__":
 
     if len(sys.argv) == 1:
-        print('ERROR: Command Usage -> \'python3 get_history.py [CoinPair 1] <CoinPair 2> ... <CoinPair N>\'')
+        print('ERROR: Command Usage -> \'python3 get_history.py <CoinPair 1> [CoinPair 2] ... [CoinPair N]\'')
         sys.exit()
 
     for coinPair in sys.argv[1:]:
