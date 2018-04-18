@@ -8,6 +8,7 @@ sys.path.append(dirname(sys.path[0]))
 
 import numpy as np
 import time
+import helpers
 
 from trading_env.tenv.envs.trading_env import TradingEnv
 from trading_env.tenv.envs.gens.deterministic import SineSignal
@@ -27,9 +28,11 @@ renderwindr = 24 * 7
 environment = TradingEnv(data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length)
 
 environment.render(window_size=renderwindr)
+observation = environment.reset()
+
 while not done:
     action = np.random.choice(a=['buy', 'sell', 'hold'], size=1, p=[0.05, 0.05, 0.9])
     # print(action)
-    _, _, done, _ = environment.step(action)
+    observation, _, done, _ = environment.step(action)
     environment.render(window_size=renderwindr)
     # time.sleep(0.001)
