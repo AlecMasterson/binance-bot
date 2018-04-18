@@ -88,6 +88,10 @@ def sell(trading, coinPair, time, price, quantity, fee):
     return trading
 
 
+def starting_total(data, trading):
+    return trading.iloc[-1]['btc'] + trading.iloc[-1]['eth'] * data.iloc[0]['open-ETHBTC']
+
+
 # Return combined wallet total value in the form of BTC
 # data - Combined price-data of all coin-pairs
 # trading - The trading-data DataFrame
