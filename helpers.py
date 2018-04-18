@@ -8,26 +8,6 @@ def round_down(x):
     return float(math.floor(x * 1000) / 1000)
 
 
-# Return the resulting BTC and ALT wallet values if you were to buy
-# price - Price at which to trade
-# fee - Percent fee for transaction
-# quantity - Percentage of BTC/ALT to trade with
-# btc - Current BTC wallet value
-# alt - Current ALT wallet value
-def predict_buy(price, fee, quantity, btc, alt):
-    return {'btc': btc - round_down(btc * quantity), 'alt': alt + round_down(btc * quantity) / price * (1.0 - fee)}
-
-
-# Return the resulting BTC and ALT wallet values if you were to sell
-# price - Price at which to trade
-# fee - Percent fee for transaction
-# quantity - Percentage of BTC/ALT to trade with
-# btc - Current BTC wallet value
-# alt - Current ALT wallet value
-def predict_sell(price, fee, quantity, btc, alt):
-    return {'alt': alt - round_down(alt * quantity), 'btc': btc + round_down(alt * quantity) * price * (1.0 - fee)}
-
-
 # Return DataFrame with trading-data after submitting a buy order
 # trading - The trading-data DataFrame
 # coinPair - The coin-pair exchange being made
