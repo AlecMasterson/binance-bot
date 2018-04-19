@@ -64,10 +64,11 @@ def get_logger():
 
 # Print an error message and exit the script
 # message - The unique error message
-def throw_error(message):
+# terminate - True if the error should stop the script
+def throw_error(message, terminate):
     print('ERROR: ' + message)
     get_logger().error(message)
-    sys.exit()
+    if terminate: sys.exit()
 
 
 # Print an info message

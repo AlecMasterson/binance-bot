@@ -19,11 +19,11 @@ def combine_frames(df, df2):
 # fileName - The csv file that contains the price-data
 def load_file(fileName):
     priceData = pandas.read_csv(fileName)
-    if list(priceData) != utilities.COLUMN_STRUCTURE: utilities.throw_error('Incorrect price-data DataFrame column structure')
+    if list(priceData) != utilities.COLUMN_STRUCTURE: utilities.throw_error('Incorrect price-data DataFrame column structure', True)
     return priceData
 
 
-# Update existing, or create new, price-data file.
+# Update existing, or create new, price-data file. Return True if successful.
 # dir - The directory to read/write data from/to
 # api - The specific time interval API to use
 # coinpair - The coinpair to get data for
@@ -50,28 +50,42 @@ def get_data(dir, api, coinpair):
 
         df.to_csv(dir + str(coinpair) + '.csv', index=False)
 
-    except Exception as e:
-        print(e)
-        utilities.throw_error('Unknown Error Getting Historical Data')
+    except:
+        utilities.throw_error('Unknown Error Getting Historical Data', False)
+        return False
+
+    return True
 
 
-if __name__ == "__main__":
-
+# The main functionality of get_history wrapped into a single function
+def execute():
     # Inform the start of this script.
     utilities.throw_info('Get_History Script Starting')
-
-    # Verify command usage.
-    if len(sys.argv) != 1: utilities.throw_error('Command Usage -> \'python3 get_history.py [coinpair 1] [coinpair 2] ... [coinpair N]\'')
 
     # Get the default info for time intervals and coinpairs to use.
     locations = utilities.get_default_dirs_intervals()
     coinpairs = utilities.get_default_coinpairs()
 
+    results = []
     for location in locations:
         for coinpair in coinpairs:
             utilities.throw_info('Getting Data for ' + coinpair + ' coinpair in ' + location['dir'])
-            get_data(location['dir'], location['api'], coinpair)
+            results.append(get_data(location['dir'], location['api'], coinpair))
             utilities.throw_info('Done Getting Data for ' + coinpair + ' coinpair in ' + location['dir'])
 
+    # Check if any of the data wasn't received successfully.
+    message = 'Get_History Script Completed'
+    if False in results: message += ' with Errors'
+
     # Inform the end of this script
-    utilities.throw_info('Get_History Script Completed')
+    utilities.throw_info(message)
+
+    if False in results: return False
+    return True
+
+
+if __name__ == "__main__":
+
+    # Verify command usage before executing.
+    if len(sys.argv) != 1: utilities.throw_error('Command Usage -> \'python3 get_history.py\'', True)
+    execute()
