@@ -58,12 +58,15 @@ def get_data(dir, api, coinpair):
 
 
 # The main functionality of get_history wrapped into a single function
-def execute():
+# locations - The location or locations to focus on
+def execute(locations):
     # Inform the start of this script.
     utilities.throw_info('Get_History Script Starting')
 
-    # Get the default info for time intervals and coinpairs to use.
-    locations = utilities.get_default_dirs_intervals()
+    # Verify we have directories to check.
+    if len(locations) == 0: utilities.throw_error('No Locations Found', True)
+
+    # Get the default coinpairs to use.
     coinpairs = utilities.get_default_coinpairs()
 
     results = []
@@ -120,4 +123,6 @@ if __name__ == "__main__":
 
     # Verify command usage before executing.
     if len(sys.argv) != 1: utilities.throw_error('Command Usage -> \'python3 get_history.py\'', True)
-    execute()
+
+    # Use the default time intervals.
+    execute(utilities.get_default_dirs_intervals())

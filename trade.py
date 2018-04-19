@@ -14,9 +14,12 @@ if __name__ == "__main__":
     except:
         utilities.throw_error('Could Not Connect to Binance API', True)
 
+    # Only use the directory given as an argument.
+    locations = [location for location in utilities.get_default_dirs_intervals() if location['dir'] == sys.argv[1]]
+
     # Update all historical data. Two attempts to update.
-    if not get_history.execute():
-        if not get_history.execute():
+    if not get_history.execute(locations):
+        if not get_history.execute(locations):
             utilities.throw_error('Failed to Update All Historical Data', True)
 
     # Populate with all used assets and their current balance in our account.
@@ -27,7 +30,7 @@ if __name__ == "__main__":
     except:
         utilities.throw_error('Failed to Get Asset Balances', True)
 
-    # Get the combined price-data file for all used coinpairs.
+    # Get the combined price-data file for all used coinpairs. This should never fail as get_history handles it.
     try:
         data = pandas.read_csv(sys.argv[1] + 'ALL.csv')
     except:
