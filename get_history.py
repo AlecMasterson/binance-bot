@@ -1,5 +1,5 @@
 from binance.client import Client
-import sys, utilities, pandas, datetime, time
+import sys, utilities, pandas, datetime, time, numpy
 
 
 # Create a DataFrame to store the historical data from the Binance API
@@ -52,9 +52,9 @@ def get_data(dir, api, coinpair):
 
     except:
         utilities.throw_error('Unknown Error Getting Historical Data', False)
-        return False
+        return {'status': False, 'frame': df}
 
-    return True
+    return {'status': True, 'frame': df}
 
 
 # The main functionality of get_history wrapped into a single function
@@ -68,10 +68,42 @@ def execute():
 
     results = []
     for location in locations:
+        combined = []        # Stores all coinpair DataFrames from a single time interval.
         for coinpair in coinpairs:
             utilities.throw_info('Getting Data for ' + coinpair + ' coinpair in ' + location['dir'])
-            results.append(get_data(location['dir'], location['api'], coinpair))
-            utilities.throw_info('Done Getting Data for ' + coinpair + ' coinpair in ' + location['dir'])
+
+            # Append whether the retreival was succesful.
+            result = get_data(location['dir'], location['api'], coinpair)
+            results.append(result['status'])
+
+            # Strip down the resulting DataFrame so it can be merged with all the coinpair DataFrames.
+            try:
+                result['frame'].set_index('Open Time', inplace=True)
+                result['frame'] = result['frame'].drop(columns=['Volume', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore'])
+                result['frame'] = result['frame'].rename(columns={
+                    'Open': 'open-' + coinpair,
+                    'High': 'high-' + coinpair,
+                    'Low': 'low-' + coinpair,
+                    'Close': 'close-' + coinpair,
+                    'Close Time': 'cTime-' + coinpair
+                })
+                combined.append(result['frame'])
+            except:
+                utilities.throw_error('Failed to Strip DataFrame for Merging', False)
+                results.append(False)
+
+        # Merge all the coinpair DataFrames.
+        try:
+            for i in range(len(combined)):
+                if i == 0: continue
+                combined[0] = pandas.merge(combined[0], combined[i], left_index=True, right_index=True, how='outer')
+
+            # Fill in missing data that could cause inconsistencies between coinpairs and then write to 'ALL.csv'.
+            combined[0] = combined[0].replace(numpy.nan, numpy.nan).ffill()
+            combined[0].to_csv(location['dir'] + 'ALL.csv')
+        except:
+            utilities.throw_error('Failed to Merge DataFrames', False)
+            results.append(False)
 
     # Check if any of the data wasn't received successfully.
     message = 'Get_History Script Completed'
