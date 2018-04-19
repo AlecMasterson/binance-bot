@@ -17,6 +17,7 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 COINPAIRS = ['ADAETH', 'BNBBTC', 'BNBETH', 'ETHBTC', 'XRPETH']
+ASSETS = ['ADA', 'BNB', 'BTC', 'ETH', 'XRP']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 
