@@ -67,10 +67,11 @@ def execute(locations):
     if len(locations) == 0: utilities.throw_error('No Locations Found', True)
 
     # Get the default coinpairs to use.
-    coinpairs = utilities.get_default_coinpairs()
+    coinpairs = utilities.COINPAIRS
 
     results = []
     for location in locations:
+        if location['dir'] != 'data_30_min/': continue
         combined = []        # Stores all coinpair DataFrames from a single time interval.
         for coinpair in coinpairs:
             utilities.throw_info('Getting Data for ' + coinpair + ' coinpair in ' + location['dir'])
@@ -125,4 +126,4 @@ if __name__ == "__main__":
     if len(sys.argv) != 1: utilities.throw_error('Command Usage -> \'python3 get_history.py\'', True)
 
     # Use the default time intervals.
-    execute(utilities.get_default_dirs_intervals())
+    execute(utilities.DIRS_INTERVALS)

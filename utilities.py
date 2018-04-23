@@ -16,25 +16,10 @@ DIRS_INTERVALS = [{
     'dir': 'data_2_hour/',
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
-COINPAIRS = ['ADAETH', 'BNBBTC', 'BNBETH', 'ETHBTC', 'XRPETH']
+#COINPAIRS = ['ADAETH', 'BNBBTC', 'BNBETH', 'ETHBTC', 'XRPETH']
+COINPAIRS = ['ADAETH', 'BNBETH', 'ETHBTC', 'XRPETH']
 ASSETS = ['ADA', 'BNB', 'BTC', 'ETH', 'XRP']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
-
-
-def get_default_dirs():
-    return DIRS
-
-
-def get_default_intervals():
-    return INTERVALS
-
-
-def get_default_dirs_intervals():
-    return DIRS_INTERVALS
-
-
-def get_default_coinpairs():
-    return COINPAIRS
 
 
 # Setup the logging interface with the correct formatting and log file
