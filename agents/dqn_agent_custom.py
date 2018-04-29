@@ -1,15 +1,29 @@
 import sys
 from os.path import dirname
-sys.path.append(dirname(sys.path[0]) + '/trading_gym')
-print(sys.path)
+sys.path.append(dirname(sys.path[0]))
 
 import random
-
 import numpy as np
+import time
+
 from keras.layers import Dense
 from keras.models import Sequential
 from keras.optimizers import Adam
-from tgym.envs import SpreadTrading
+
+import helpers
+
+import GPy
+import GPyOpt
+
+from trading_env.tenv.envs.trading_env import TradingEnv
+from trading_env.tenv.envs.gens.csvstream import CSVStreamer
+
+
+# episode_length = 100000
+# trading_fee = 0.001
+# time_fee = 0
+# renderwindr = 20
+# actions = ['buy', 'sell', 'hold']
 
 
 class DQNAgent:
@@ -64,7 +78,12 @@ class DQNAgent:
             state = state.reshape(1, self.state_size)
             act_values = self.brain.predict(state)
             action[np.argmax(act_values[0])] = 1
-        return action
+        if action[0]:
+            return 'hold'
+        elif action[1]:
+            return 'sell'
+        elif action[2]:
+            return 'buy'
 
     def observe(self, state, action, reward, next_state, done, warming_up=False):
         """Memory Management and training of the agent
@@ -106,23 +125,14 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    from tgym.envs import SpreadTrading
-    from tgym.gens.deterministic import WavySignal
     # Instantiating the environmnent
-    generator = WavySignal(period_1=25, period_2=50, epsilon=-0.5)
+    generator = CSVStreamer('data_15_min/ADABTC.csv')
     episodes = 50
     episode_length = 400
     trading_fee = .2
     time_fee = 0
     history_length = 2
-    environment = SpreadTrading(spread_coefficients=[1],
-                                data_generator=generator,
-                                trading_fee=trading_fee,
-                                time_fee=time_fee,
-                                history_length=history_length,
-                                episode_length=episode_length)
+    environment = TradingEnv(data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length)
     state = environment.reset()
     # Instantiating the agent
     memory_size = 3000
@@ -130,7 +140,7 @@ if __name__ == "__main__":
     gamma = 0.96
     epsilon_min = 0.01
     batch_size = 64
-    action_size = len(SpreadTrading._actions)
+    action_size = 3
     train_interval = 10
     learning_rate = 0.001
     agent = DQNAgent(state_size=state_size,

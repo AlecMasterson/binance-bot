@@ -30,10 +30,6 @@ sns.set_style(
 sns.despine(offset=10, trim=True)
 mpl.rcParams.update({"font.size": 10, "axes.labelsize": 10, "lines.linewidth": 1, "lines.markersize": 8, "figure.figsize": (13, 5), "axes.xmargin": 0.1, "axes.ymargin": 0.1})
 
-HOLD = np.array([1, 0, 0])
-BUY = np.array([0, 1, 0])
-SELL = np.array([0, 0, 1])
-
 
 class TradingEnv(gym.Env):
 
@@ -64,8 +60,9 @@ class TradingEnv(gym.Env):
         Returns:
             observation (numpy.array): observation of the state
         """
-        self.w_btc = 0.01
-        self.w_alt = 0
+        self.w_btc = 1.0
+        self.w_alt = 0.0
+        self.total_value = 0
         self._iteration = 0
         self._data_generator.rewind()
         self._total_reward = 0
@@ -127,22 +124,29 @@ class TradingEnv(gym.Env):
         self._iteration += 1
         done = False
         info = {}
-        reward = -self._time_fee
-        if action == 'buy':
+        w_prev = helpers.combined_total_env(self.w_btc, self.w_alt, self.open_history[-1])
+        reward = 0
+        if action == 0:        #hold
+            reward = self.reward
+            reward -= self._time_fee
+        elif action == 1:        #buy
+            reward = 0
             self._buy_price = self.open_history[-1]
             w_buy = helpers.buy_env(self.w_btc, self.w_alt, self._buy_price, self._trading_fee)
             self.w_btc = w_buy[0]
             self.w_alt = w_buy[1]
-        elif action == 'sell':
+            reward += helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price) - w_prev
+        elif action == 2:        #sell
+            reward = 0
             self._sell_price = self.open_history[-1]
-            w_prev = helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price)
             w_sell = helpers.sell_env(self.w_btc, self.w_alt, self._sell_price, self._trading_fee)
             self.w_btc = w_sell[0]
             self.w_alt = w_sell[1]
-            reward += helpers.combined_total_env(self.w_btc, self.w_alt, self._sell_price) / w_prev - 1.0
+            reward += helpers.combined_total_env(self.w_btc, self.w_alt, self._buy_price) - w_prev
 
         self.reward = reward
         self._total_reward += reward
+        self.total_value = helpers.combined_total_env(self.w_btc, self.w_alt, self.open_history[-1])
 
         self.action_history.append({'action': action, 'price': self.open_history[-1], 'iteration': self._iteration, 'reward': reward, 'total_reward': self._total_reward})
 
@@ -158,45 +162,14 @@ class TradingEnv(gym.Env):
         if self._closed_plot:
             info['status'] = 'Closed plot'
 
+        info['w_btc'] = self.w_btc
+        info['w_alt'] = self.w_alt
+        info['total_value'] = self.total_value
+        info['reward'] = self.reward
+        info['total_reward'] = self._total_reward
+
         observation = self._get_observation()
         return observation, reward, done, info
-
-    def _handle_close(self, evt):
-        self._closed_plot = True
-
-    def render(self, window_size=20, savefig=False, filename='myfig'):
-        """Matlplotlib rendering of each step.
-        Args:
-            savefig (bool): Whether to save the figure as an image or not.
-            filename (str): Name of the image file.
-        """
-        if self._first_render:
-            self._f, self._ax = plt.subplots()
-            self._first_render = False
-            self._f.canvas.mpl_connect('close_event', self._handle_close)
-
-        # Plot latest iteration
-        self._ax.plot([self._iteration + 0.2, self._iteration + 0.8], [self.open_history[-1], self.open_history[-1]], color='black')
-        ymin, ymax = self._ax.get_ylim()
-        yrange = ymax - ymin
-        if (self._action == 'sell'):
-            self._ax.scatter(self._iteration + 0.5, self.open_history[-1] + 0.03 * yrange, color='red', marker='v')
-        elif (self._action == 'buy'):
-            self._ax.scatter(self._iteration + 0.5, self.open_history[-1] - 0.03 * yrange, color='green', marker='^')
-        plt.suptitle('Iteration: {}, Total Reward: {}, Current Reward: {}, Current Price: {}, Action: {}'.format(self._iteration, self._total_reward, self.reward, self.open_history[-1], self._action))
-        self._f.tight_layout()
-        plt.xticks(range(self._iteration)[::5])
-        plt.xlim([max(0, self._iteration - window_size), self._iteration + 0.5])
-        plt.subplots_adjust(top=0.9)
-        plt.pause(0.000001)
-
-        for l in self._ax.get_lines()[:window_size + 1]:
-            xval = l.get_xdata()[0]
-            if (xval < self._ax.get_xlim()[0]):
-                l.remove()
-
-        if savefig:
-            plt.savefig(filename)
 
     def _get_observation(self):
         """Concatenate all necessary elements to create the observation.
@@ -204,5 +177,75 @@ class TradingEnv(gym.Env):
         Returns:
             numpy.array: observation array.
         """
-        return np.array([helpers.combined_total_env(self.w_btc, self.w_alt,
-                                                    self.open_history[-1])])        #(np.array([price for price in self.open_history[-self._history_length:]]) + np.array([self._buy_price]))
+        # return np.array([helpers.combined_total_env(self.w_btc, self.w_alt, self.open_history[-1])])
+        return np.array([price for price in self.open_history[-self._history_length:]] + [self.w_btc, self.w_alt, self.total_value, self.reward, self._total_reward])
+
+    def _handle_close(self, evt):
+        self._closed_plot = True
+
+    def render(self, window_size=20, savefig=False, filename='myfig', mode='human'):
+        """Matlplotlib rendering of each step.
+        Args:
+            savefig (bool): Whether to save the figure as an image or not.
+            filename (str): Name of the image file.
+        """
+        if mode != 'human':
+            if self._first_render:
+                self._f, self._ax = plt.subplots()
+                self._first_render = False
+                self._f.canvas.mpl_connect('close_event', self._handle_close)
+
+            # Plot latest iteration
+            self._ax.plot([self._iteration + 0.2, self._iteration + 0.8], [self.open_history[-1], self.open_history[-1]], color='black')
+            ymin, ymax = self._ax.get_ylim()
+            yrange = ymax - ymin
+            if (self._action == 2):
+                self._ax.scatter(self._iteration + 0.5, self.open_history[-1] + 0.03 * yrange, color='red', marker='v')
+            elif (self._action == 1):
+                self._ax.scatter(self._iteration + 0.5, self.open_history[-1] - 0.03 * yrange, color='green', marker='^')
+            plt.suptitle('Iteration: {}, Total Reward: {}, Current Reward: {}, Current Price: {}, Total Value: {}, Action: {}'.format(self._iteration, self._total_reward, self.reward,
+                                                                                                                                      self.open_history[-1], self.total_value, self._action))
+            self._f.tight_layout()
+            plt.xticks(range(self._iteration)[::5])
+            plt.xlim([max(0, self._iteration - window_size), self._iteration + 0.5])
+            plt.subplots_adjust(top=0.9)
+            plt.pause(0.000001)
+
+            for l in self._ax.get_lines():
+                xval = l.get_xdata()[0]
+                if (xval < self._ax.get_xlim()[0]):
+                    l.remove()
+
+            if savefig:
+                plt.savefig(filename)
+
+    def final_render(self, savefig=False, filename='myfig', extras={}):
+        """Matlplotlib rendering after bot has finished.
+        Args:
+            savefig (bool): Whether to save the figure as an image or not.
+            filename (str): Name of the image file.
+            extra (dict(list)): A dictionary of lists to plot on top of the trade history
+        """
+        f, ax = plt.subplots()
+        f.canvas.mpl_connect('close_event', self._handle_close)
+
+        ax.plot(list(range(-1 * self._history_length, self._iteration - 1)), self.open_history, color='black', label='Price')
+
+        ymin, ymax = ax.get_ylim()
+        yrange = ymax - ymin
+        for i in self.action_history:
+            itera, act, p = i['iteration'], i['action'], i['price']
+            if (act == 2):
+                ax.scatter(itera + 0.5, p + 0.03 * yrange, color='red', marker='v')
+            elif (act == 1):
+                ax.scatter(itera + 0.5, p - 0.03 * yrange, color='green', marker='^')
+
+        for name, l in extras.items():
+            nax = ax.twinx()
+            nax.plot(list(range(-1 * self._history_length, self._iteration - 1)), np.pad(l, (self._history_length - 1, 0), 'constant', constant_values=(0)), label=name)
+
+        if savefig:
+            plt.savefig(filename)
+
+        f.tight_layout()
+        plt.show()

@@ -17,7 +17,7 @@ class RandomCSV:
         # Rewinding automatically would cause a loop that would cause extreme shifts in value
         try:
             return random.choice(self.list)
-        except:
+        except BaseException:
             self.rewind()
             return random.choice(self.list)
 
