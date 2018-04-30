@@ -66,6 +66,7 @@ class TradingEnv():
         self.data_generator.rewind()
         self.total_reward = 0
         self.reward = 0
+        self.done = False
 
         self.buy_price = 0
         self.sell_price = 0
@@ -106,6 +107,32 @@ class TradingEnv():
         self.time_history.append(self.row['Open Time'])
         self.NT_history.append(float(self.row['Number Trades']))
 
+    def get_observation(self):
+        """Concatenate all necessary elements to create the observation.
+
+        Returns:
+            dict: actionable environment variables.
+        """
+        # {
+        #     'open_history': [price for price in self.open_history[-self.history_length:]],
+        #     'close_history': [price for price in self.close_history[-self.history_length:]],
+        #     'high_history': [price for price in self.high_history[-self.history_length:]],
+        #     'low_history': [price for price in self.low_history[-self.history_length:]],
+        #     'volume_history': [price for price in self.volume_history[-self.history_length:]],
+        #     'QAV_history': [price for price in self.QAV_history[-self.history_length:]],
+        #     'TBAV_history': [price for price in self.TBAV_history[-self.history_length:]],
+        #     'TQAV_history': [price for price in self.TQAV_history[-self.history_length:]],
+        #     'NT_history': [price for price in self.NT_history[-self.history_length:]],
+        #     'w_c1': self.w_c1,
+        #     'w_c2': self.w_c2,
+        #     'total_value': self.total_value
+        # }
+
+        return np.array([price for price in self.open_history[-self.history_length:]]
+        + [price for price in self.volume_history[-self.history_length:]]
+        + [self.w_c1, self.w_c2, self.total_value]
+        )
+
     def step(self, action):
         """Take an action (buy/sell/hold) and computes the immediate reward.
 
@@ -118,38 +145,33 @@ class TradingEnv():
                 - done (bool): Whether the episode has ended, in which case further step() calls will return undefined results.
                 - info (dict): Contains auxiliary information
         """
-
+        if self.done:
+            1/0
+        # print('ACTION')
+        # print(action)
+        # print('^^^^^^^')
         self.action = action
         self.iteration += 1
         done = False
 
         w_prev = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
 
-        if action == 'buy':
+        if action == 'buy' or action == 0:
             self.buy_price = self.open_history[-1]
             self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
-            reward = helpers.combined_total_env(self.w_c1, self.w_c2, self.sell_price) - w_prev
-        elif action == 'sell':
+            reward = helpers.combined_total_env(self.w_c1, self.w_c2, self.sell_price) - (w_prev * 1.3)
+        elif action == 'sell' or action == 1:
             self.sell_price = self.open_history[-1]
             self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
-            reward = helpers.combined_total_env(self.w_c1, self.w_c2, self.buy_price) - w_prev
-        elif action == 'hold':
-            reward = helpers.combined_total_env(self.w_c1, self.w_c2, self.buy_price) - self.time_fee
+            reward = helpers.combined_total_env(self.w_c1, self.w_c2, self.buy_price) - (w_prev * 1.3)
+        elif action == 'hold' or action == 2:
+            reward = self.reward - self.time_fee
         else:
             reward = -10000
             print("UNSUPPORTED ACTION")
 
-        self.reward = reward
-        self.total_reward += reward
-        self.total_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
-
-        self.reward_history.append(self.reward)
-        self.total_reward_history.append(self.total_reward)
-        self.total_value_history.append(self.total_value)
-
-        self.action_history.append({'action': action, 'price': self.open_history[-1], 'iteration': self.iteration, 'reward': reward, 'total_reward': self.total_reward})
-
         # Game over logic
+        self.total_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
         info = {}
         try:
             self.ingest_data()
@@ -159,6 +181,20 @@ class TradingEnv():
         if self.iteration >= self.episode_length:
             done = True
             info['status'] = 'Time out.'
+        if self.total_value < 0.001:
+            done = True
+            reward = -1
+        self.done = done
+
+        self.reward = reward
+        self.total_reward += reward
+
+        self.reward_history.append(self.reward)
+        self.total_reward_history.append(self.total_reward)
+        self.total_value_history.append(self.total_value)
+
+        self.action_history.append({'action': action, 'price': self.open_history[-1], 'iteration': self.iteration, 'reward': reward, 'total_reward': self.total_reward})
+
 
         info['w_c1'] = self.w_c1
         info['w_c2'] = self.w_c2
@@ -166,28 +202,10 @@ class TradingEnv():
         info['reward'] = self.reward
         info['total_reward'] = self.total_reward
 
+        # print(done, info)
+
         observation = self.get_observation()
-        return observation, done, info
-
-    def get_observation(self):
-        """Concatenate all necessary elements to create the observation.
-
-        Returns:
-            dict: actionable environment variables.
-        """
-        return {'open_history': [price for price in self.open_history[-self.history_length:]],
-                'close_history': [price for price in self.close_history[-self.history_length:]],
-                'high_history': [price for price in self.high_history[-self.history_length:]],
-                'low_history': [price for price in self.low_history[-self.history_length:]],
-                'volume_history': [price for price in self.volume_history[-self.history_length:]],
-                'QAV_history': [price for price in self.QAV_history[-self.history_length:]],
-                'TBAV_history': [price for price in self.TBAV_history[-self.history_length:]],
-                'TQAV_history': [price for price in self.TQAV_history[-self.history_length:]],
-                'NT_history': [price for price in self.NT_history[-self.history_length:]],
-                'w_c1': self.w_c1,
-                'w_c2': self.w_c2,
-                'total_value': self.total_value
-        }
+        return observation, reward, done, info
 
     def render(self, window_size=20, savefig=False, filename='myfig', mode='human'):
         """Matlplotlib rendering of each step.
@@ -241,13 +259,19 @@ class TradingEnv():
         yrange = ymax - ymin
         for i in self.action_history:
             itera, act, p = i['iteration'], i['action'], i['price']
-            if (act == 2):
+            if (act == 'sell'):
                 ax.scatter(itera + 0.5, p + 0.03 * yrange, color='red', marker='v')
-            elif (act == 1):
-                ax.scatter(itera + 0.5, p - 0.03 * yrange, color='green', marker='^')
+            elif (act == 'buy'):
+                ax.scatter(itera + 0.5, p - 0.03 * yrange, color='blue', marker='^')
 
         if plot_reward:
-            extras['reward'] = self.rewa
+            extras['reward'] = self.reward_history
+
+        if plot_total_reward:
+            extras['total_reward'] = self.total_reward_history
+
+        if plot_total_value:
+            extras['total_value'] = self.total_value_history
 
         for name, l in extras.items():
             nax = ax.twinx()

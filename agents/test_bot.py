@@ -1,5 +1,5 @@
 """
-The aim of this file is to give a standalone example of how an environment  runs.
+The aim of this file is to give a standalone example of how an environment runs.
 """
 
 import sys
@@ -17,7 +17,6 @@ from trading_env.trading_env import TradingEnv
 from trading_env.csvstream import CSVStreamer
 
 generator = CSVStreamer('data_1_hour/ADAETH.csv')
-# generator = RandomCSV('data/ADABTC.csv')
 
 episode_length = 100000
 trading_fee = 0.001
@@ -59,7 +58,7 @@ def run_bot(params):
     observation = environment.reset()
     while not done:
         action = decide_action(observation, para_upper, para_lower)
-        observation, done, info = environment.step(action)
+        observation, reward, done, info = environment.step(action)
         # environment.render(window_size=renderwindr)
         # time.sleep(0.001)
 
