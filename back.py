@@ -1,6 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sys, pandas, talib, math, glob, helpers, utilities
+import sys, pandas, talib, math, glob, utilities
+
+
+# Round down x to the nearest 0.001 (Binance Trade Minimum)
+# x - The number to round down
+def round_down(x):
+    return float(math.floor(x * 1000) / 1000)
 
 
 # Return the normalized number used for plotting
@@ -69,7 +75,7 @@ def create_position(time, pair, amount, price, fee):
 # current - The current price of the position's coinpair
 # arm - The percent increase needed to arm the stop-loss trigger
 def update_position(position, time, current, arm):
-    position['age'] = time - position['age']
+    position['age'] = time - position['time']
     position['current'] = current
     position['result'] = (position['amount'] * position['current']) / (position['amount'] * position['price'])
     if position['result'] > position['peak']: position['peak'] = position['result']
@@ -87,7 +93,7 @@ def get_positions(positions, pair):
 
 
 def buy(balances, positions, time, pair, quantity, price, dataMinMax):
-    using = helpers.round_down(balances[get_source(pair)] * quantity)
+    using = round_down(balances[get_source(pair)] * quantity)
     if using > 0.0:
         totalFee = using / price * 0.001
         total = using / price - totalFee
@@ -101,7 +107,7 @@ def buy(balances, positions, time, pair, quantity, price, dataMinMax):
 
 
 def sell(balances, position, time, dataMinMax):
-    using = helpers.round_down(position['amount'])
+    using = round_down(position['amount'])
     if using > 0.0:
         totalFee = using * position['current'] * 0.001
         total = using * position['current'] - totalFee
@@ -140,65 +146,108 @@ def backtest(data, balances, pairs, params):
     macds = {}
     signals = {}
 
+    # Overhead dictionaries that will contain the upper/lower bollinger bands for the coinpairs.
+    bbandsUpper = {}
+    bbandsLower = {}
+
+    # Plotting dictionary.
+    dataMinMaxs = {}
+
     # Run our overhead code on all the coinpairs before running through the price-data.
     for pair in pairs:
 
         # If our balances dictionary doesn't contain an asset, add it.
         if not get_asset(pair) in balances: balances[get_asset(pair)] = 0.0
 
+        # INFO: During talib calculation, we must multiply by 1e6. Extremely small numbers (prices) break talib.
+
+        # Populate the MACD and MACD-Signal dictionaries with the current coinpair's info.
+        macd, macdsignal, macdhist = talib.MACDFIX(np.array(data['close-' + pair] * 1e6), signalperiod=9)
+        macds[pair] = macd / 1e6
+        signals[pair] = macdsignal / 1e6
+
+        # Populate the upper/lower bollinger band dictionaries with the current coinpair's info.
+        upperband, middleband, lowerband = talib.BBANDS(np.array(data['close-' + pair] * 1e6), timeperiod=14, nbdevup=2, nbdevdn=2, matype=0)
+        bbandsUpper[pair] = upperband / 1e6
+        bbandsLower[pair] = lowerband / 1e6
+
         # Get all price-data as a pandas.DateTime for plotting.
         plotDataTime = to_datetime(data['Open Time'])
 
         # Plot the normalized price-data.
-        dataMinMax = [min(data['open-' + pair]), max(data['open-' + pair])]
-        plt.plot(plotDataTime, normalize(dataMinMax[0], dataMinMax[1], data['open-' + pair]))
+        dataMinMaxs[pair] = [min(data['open-' + pair]), max(data['open-' + pair])]
+        plt.plot(plotDataTime, normalize(dataMinMaxs[pair][0], dataMinMaxs[pair][1], data['open-' + pair]))
 
-        # Populate the MACD and MACD-Signal dictionary with the current coinpair's info.
-        macd, macdsignal, macdhist = talib.MACDFIX(np.array(data['close-' + pair]), signalperiod=9)
-        macds[pair] = macd
-        signals[pair] = macdsignal
-
-        # Only plot the normalized MACD if we're testing one coinpair, otherwise it gets to cluttered.
+        # Only plot the normalized info if we're testing one coinpair, otherwise it gets too cluttered.
         if len(pairs) == 1:
+            plt.plot(plotDataTime, normalize(dataMinMaxs[pair][0], dataMinMaxs[pair][1], data['low-' + pair]), label='low')
+
             minmax = [get_min(macd), get_max(macd)]
             plt.plot(plotDataTime, normalize(minmax[0], minmax[1], macd), label='macd')
             plt.plot(plotDataTime, np.array([normalize(minmax[0], minmax[1], 0.0) for i in range(len(data))]))
 
-            #minmax = [get_min(macdsignal), get_max(macdsignal)]
-            plt.plot(plotDataTime, normalize(minmax[0], minmax[1], macdsignal), label='signal')
+            plt.plot(plotDataTime, normalize(dataMinMaxs[pair][0], dataMinMaxs[pair][1], bbandsUpper[pair]), linestyle='dashed', label='upperband')
+            plt.plot(plotDataTime, normalize(dataMinMaxs[pair][0], dataMinMaxs[pair][1], bbandsLower[pair]), linestyle='dashed', label='lowerband')
 
-    # Reset all positions to an empty list, none.
+    # Reset all positions and open orders to an empty list or dictionary.
     positions = []
+    orders = {}
 
+    # All coinpairs open orders start as an empty list, no orders.
+    for pair in pairs:
+        orders[pair] = []
+
+    # The long as fuck iterative traverse of all price-data. All backtesting trades are done here.
     for index, row in data.iterrows():
+
+        # Skip the section in February where Binance was missing data, plus a buffer after.
+        # Skip the first 3 time entries to provide past data that we can make decisions on.
+        if row['Open Time'] > 1517961600000 and row['Open Time'] < 1518307200000: continue
         if index < 3: continue
 
         # For each time entry, check all coinpairs for a potential buy/sell trade.
         for pair in pairs:
-            # Load in the coinpair's MACD and MACD-Signal info.
+
+            # Skip unusual anomolies where we have a horizontal (stair stepping) trend.
+            if row['open-' + pair] == data.iloc[index - 1]['open-' + pair]: continue
+
+            # Load in the coinpair's MACD, MACD-Signal, and bollinger bands.
             macd = macds[pair]
             signal = signals[pair]
+            upperband = bbandsUpper[pair]
+            lowerband = bbandsLower[pair]
 
-            status = 'hold'
+            # Check all open orders for a potential purchase or if an order needs to be cancelled.
+            for order in orders[pair]:
+                # If the order was opened within the past hour, attempt a buy, else cancel the order.
+                if row['Open Time'] - order['time'] <= 36e5:
+                    # If the asking price fell within the high/low of the last time entry, complete the buy order.
+                    if order['price'] < data.iloc[index - 1]['high-' + pair] and order['price'] > data.iloc[index - 1]['low-' + pair]:
+                        # TODO: Determine function for calculating percent of total BTC you want to use to buy.
+                        # TODO: Replace row['Open Time'] with a more precise time of the purchase.
+                        buy(balances, positions, row['Open Time'], pair, 1.0, order['price'], dataMinMaxs[pair])
+                else:
+                    orders[pair].remove(order)
 
-            # TODO: Determine a 'buy' status.
+            # Hold the position if the MACD is above zero and increasing.
+            if macd[index - 1] > macd[index - 2] and macd[index - 2] > 0: status = 'hold'
+            else: status = ''
 
-            # Self explanatory.
-            # It automatically updates the balances and positions.
-            # TODO: Replace 0.5 with percent of total BTC you want to use to buy.
-            if status == 'buy':
-                buy(balances, positions, row['Open Time'], pair, min(1.0, 0.5), row['open-' + pair], dataMinMax)
-
-            # For all positions, if they're open then update it. If the status is sell, sell.
-            # It automatically updates the balances and positions.
+            # For all positions, if they're open then update it.
             for position in get_positions(positions, pair):
                 if position['open']:
                     update_position(position, row['Open Time'], row['open-' + pair], params['arm'])
-                    #if status == 'sell': sell(balances, position, row['Open Time'], dataMinMax)
-                    if position['stop-loss'] and position['result'] / position['peak'] < params['stop']:
-                        sell(balances, position, row['Open Time'], dataMinMax)
-                    elif position['result'] < params['drop']:
-                        sell(balances, position, row['Open Time'], dataMinMax)
+
+                    # If not told to hold the position and the stop limit has been reached, sell the position.
+                    # If the age of the position is too old and the % result has dropped too low, sell the position.
+                    if not status == 'hold' and position['stop-loss']:
+                        sell(balances, position, row['Open Time'], dataMinMaxs[pair])
+                    elif position['age'] > 108e5 and position['result'] < params['drop']:
+                        sell(balances, position, row['Open Time'], dataMinMaxs[pair])
+
+            # If the previous time entry's lowest price was below the previous time entry's lower bollinger band, then create a buy order.
+            # TODO: This couldn't be more simple. Clearly room to grow.
+            if data.iloc[index - 1]['low-' + pair] < lowerband[index - 1]: orders[pair].append({'time': row['Open Time'], 'price': row['open-' + pair] * 0.993})
 
     # Return the final balances and all positions used, opened or closed
     return balances, positions
@@ -227,7 +276,7 @@ if __name__ == "__main__":
     for file in glob.glob(sys.argv[1].split('/')[0] + '/*.csv'):
         pair = file.split('/')[1].split('.')[0]
         if pair == 'ALL': data = pandas.read_csv(file)
-        elif pair == 'NEOBTC': pairs.append(pair)
+        elif pair != 'BNBBTC': pairs.append(pair)
 
     # Verify that all coinpairs were loaded correctly.
     # Comment out if only testing one coinpair.
@@ -235,13 +284,14 @@ if __name__ == "__main__":
         utilities.throw_error('Not all coinpairs loaded. Some history may be missing.', True)'''
 
     # Run the backtesting function, getting the necessary information returned.
-    balances, positions = backtest(data, {'BTC': 1.0}, pairs, {'arm': 1.01, 'stop': 0.996, 'drop': 0.98})
+    balances, positions = backtest(data, {'BTC': 1.0}, pairs, {'arm': 1.01, 'stop': 0.999, 'drop': 0.985})
 
-    #results[1].to_csv('results/' + sys.argv[1].split('/')[0] + '.csv', index=False)
+    # I used this for debugging...
+    '''for pos in positions:
+        print(pos['pair'] + '\t' + str(pos['time']) + '\t' + str(pos['time'] + pos['age']) + '\t' +
+              str(pos['amount']) + '\t' + str(pos['price']) + '\t' + str(pos['current']) + '\t ' + str(pos['result']))'''
+
     print('INFO: Finished with ' + str(get_total_balance(data, balances)) + ' BTC from 1 BTC')
-    #print('\t' + str(100 * results[0] / helpers.starting_total(data, results[1])) + '% ROI')
-    #diff = pandas.to_datetime(data.iloc[-1]['Open Time'], unit='ms') - pandas.to_datetime(data.iloc[0]['Open Time'], unit='ms')
-    #print('\tOver ' + str(diff) + ' hours')
 
     # If the '-p' argument was provided, show the plotting.
     if '-p' in sys.argv:

@@ -16,10 +16,10 @@ DIRS_INTERVALS = [{
     'dir': 'data_2_hour/',
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
-#COINPAIRS = ['ADAETH', 'BNBBTC', 'BNBETH', 'ETHBTC', 'XRPETH']
-#COINPAIRS = ['ADAETH', 'BNBETH', 'ETHBTC', 'XRPETH']
-COINPAIRS = ['ETHBTC', 'BNBBTC', 'NEOBTC']
-ASSETS = ['ADA', 'BNB', 'BTC', 'ETH', 'XRP']
+
+COINPAIRS = ['BNBBTC', 'CMTBTC', 'EOSBTC', 'ETHBTC', 'GTOBTC', 'ICNBTC', 'ICXBTC', 'INSBTC', 'NAVBTC', 'OMGBTC', 'REQBTC', 'SNMBTC', 'WTCBTC', 'XLMBTC']
+ASSETS = ['BNB', 'BTC', 'CMT', 'EOS', 'ETH', 'GTO', 'ICN', 'ICX', 'INS', 'NAV', 'OMG', 'REQ', 'SNM', 'WTC', 'XLM']
+
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 
