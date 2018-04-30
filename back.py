@@ -249,7 +249,7 @@ def backtest(data, balances, pairs, params):
             # TODO: This couldn't be more simple. Clearly room to grow.
             if data.iloc[index - 1]['low-' + pair] < lowerband[index - 1]: orders[pair].append({'time': row['Open Time'], 'price': row['open-' + pair] * 0.993})
 
-    # Return the final balances and all positions used, opened or closed
+    # Return the final balances and all positions used, opened or closed.
     return balances, positions
 
 
@@ -276,7 +276,7 @@ if __name__ == "__main__":
     for file in glob.glob(sys.argv[1].split('/')[0] + '/*.csv'):
         pair = file.split('/')[1].split('.')[0]
         if pair == 'ALL': data = pandas.read_csv(file)
-        elif pair != 'BNBBTC': pairs.append(pair)
+        else: pairs.append(pair)
 
     # Verify that all coinpairs were loaded correctly.
     # Comment out if only testing one coinpair.
