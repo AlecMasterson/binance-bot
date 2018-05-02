@@ -1,7 +1,7 @@
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
 from binance.enums import *
-import sys, time, pandas
+import sys, time, pandas, numpy, talib
 import utilities
 
 
@@ -15,6 +15,24 @@ def close_socket_manager(manager):
         utilities.throw_info('Socket Manager Closed')
     except:
         utilities.throw_info('Could Not Gracefully Close Socket Manager')
+
+
+# Update the overhead information associated with a coinpair
+# This information is what's used to determine if a buy/sell order is needed
+# coinpair - The coinpair needing updating
+def update_overhead(coinpair):
+    # Access the global variables storing all price data and overhead information from all coinpairs.
+    global data
+    global overhead
+
+    # Convert data to type float for the talib library.
+    floatData = [float(x) for x in data[coinpair]['Close']]
+
+    # Extremely small numbers (prices) break talib calculations, we must multiply and then divide by 1e6.
+    macd, macdsignal, macdhist = talib.MACDFIX(numpy.array(floatData) * 1e6, signalperiod=9)
+    upperband, middleband, lowerband = talib.BBANDS(numpy.array(floatData) * 1e6, timeperiod=14, nbdevup=2, nbdevdn=2, matype=0)
+    overhead[coinpair] = {'macd': macd / 1e6}
+    overhead[coinpair]['lowerband'] = lowerband / 1e6
 
 
 # Update the pandas.DataFrame containing all coinpair price data
@@ -40,6 +58,8 @@ def update_data(info):
             'Close Time': info['k']['T']
         }, ignore_index=True)
 
+    update_overhead(info['s'])
+
 
 # The kline_socket connection handler
 # message - The response message from the kline socket connection
@@ -63,15 +83,26 @@ if __name__ == "__main__":
     except:
         utilities.throw_error('Could Not Connect to Binance API', True)
 
+    # Acquire all necessary asset balances from the API.
+    try:
+        balances = []
+
+        # TODO: Do this. Fix the get_account API synchronization issue.
+        print('TODO: Get Asset Balances...')
+    except:
+        utilities.throw_error('Failed to Get Asset Balances', True)
+
     # Acquire all necessary historical data from the API for each coinpair.
     try:
         data = {}
+        overhead = {}
         for coinpair in utilities.COINPAIRS:
 
             # TODO: Remove this when not testing.
             if coinpair != 'ICXBTC': continue
 
             data[coinpair] = pandas.DataFrame(client.get_klines(symbol=coinpair, interval=Client.KLINE_INTERVAL_1MINUTE), columns=utilities.COLUMN_STRUCTURE)
+            update_overhead(coinpair)
 
             # Wait between API calls to not overload the API.
             time.sleep(1)
@@ -82,7 +113,13 @@ if __name__ == "__main__":
     try:
         manager = BinanceSocketManager(client)
 
-        manager.start_kline_socket('ICXBTC', kline_callback, interval=Client.KLINE_INTERVAL_1MINUTE)
+        # Create a kline_socket connection for each coinpair.
+        for coinpair in utilities.COINPAIRS:
+
+            # TODO: Remove this when not testing.
+            if coinpair != 'ICXBTC': continue
+
+            manager.start_kline_socket(coinpair, kline_callback, interval=Client.KLINE_INTERVAL_1MINUTE)
 
         manager.start()
     except:
@@ -128,6 +165,9 @@ if __name__ == "__main__":
 
         # Cool debugging output to watch the socket connection.
         print(data['ICXBTC'][['Open Time', 'Open', 'High', 'Low', 'Close']].tail(2))
+        print(overhead['ICXBTC']['macd'][-2:])
+        print(overhead['ICXBTC']['lowerband'][-2:])
+        print('\n')
 
         # Stall the infinite loop for obvious reasons.
         time.sleep(5)
