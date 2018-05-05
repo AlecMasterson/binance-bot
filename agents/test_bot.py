@@ -96,5 +96,6 @@ def optimize():
     opt.plot_convergence()
     print('done')
 
+
 optimize()
 # print(run_bot([[-3.44645752e-06, 3.51521520e-06]]))

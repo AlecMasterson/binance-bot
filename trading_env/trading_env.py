@@ -1,9 +1,9 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import sys
 import numpy as np
 import seaborn as sns
-# import line_profiler
-
+import logging
 import helpers
 
 # plt.style.use('dark_background')
@@ -25,12 +25,11 @@ sns.set_style(
         'ytick.color': '.15',
         'ytick.direction': u'out'
     })
-sns.despine(offset=10, trim=True)
 
 
 class TradingEnv():
 
-    def __init__(self, data_generator, episode_length, trading_fee, time_fee, history_length, s_c1, s_c2):
+    def __init__(self, data_generator, episode_length, trading_fee, time_fee, history_length, s_c1, s_c2, failed_trade_scalar, buy_sell_scalar, logging_level='WARN'):
         """Initialisation function
 
         Args:
@@ -52,6 +51,11 @@ class TradingEnv():
         self.episode_length = episode_length
         self.action_space = 3
         self.history_length = history_length
+        self.failed_trade_scalar = failed_trade_scalar
+        self.buy_sell_scalar = buy_sell_scalar
+
+        logging.basicConfig(stream=sys.stdout, level=logging_level)
+        self.logger = logging.getLogger('Trading_ENV')
 
     def reset(self):
         """Reset the trading environment. Reset rewards, data generator...
@@ -66,10 +70,13 @@ class TradingEnv():
         self.data_generator.rewind()
         self.total_reward = 0
         self.reward = 0
+        self.action = 2
         self.done = False
 
         self.buy_price = 0
         self.sell_price = 0
+
+        self.coin_min_trade = 0.001
 
         self.open_history = []
         self.close_history = []
@@ -91,7 +98,6 @@ class TradingEnv():
             self.ingest_data()
 
         observation = self.get_observation()
-        self.action = 'hold'
         return observation
 
     def ingest_data(self):
@@ -128,10 +134,16 @@ class TradingEnv():
         #     'total_value': self.total_value
         # }
 
-        return np.array([price for price in self.open_history[-self.history_length:]]
-        + [price for price in self.volume_history[-self.history_length:]]
-        + [self.w_c1, self.w_c2, self.total_value]
-        )
+        # return np.array([price for price in self.open_history[-self.history_length:]] + [price for price in self.high_history[-self.history_length:]] +
+        #                 [price for price in self.low_history[-self.history_length:]] + [price for price in self.volume_history[-self.history_length:]] +
+        #                 [self.w_c1, self.w_c2, self.total_value, (self.open_history[-1] - self.buy_price), (self.open_history[-1] - self.sell_price)] + [self.coin_min_trade, self.action])
+        return [
+            np.array([price for price in self.open_history[-self.history_length:]]),
+            np.array([price for price in self.high_history[-self.history_length:]]),
+            np.array([price for price in self.low_history[-self.history_length:]]),
+            np.array([price for price in self.volume_history[-self.history_length:]]),
+            np.array([self.w_c1, self.w_c2, self.total_value, (self.open_history[-1] - self.buy_price), (self.open_history[-1] - self.sell_price), self.coin_min_trade, self.action])
+        ]
 
     def step(self, action):
         """Take an action (buy/sell/hold) and computes the immediate reward.
@@ -145,8 +157,9 @@ class TradingEnv():
                 - done (bool): Whether the episode has ended, in which case further step() calls will return undefined results.
                 - info (dict): Contains auxiliary information
         """
+        # print('Action: ', action, "| Done:", self.done, '| Total reward:', self.total_reward)
         if self.done:
-            1/0
+            1 / 0
         # print('ACTION')
         # print(action)
         # print('^^^^^^^')
@@ -157,18 +170,32 @@ class TradingEnv():
         w_prev = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
 
         if action == 'buy' or action == 0:
-            self.buy_price = self.open_history[-1]
-            self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
-            reward = helpers.combined_total_env(self.w_c1, self.w_c2, self.sell_price) - (w_prev * 1.3)
+            if self.w_c1 <= self.coin_min_trade:
+                reward = -self.failed_trade_scalar
+                self.logger.debug('Failed Buying Reward: ' + str(reward))
+            else:
+                self.buy_price = self.open_history[-1]
+                self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
+                self.logger.info('Successful Buying Total Value: ' + str(helpers.combined_total_env(self.w_c1, self.w_c2, self.sell_price) - (w_prev * 1.0)))
+                reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.sell_price) - (w_prev * 1.0))**self.buy_sell_scalar
+                self.logger.debug('Successful Buying Reward: ' + str(reward))
         elif action == 'sell' or action == 1:
-            self.sell_price = self.open_history[-1]
-            self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
-            reward = helpers.combined_total_env(self.w_c1, self.w_c2, self.buy_price) - (w_prev * 1.3)
+            if self.w_c2 <= self.coin_min_trade:
+                reward = -self.failed_trade_scalar
+                self.logger.debug('Failed Selling Reward: ' + str(reward))
+            else:
+                self.sell_price = self.open_history[-1]
+                self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
+                self.logger.info('Successful Selling Total Value: ' + str(helpers.combined_total_env(self.w_c1, self.w_c2, self.buy_price) - (w_prev * 1.0)))
+                reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.buy_price) - (w_prev * 1.0))**self.buy_sell_scalar
+                self.logger.debug('Successful Selling Reward: ' + str(reward))
         elif action == 'hold' or action == 2:
-            reward = self.reward - self.time_fee
+            overhold = max(self.action_history[-100:].count('hold'), self.action_history[-100:].count(2), 1)
+            reward = -1 * self.time_fee * (overhold**2)
+            self.logger.debug('Holding Reward: ' + str(reward))
         else:
             reward = -10000
-            print("UNSUPPORTED ACTION")
+            self.logger.warn("UNSUPPORTED ACTION")
 
         # Game over logic
         self.total_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
@@ -181,9 +208,9 @@ class TradingEnv():
         if self.iteration >= self.episode_length:
             done = True
             info['status'] = 'Time out.'
-        if self.total_value < 0.001:
+        if self.total_value <= 0.05:
             done = True
-            reward = -1
+            reward = -10 * self.failed_trade_scalar
         self.done = done
 
         self.reward = reward
@@ -194,7 +221,6 @@ class TradingEnv():
         self.total_value_history.append(self.total_value)
 
         self.action_history.append({'action': action, 'price': self.open_history[-1], 'iteration': self.iteration, 'reward': reward, 'total_reward': self.total_reward})
-
 
         info['w_c1'] = self.w_c1
         info['w_c2'] = self.w_c2
@@ -213,7 +239,7 @@ class TradingEnv():
             savefig (bool): Whether to save the figure as an image or not.
             filename (str): Name of the image file.
         """
-        if mode != 'human':
+        if mode == 'human':
             if self.first_render:
                 self.f, self.ax = plt.subplots()
                 self.first_render = False
