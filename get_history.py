@@ -1,5 +1,5 @@
 from binance.client import Client
-import sys, utilities, pandas, datetime, time, numpy
+import sys, utilities, pandas, talib, datetime, time, numpy
 
 
 # Create a DataFrame to store the historical data from the Binance API
@@ -71,7 +71,7 @@ def execute(locations):
 
     results = []
     for location in locations:
-        if location['dir'] != 'data_30_min/': continue
+        if location['dir'] != 'data_5_min/': continue
         combined = []        # Stores all coinpair DataFrames from a single time interval.
         for coinpair in coinpairs:
             utilities.throw_info('Getting Data for ' + coinpair + ' coinpair in ' + location['dir'])
@@ -91,6 +91,15 @@ def execute(locations):
                     'Close': 'close-' + coinpair,
                     'Close Time': 'cTime-' + coinpair
                 })
+
+                floatData = [float(x) for x in result['frame']['close-' + coinpair]]
+                macd, macdsignal, macdhist = talib.MACDFIX(numpy.array(floatData) * 1e6, signalperiod=9)
+                result['frame']['macd-' + coinpair] = macd / 1e6
+
+                upperband, middleband, lowerband = talib.BBANDS(numpy.array(floatData) * 1e6, timeperiod=14, nbdevup=2, nbdevdn=2, matype=0)
+                result['frame']['upperband-' + coinpair] = upperband / 1e6
+                result['frame']['lowerband-' + coinpair] = lowerband / 1e6
+
                 combined.append(result['frame'])
             except:
                 utilities.throw_error('Failed to Strip DataFrame for Merging', False)
