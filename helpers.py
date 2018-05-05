@@ -88,6 +88,21 @@ def sell(trading, coinPair, time, price, quantity, fee):
     return trading
 
 
+def predict_loss(trading, coinPair, price, quantity):
+    buyRow = None
+    for index, row in trading.iterrows():
+        if row['type'] == 'buy' and row['coinPair'] == coinPair: buyRow = row
+    if buyRow is None: return 1.0
+    return (trading.iloc[-1][coinPair] * price * quantity) / (buyRow[coinPair] * buyRow['price'])
+
+
+# Return combined initial wallet total value in the form of BTC
+# data - Combined price-data of all coin-pairs
+# trading - The trading-data DataFrame
+def starting_total(data, trading):
+    return trading.iloc[0]['btc'] + trading.iloc[0]['eth'] * data.iloc[0]['open-ETHBTC']
+
+
 # Return combined wallet total value in the form of BTC
 # data - Combined price-data of all coin-pairs
 # trading - The trading-data DataFrame
