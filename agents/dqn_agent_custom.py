@@ -1,30 +1,31 @@
 import sys
 from os.path import dirname
-sys.path.append(dirname(sys.path[0]) + '/trading_gym')
-print(sys.path)
+sys.path.append(dirname(sys.path[0]))
 
 import random
-
+from itertools import compress
 import numpy as np
+import time
+
 from keras.layers import Dense
 from keras.models import Sequential
 from keras.optimizers import Adam
-from tgym.envs import SpreadTrading
+
+import helpers
+
+from trading_env.trading_env import TradingEnv
+from trading_env.csvstream import CSVStreamer
+
+# episode_length = 100000
+# trading_fee = 0.001
+# time_fee = 0
+# renderwindr = 20
+# actions = ['buy', 'sell', 'hold']
 
 
 class DQNAgent:
-    def __init__(self,
-                 state_size,
-                 action_size,
-                 episodes,
-                 episode_length,
-                 memory_size=2000,
-                 train_interval=100,
-                 gamma=0.95,
-                 learning_rate=0.001,
-                 batch_size=64,
-                 epsilon_min=0.01
-                 ):
+
+    def __init__(self, state_size, action_size, episodes, episode_length, memory_size=2000, train_interval=100, gamma=0.95, learning_rate=0.001, batch_size=64, epsilon_min=0.01):
         self.state_size = state_size
         self.action_size = action_size
         self.memory_size = memory_size
@@ -44,12 +45,10 @@ class DQNAgent:
         """Build the agent's brain
         """
         brain = Sequential()
-        neurons_per_layer = 24
-        activation = "relu"
-        brain.add(Dense(neurons_per_layer,
-                        input_dim=self.state_size,
-                        activation=activation))
-        brain.add(Dense(neurons_per_layer, activation=activation))
+        brain.add(Dense(int(self.state_size), input_dim=self.state_size, activation='relu'))
+        brain.add(Dense(max(int(self.state_size * 0.2), 10), activation='relu'))
+        brain.add(Dense(max(int(self.state_size * 0.3), 7), activation='relu'))
+        brain.add(Dense(max(int(self.state_size * 0.2), 5), activation='relu'))
         brain.add(Dense(self.action_size, activation='linear'))
         brain.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return brain
@@ -75,16 +74,10 @@ class DQNAgent:
             if self.epsilon > self.epsilon_min:
                 self.epsilon -= self.epsilon_decrement
             state, action, reward, next_state, done = self._get_batches()
-            reward += (self.gamma *
-                       np.logical_not(done) *
-                       np.amax(self.brain.predict(next_state),
-                               axis=1))
+            reward += (self.gamma * np.logical_not(done) * np.amax(self.brain.predict(next_state), axis=1))
             q_target = self.brain.predict(state)
             q_target[action[0], action[1]] = reward
-            return self.brain.fit(state, q_target,
-                                  batch_size=self.batch_size,
-                                  epochs=1,
-                                  verbose=False)
+            return self.brain.fit(state, q_target, batch_size=self.batch_size, epochs=1, verbose=False)
 
     def _get_batches(self):
         """Selecting a batch of memory
@@ -106,69 +99,73 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    from tgym.envs import SpreadTrading
-    from tgym.gens.deterministic import WavySignal
     # Instantiating the environmnent
-    generator = WavySignal(period_1=25, period_2=50, epsilon=-0.5)
-    episodes = 50
-    episode_length = 400
-    trading_fee = .2
-    time_fee = 0
-    history_length = 2
-    environment = SpreadTrading(spread_coefficients=[1],
-                                data_generator=generator,
-                                trading_fee=trading_fee,
-                                time_fee=time_fee,
-                                history_length=history_length,
-                                episode_length=episode_length)
+    generator = CSVStreamer('data_15_min/ADAETH.csv')
+    possible_actions = ['buy', 'sell', 'hold']
+    training_episodes = 10000
+    episode_length = int(10e10)        # all the data
+    trading_fee = .01
+    time_fee = 0.01
+    history_length = 16
+    s_c1 = 1
+    s_c2 = 0
+    environment = TradingEnv(data_generator=generator, episode_length=episode_length, trading_fee=trading_fee, time_fee=time_fee, history_length=history_length, s_c1=s_c1, s_c2=s_c2)
     state = environment.reset()
+
     # Instantiating the agent
-    memory_size = 3000
+    memory_size = 1000
     state_size = len(state)
     gamma = 0.96
     epsilon_min = 0.01
     batch_size = 64
-    action_size = len(SpreadTrading._actions)
+    action_size = 3
     train_interval = 10
-    learning_rate = 0.001
-    agent = DQNAgent(state_size=state_size,
-                     action_size=action_size,
-                     memory_size=memory_size,
-                     episodes=episodes,
-                     episode_length=episode_length,
-                     train_interval=train_interval,
-                     gamma=gamma,
-                     learning_rate=learning_rate,
-                     batch_size=batch_size,
-                     epsilon_min=epsilon_min)
+    learning_rate = 1e-3
+    agent = DQNAgent(
+        state_size=state_size,
+        action_size=action_size,
+        memory_size=memory_size,
+        episodes=training_episodes,
+        episode_length=episode_length,
+        train_interval=train_interval,
+        gamma=gamma,
+        learning_rate=learning_rate,
+        batch_size=batch_size,
+        epsilon_min=epsilon_min)
     # Warming up the agent
+    print('Warming up')
     for _ in range(memory_size):
         action = agent.act(state)
-        next_state, reward, done, _ = environment.step(action)
+        next_state, reward, done, _ = environment.step(list(compress(possible_actions, action))[0])
         agent.observe(state, action, reward, next_state, done, warming_up=True)
     # Training the agent
-    for ep in range(episodes):
+    print('Training')
+    for ep in range(training_episodes):
+        print("Ep:" + str(ep))
         state = environment.reset()
         rew = 0
+        loss = 0
         for _ in range(episode_length):
             action = agent.act(state)
-            next_state, reward, done, _ = environment.step(action)
-            loss = agent.observe(state, action, reward, next_state, done)
+            next_state, reward, done, _ = environment.step(list(compress(possible_actions, action))[0])
+            l = agent.observe(state, action, reward, next_state, done)
+            loss = l if l is not None else loss
             state = next_state
             rew += reward
-        print("Ep:" + str(ep) +
-              "| rew:" + str(round(rew, 2)) +
-              "| eps:" + str(round(agent.epsilon, 2)) +
-              "| loss:" + str(round(loss.history["loss"][0], 4)))
+            if done:
+                break
+
+        print("rew:" + str(round(rew, 3)) + "| eps:" + str(round(agent.epsilon, 3)) + "| loss:" + str(round(loss.history["loss"][0], 4)) + "| wallet:" + str(environment.total_value))
     # Running the agent
     done = False
     state = environment.reset()
     while not done:
         action = agent.act(state)
-        state, _, done, info = environment.step(action)
+        state, _, done, info = environment.step(list(compress(possible_actions, action))[0])
         if 'status' in info and info['status'] == 'Closed plot':
             done = True
         else:
             environment.render()
+
+    print(environment.total_reward, environment.total_value)
+    environment.final_render(plot_reward=False, plot_total_reward=False, plot_total_value=True)
