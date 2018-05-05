@@ -4,6 +4,9 @@ import sys, logging
 DIRS = ['data_15_min/', 'data_30_min/', 'data_1_hour/', 'data_2_hour/']
 INTERVALS = [Client.KLINE_INTERVAL_15MINUTE, Client.KLINE_INTERVAL_30MINUTE, Client.KLINE_INTERVAL_1HOUR, Client.KLINE_INTERVAL_2HOUR]
 DIRS_INTERVALS = [{
+    'dir': 'data_5_min/',
+    'api': Client.KLINE_INTERVAL_5MINUTE
+}, {
     'dir': 'data_15_min/',
     'api': Client.KLINE_INTERVAL_15MINUTE
 }, {
@@ -16,11 +19,13 @@ DIRS_INTERVALS = [{
     'dir': 'data_2_hour/',
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
+ACTIVE_DIR = DIRS_INTERVALS[1]
 
 COINPAIRS = ['BNBBTC', 'CMTBTC', 'EOSBTC', 'ETHBTC', 'GTOBTC', 'ICNBTC', 'ICXBTC', 'INSBTC', 'NAVBTC', 'OMGBTC', 'REQBTC', 'SNMBTC', 'WTCBTC', 'XLMBTC']
 ASSETS = ['BNB', 'BTC', 'CMT', 'EOS', 'ETH', 'GTO', 'ICN', 'ICX', 'INS', 'NAV', 'OMG', 'REQ', 'SNM', 'WTC', 'XLM']
 
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
+POSITION_STRUCTURE = ['buy_id', 'sell_id', 'open', 'time', 'age', 'pair', 'amount', 'price', 'current', 'fee', 'result', 'peak', 'stop-loss']
 
 
 # Setup the logging interface with the correct formatting and log file
