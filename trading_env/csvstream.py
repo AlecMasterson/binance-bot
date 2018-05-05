@@ -13,6 +13,7 @@ class CSVStreamer():
     def __init__(self, filename, header=False):
         self.filename = filename
         self.csvfile = open(filename, "r")
+        self.file_length = sum(1 for line in open(filename, "r"))
         self.csv = csv.DictReader(self.csvfile)
 
     def rewind(self):

@@ -1,10 +1,10 @@
 import sys
+from time import time
 from os.path import dirname
 sys.path.append(dirname(sys.path[0]))
 
 import numpy as np
 
-import GPy
 import GPyOpt
 
 from trading_env.trading_env import TradingEnv
@@ -17,6 +17,7 @@ from keras.utils import plot_model
 from keras_diagram import ascii
 from keras.utils import plot_model
 from keras.utils.vis_utils import model_to_dot
+from keras.callbacks import TensorBoard
 
 from rl.agents.dqn import DQNAgent
 from rl.agents.cem import CEMAgent
@@ -56,7 +57,7 @@ epsilon_min = 0.01
 batch_size = 16
 action_size = len(possible_actions)
 train_interval = 4
-learning_rate = 1e-2
+learning_rate = 1e-1
 
 
 def build_brain(state_size, history_length, big_layers=0, small_layers=0):
@@ -68,7 +69,7 @@ def build_brain(state_size, history_length, big_layers=0, small_layers=0):
     open_history_cnn_out = Reshape((history_length, 1))(open_history_cnn_input)
     open_history_cnn_out = Conv1D(filters=filter_length, kernel_size=kernel_length * 5, activation='relu')(open_history_cnn_out)
     open_history_cnn_out = Conv1D(filters=filter_length, kernel_size=kernel_length * 3, activation='relu')(open_history_cnn_out)
-    open_history_cnn_out = MaxPool1D(pool_size=int(filter_length/3))(open_history_cnn_out)
+    open_history_cnn_out = MaxPool1D(pool_size=int(filter_length / 3))(open_history_cnn_out)
     open_history_cnn_out = Conv1D(filters=filter_length, kernel_size=kernel_length * 2, activation='relu')(open_history_cnn_out)
     open_history_cnn_out = Conv1D(filters=filter_length, kernel_size=kernel_length, activation='relu')(open_history_cnn_out)
     open_history_cnn_out = MaxPool1D(pool_size=3)(open_history_cnn_out)
@@ -138,6 +139,7 @@ def build_brain(state_size, history_length, big_layers=0, small_layers=0):
     brain_output = Dense(max(int(history_length * 0.1), 5), activation='relu')(brain_output)
     brain_output = Dense(3, activation='relu')(brain_output)
     brain_model = Model(input=[open_model.input, high_model.input, low_model.input, volume_model.input, extras_model.input], output=brain_output)
+    brain_model.compile(optimizer=Adam(lr=learning_rate), metrics=['mae', 'acc'], loss='mean_absolute_error')
     print(brain_model.summary())
     # print(ascii(brain_model))
     plot_model(brain_model, show_shapes=True, to_file='brain.png')
@@ -152,14 +154,14 @@ def build_learner(brain):
         model=brain,
         nb_actions=action_size,
         memory=memory,
-        nb_steps_warmup=500,
+        nb_steps_warmup=300,
         target_model_update=learning_rate,
         policy=policy,
         processor=MultiInputProcessor(5),
         enable_double_dqn=True,
         enable_dueling_network=False,
         dueling_type='avg')
-    learner.compile(Adam(lr=learning_rate))
+    learner.compile(optimizer=Adam(lr=learning_rate), metrics=['mae', 'acc'])
     return learner
 
 
@@ -171,7 +173,7 @@ def bot_learn(params):
     generator = CSVStreamer('data_15_min/ADAETH.csv')
     env = TradingEnv(
         data_generator=generator,
-        episode_length=episode_length,
+        episode_length=generator.file_length + 1,
         trading_fee=trading_fee,
         time_fee=time_fee,
         history_length=history_length,
@@ -184,8 +186,9 @@ def bot_learn(params):
     state_size = len(state)
     brain = build_brain(state_size, history_length, large, small)
     learner = build_learner(brain)
+    tbCallBack = TensorBoard(log_dir="tbgraph/{}".format(time()), histogram_freq=0, write_graph=True, write_images=True)
     print('large:', large, '| small:', small, '| time_fee:', time_fee, '| history_length:', history_length, '| failed_trade_scalar:', failed_trade_scalar, '| buy_sell_scalar:', buy_sell_scalar)
-    learner.fit(env, nb_steps=20000, callbacks=None, visualize=False, verbose=1)
+    learner.fit(env, nb_steps=200000, callbacks=[tbCallBack], visualize=False, verbose=1)
     env.reset()
     learner.test(env, nb_episodes=1, visualize=False)
     x = env.total_value
@@ -251,4 +254,4 @@ def optimize():
 # optimize()
 
 # large, small, time_fee, history_length, failed_trade_scalar, buy_sell_scalar
-bot_learn([[3, 2, 0.001, 200, 1, 10]])
+bot_learn([[3, 2, 0.001, 40, 1, 100]])
