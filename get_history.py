@@ -19,7 +19,7 @@ def combine_frames(df, df2):
 # fileName - The csv file that contains the price-data
 def load_file(fileName):
     priceData = pandas.read_csv(fileName)
-    if list(priceData) != utilities.COLUMN_STRUCTURE: utilities.throw_error('Incorrect price-data DataFrame column structure', True)
+    #if list(priceData) != utilities.COLUMN_STRUCTURE: utilities.throw_error('Incorrect price-data DataFrame column structure', True)
     return priceData
 
 
@@ -47,6 +47,14 @@ def get_data(dir, api, coinpair):
 
             startTime += 259200000        # Acquire data in 3 day intervals to not overload the API.
             time.sleep(2)        # Wait between API calls to not overload the API.
+
+        floatData = [float(x) for x in df['Close']]
+        macd, macdsignal, macdhist = talib.MACDFIX(numpy.array(floatData) * 1e6, signalperiod=9)
+        df['macd'] = macd / 1e6
+
+        upperband, middleband, lowerband = talib.BBANDS(numpy.array(floatData) * 1e6, timeperiod=14, nbdevup=2, nbdevdn=2, matype=0)
+        df['upperband'] = upperband / 1e6
+        df['lowerband'] = lowerband / 1e6
 
         df.to_csv(dir + str(coinpair) + '.csv', index=False)
 
@@ -84,21 +92,17 @@ def execute(locations):
             try:
                 result['frame'].set_index('Open Time', inplace=True)
                 result['frame'] = result['frame'].drop(columns=['Volume', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore'])
-                result['frame'] = result['frame'].rename(columns={
-                    'Open': 'open-' + coinpair,
-                    'High': 'high-' + coinpair,
-                    'Low': 'low-' + coinpair,
-                    'Close': 'close-' + coinpair,
-                    'Close Time': 'cTime-' + coinpair
-                })
-
-                floatData = [float(x) for x in result['frame']['close-' + coinpair]]
-                macd, macdsignal, macdhist = talib.MACDFIX(numpy.array(floatData) * 1e6, signalperiod=9)
-                result['frame']['macd-' + coinpair] = macd / 1e6
-
-                upperband, middleband, lowerband = talib.BBANDS(numpy.array(floatData) * 1e6, timeperiod=14, nbdevup=2, nbdevdn=2, matype=0)
-                result['frame']['upperband-' + coinpair] = upperband / 1e6
-                result['frame']['lowerband-' + coinpair] = lowerband / 1e6
+                result['frame'] = result['frame'].rename(
+                    columns={
+                        'Open': 'open-' + coinpair,
+                        'High': 'high-' + coinpair,
+                        'Low': 'low-' + coinpair,
+                        'Close': 'close-' + coinpair,
+                        'Close Time': 'cTime-' + coinpair,
+                        'macd': 'macd-' + coinpair,
+                        'upperband': 'upperband-' + coinpair,
+                        'lowerband': 'lowerband-' + coinpair
+                    })
 
                 combined.append(result['frame'])
             except:
