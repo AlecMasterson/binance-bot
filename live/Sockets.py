@@ -4,23 +4,21 @@ from twisted.internet import reactor
 
 import utilities
 
+from Candle import Candle
+
 
 class Sockets:
 
     # Initialize a new Sockets with the required information
     # Start all socket connections used by the bot
-    def __init__(self, client, data):
-        self.client = client
-        self.data = data
+    def __init__(self, live):
+        self.live = live
 
         # This handles all socket connections to Binance.
-        self.manager = BinanceSocketManager(client)
+        self.manager = BinanceSocketManager(live.client)
 
         # Create a kline socket connection for each coinpair.
-        for coinpair in utilities.COINPAIRS:
-
-            # TODO: Remove this when not testing.
-            if coinpair != 'ICXBTC': continue
+        for coinpair in live.coinpairs:
 
             # The kline_socket connection consistently returns the latest price info for a coinpair.
             self.manager.start_kline_socket(coinpair, self.kline_callback, interval=Client.KLINE_INTERVAL_1MINUTE)
@@ -44,13 +42,15 @@ class Sockets:
 
                 # If the kline entry is the same as the most recent entry in the Coinpair, ignore it.
                 # This may happen the first time this function is run, but never again.
-                if message['k']['t'] == self.data[message['s']].data[-1].openTime: return
+                if message['k']['t'] == self.live.data[message['s']].data[-1].openTime: return
 
-                self.data[message['s']].add_candle(Candle(message['k']['t'], message['k']['o'], message['k']['h'], message['k']['l'], message['k']['c'], message['k']['T']), True)
+                self.live.data[message['s']].add_candle(Candle(message['k']['t'], message['k']['o'], message['k']['h'], message['k']['l'], message['k']['c'], message['k']['T']), True)
 
-            # Use the bot's handler for handling new data.
-            import bot
-            bot.new_data(message)
+            # Update the list of most recent data prices.
+            self.live.recent[message['s']].append({'time': message['k']['t'], 'price': message['k']['c']})
+
+            # We only want 25 prices per coinpair.
+            if len(self.live.recent[message['s']]) > 25: self.live.recent[message['s']].pop(0)
 
     # Close the websocket manager, which will end all socket connections
     def close_socket_manager(self):
