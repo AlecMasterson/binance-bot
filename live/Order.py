@@ -1,6 +1,3 @@
-import time
-
-
 class Order:
 
     # Initialize a new Order with the required information

@@ -1,6 +1,3 @@
-import time
-
-
 class Balance:
 
     # Initialize a new Balance with the required information
