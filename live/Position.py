@@ -28,19 +28,19 @@ class Position:
     # Update the percent gain/loss of this Position and the highest % reached
     # Mark self.stopLoss if threshold is met
     def update_result(self):
-        self.result = (self.current - self.fee) / self.price
+        self.result = str((float(self.current) - float(self.fee)) / float(self.price))
 
         # Update the peak if needed.
-        if self.result > self.peak: self.peak = self.result
+        if float(self.result) > float(self.peak): self.peak = self.result
 
         # NOTE: 1.01 means a 1% gain was reached. This value can be changed.
-        if self.result >= 1.01: self.stopLoss = True
+        if float(self.result) >= 1.01: self.stopLoss = True
 
     # Update all attributes of the Position
     # time - New time, in milliseconds, associated with the Position
     # price - New price associated with the Position
     def update(self, time, price):
-        self.age = time - self.time
+        self.age = str(float(time) - float(self.time))
         self.current = price
 
         # Handle our % gain/loss on the Position
