@@ -1,6 +1,6 @@
 from binance.client import Client
 
-import sys, time, pandas, glob, csv
+import time, pandas, csv
 import utilities
 
 from Coinpair import Coinpair
