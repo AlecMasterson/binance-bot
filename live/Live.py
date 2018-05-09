@@ -78,6 +78,8 @@ class Live:
                     position.peak = row[11]
                     position.stopLoss = row[12]
                     self.positions.append(position)
+        except FileNotFoundError:
+            utilities.throw_info('No Positions to Import')
         except:
             utilities.throw_error('Failed to Import Positions', True)
         utilities.throw_info('Successfully Imported Positions')
@@ -100,6 +102,8 @@ class Live:
                     order['origQty'] = row[6]
                     order['executedQty'] = row[7]
                     self.orders.append(Order(self.client, order))
+        except FileNotFoundError:
+            utilities.throw_info('No Orders to Import')
         except:
             utilities.throw_error('Failed to Import Orders', True)
         utilities.throw_info('Successfully Imported Orders')
@@ -156,6 +160,7 @@ class Live:
 
     # Update the local orders information with our Binance account
     # New positions are created here if needed
+    # TODO: Handle orders that take too long and are never filled or are partially filled.
     def update_orders(self):
         try:
             for order in self.orders:
