@@ -82,10 +82,27 @@ class Live:
             utilities.throw_error('Failed to Import Positions', True)
         utilities.throw_info('Successfully Imported Positions')
 
-        # Import saved orders from previous bot usages.
         # This holds all open orders that the bot has created.
-        # TODO: Do this.
         self.orders = []
+
+        # Import saved orders from previous bot usages.
+        try:
+            with open('orders.csv', newline='\n') as file:
+                reader = csv.reader(file, delimiter=',')
+                for row in reader:
+                    order = {}
+                    order['orderId'] = row[0]
+                    order['symbol'] = row[1]
+                    order['side'] = row[2]
+                    order['status'] = row[3]
+                    order['transactTime'] = row[4]
+                    order['price'] = row[5]
+                    order['origQty'] = row[6]
+                    order['executedQty'] = row[7]
+                    self.orders.append(Order(self.client, order))
+        except:
+            utilities.throw_error('Failed to Import Orders', True)
+        utilities.throw_info('Successfully Imported Orders')
 
         # This contains the available value for all assets being used.
         # This will be populated when self.update() runs.
@@ -164,9 +181,13 @@ class Live:
             utilities.throw_error('Failed to Update the Orders', True)
 
     # Export the orders in case we need to restart the bot.
-    # TODO: Do this.
     def export_orders(self):
-        return
+        try:
+            with open('orders.csv', 'w') as file:
+                for order in self.orders:
+                    file.write(order.toCSV() + '\n')
+        except:
+            utilities.throw_error('Failed to Export Orders', False)
 
     # Provide a simple function for triggering all framework related updates
     # This will also export the necessary information

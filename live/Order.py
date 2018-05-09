@@ -22,3 +22,8 @@ class Order:
         # These are the only two values that we want to update.
         self.executedQty = updated['executedQty']
         self.status = updated['status']
+
+    # Return all data regarding the position as a comma separated String for exporting
+    def toCSV(self):
+        return str(self.orderId) + ',' + str(self.symbol) + ',' + str(self.side) + ',' + str(self.status) + ',' + str(self.transactTime) + ',' + str(self.price) + ',' + str(self.origQty) + ',' + str(
+            self.executedQty)
