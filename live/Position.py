@@ -5,16 +5,16 @@ class Position:
 
     # Initialize a new Position with the required information
     # Add additional default values for other variables
-    def __init__(self, buyId, time, pair, amount, price):
+    def __init__(self, buyId, time, coinpair, amount, price):
         self.open = True
         self.buyId = buyId
         self.sellId = None
         self.time = time
         self.age = 0
-        self.pair = pair
+        self.coinpair = coinpair
         self.amount = amount
         self.price = price
-        self.current = current
+        self.current = price
         self.fee = 0.0
         self.result = 0.0
         self.peak = 0.0
@@ -46,11 +46,16 @@ class Position:
         # Handle our % gain/loss on the Position
         self.update_result()
 
-    # Return a String interpretation of the Position
+    # Return a String interpretation of the Position for visualizing
     # Only include necessary information
     def toString(self):
         output = 'Open: ' + str(self.open) + '\t'
         output += 'Time: ' + str(self.time) + '\t'
-        output += 'CoinPair: ' + str(self.pair) + '\t'
+        output += 'CoinPair: ' + str(self.coinpair) + '\t'
         output += 'Result: ' + str(self.result)
         return output
+
+    # Return all data regarding the position as a comma separated String for exporting
+    def toCSV(self):
+        return str(self.open) + ',' + str(self.buyId) + ',' + str(self.sellId) + ',' + str(self.time) + ',' + str(self.age) + ',' + str(self.coinpair) + ',' + str(self.amount) + ',' + str(
+            self.price) + ',' + str(self.current) + ',' + str(self.fee) + ',' + str(self.result) + ',' + str(self.peak) + ',' + str(self.stopLoss)

@@ -1,3 +1,6 @@
+import time
+
+
 class Balance:
 
     # Initialize a new Balance with the required information
@@ -8,6 +11,6 @@ class Balance:
         self.update()
 
     # Update the free amount available for the asset
-    # NOTE: This is an API call
+    # NOTE: This has an API call
     def update(self):
         self.free = self.client.get_asset_balance(asset=self.asset)['free']
