@@ -138,6 +138,7 @@ class Live:
             utilities.throw_error('Failed to Update Asset Balances', True)
 
     # Update the local orders information with our Binance account
+    # New positions are created here if needed
     def update_orders(self):
         try:
             for order in self.orders:
@@ -147,7 +148,12 @@ class Live:
                 # Create a new position if the buy order has been filled.
                 if order.status == 'FILLED' and order.side == 'BUY': self.create_position(order)
 
-                # TODO: Handle sell orders that have been filled.
+                # Update and close a position if the sell order has been filled.
+                if order.status == 'FILLED' and order.side == 'SELL':
+                    for position in self.positions:
+                        if position.sellId == order.orderId:
+                            position.update(order.transactTime, order.price)
+                            position.open = False
 
                 # Remove the order from our list if it was filled or cancelled. No new position needed.
                 if order.status == 'FILLED' or order.status == 'CANCELED': self.orders.remove(order)
@@ -180,22 +186,23 @@ class Live:
         # Validate whether a valid buy order can be made and return the correct values to use.
         buyQuantity, buyPrice = self.data[coinpair].validate_buy(float(self.balances['BTC'].free) * 0.5, float(price))
 
-        print(buyPrice)
         # Do not attempt a buy order if an invalid quantity was returned.
-        if buyQuantity == -1 or buyPrice == -1: return False
+        if buyQuantity == '-1' or buyPrice == '-1': return False
 
         # Attempt a limit buy order.
         try:
-            utilities.throw_info('Creating a Buy Order on ' + coinpair + ' at price ' + str(buyPrice) + '\n')
+            utilities.throw_info('Creating a Buy Order on ' + coinpair + ' at price ' + buyPrice + '\n')
             self.orders.append(Order(self.client, self.client.order_limit_buy(symbol=coinpair, quantity=buyQuantity, price=buyPrice)))
-        except Exception as e:
-            print(e)
+        except:
             utilities.throw_error('Failed to Create a Buy Order', False)
             return False
 
         return True
 
-    #
+    # Create a sell order on the provided position
+    # position - The position being sold
+    # TODO: Do this.
     def sell(self, position):
-        print('sell')
-        return
+        utilities.throw_info('Selling Position\n')
+
+        position.open = False
