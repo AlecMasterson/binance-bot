@@ -6,9 +6,9 @@ class Position:
     # Initialize a new Position with the required information
     # Add additional default values for other variables
     def __init__(self, buyId, time, coinpair, amount, price):
-        self.open = True
+        self.open = 'True'
         self.buyId = buyId
-        self.sellId = None
+        self.sellId = 'None'
         self.time = time
         self.age = 0
         self.coinpair = coinpair
@@ -18,12 +18,7 @@ class Position:
         self.fee = 0.0
         self.result = 0.0
         self.peak = 0.0
-        self.stopLoss = False
-
-    # Return True if the Position is currently being sold, False otherwise
-    def selling(self):
-        if self.open and self.sellId != None and not math.isnan(self.sellId): return True
-        return False
+        self.stopLoss = 'False'
 
     # Update the percent gain/loss of this Position and the highest % reached
     # Mark self.stopLoss if threshold is met
