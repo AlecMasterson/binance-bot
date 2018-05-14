@@ -14,6 +14,7 @@ from Order import Order
 class Live:
 
     # Initialize a new Live object, which is the framework to the live bot
+    # TODO: Set self.coinpairs to utilities.COINPAIRS when no longer testing.
     def __init__(self):
 
         # Connect to the Binance API using our public and secret keys.
@@ -132,8 +133,8 @@ class Live:
     # Update all open positions with the latest time and price of their coinpair.
     def update_positions(self):
         for position in self.positions:
-            if not position.open: continue
-            position.update(live.data[position.pair].data[-1].closeTime, live.data[position.pair].data[-1].close)
+            if position.open == 'False' or len(self.recent[position.coinpair]) < 1: continue
+            position.update(self.recent[position.coinpair][-1]['time'], self.recent[position.coinpair][-1]['price'])
 
     # Export all positions in case we need to restart the bot.
     # This can also be used for external analysis.
@@ -175,7 +176,7 @@ class Live:
                     for position in self.positions:
                         if position.sellId == order.orderId:
                             position.update(order.transactTime, order.price)
-                            position.open = False
+                            position.open = 'False'
 
                 # Remove the order from our list if it was filled or cancelled. No new position needed.
                 if order.status == 'FILLED' or order.status == 'CANCELED': self.orders.remove(order)
@@ -198,8 +199,8 @@ class Live:
     # This will also export the necessary information
     def update(self):
         self.update_positions()
-        self.update_balances()
         self.update_orders()
+        self.update_balances()
 
         self.export_positions()
         self.export_orders()
