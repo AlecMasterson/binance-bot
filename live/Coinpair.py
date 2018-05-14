@@ -52,23 +52,29 @@ class Coinpair:
             count += 1
         return count
 
-    # Determine the correct quantity and price of the asset we can purchase
+    # Determine the correct quantity and price of the asset we can buy or sell
     # Returns -1 and -1 if unable to meet trading requirements
-    # balance - How much available BTC we have available
-    # price - The price we want to purchase the asset at
-    def validate_buy(self, balance, price):
+    # type - Whether it's a buy or sell order
+    # balance - How much of the base asset we have available
+    # price - The price we want to buy or sell the asset at
+    def validate_order(self, type, balance, price):
 
-        # Convert the price we want to buy at to the correct format for this coinpair.
+        # Convert the price we want to order at to the correct format for this coinpair.
         decimalsMinPrice = self.num_decimals(float(self.info['filters'][0]['minPrice']))
         formatPrice = price // float(self.info['filters'][0]['minPrice']) / pow(10, decimalsMinPrice)
 
-        # Convert the amount of BTC we want to use to the correct format for this coinpair.
+        # Convert the amount of the base asset we want to use to the correct format for this coinpair.
         # NOTE: Using all available BTC for every buy.
         available = math.floor(balance * pow(10, float(self.info['baseAssetPrecision']))) / pow(10, float(self.info['baseAssetPrecision']))
 
         # Convert the quantity of our desired asset to the correct format for this coinpair.
         decimalsMinQty = self.num_decimals(float(self.info['filters'][1]['minQty']))
-        quantity = (available / formatPrice) // float(self.info['filters'][1]['minQty']) / pow(10, decimalsMinQty)
+
+        # Use specific multiply/divide rules for the type of order to determine the quanity being used.
+        if type == 'buy': using = available / formatPrice
+        elif type == 'sell': using = available
+
+        quantity = using // float(self.info['filters'][1]['minQty']) / pow(10, decimalsMinQty)
 
         # Test the trading policy filters provided by the symbols dictionary.
         valid = True
