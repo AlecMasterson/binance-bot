@@ -29,7 +29,7 @@ class Position:
         if float(self.result) > float(self.peak): self.peak = self.result
 
         # NOTE: 1.01 means a 1% gain was reached. This value can be changed.
-        if float(self.result) >= 1.01: self.stopLoss = True
+        if float(self.result) >= 1.01: self.stopLoss = 'True'
 
     # Update all attributes of the Position
     # time - New time, in milliseconds, associated with the Position
