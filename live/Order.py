@@ -19,9 +19,10 @@ class Order:
         # Get the order information using the unique self.orderId value.
         updated = self.client.get_order(symbol=self.symbol, orderId=self.orderId)
 
-        # These are the only two values that we want to update.
+        # These are the only three values that we want to update.
         self.executedQty = updated['executedQty']
         self.status = updated['status']
+        self.time = updated['time']
 
     # Return all data regarding the position as a comma separated String for exporting
     def toCSV(self):

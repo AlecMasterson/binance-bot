@@ -1,6 +1,6 @@
 from binance.client import Client
 
-import time, pandas, csv
+import time, datetime, pandas, csv
 import utilities
 
 from Coinpair import Coinpair
@@ -161,27 +161,44 @@ class Live:
 
     # Update the local orders information with our Binance account
     # New positions are created here if needed
-    # TODO: Handle orders that take too long and are never filled or are partially filled.
+    # TODO: Handle SELL orders that take too long AND are partially filled.
     def update_orders(self):
         try:
             for order in self.orders:
 
                 order.update()
 
-                # Create a new position if the buy order has been filled.
-                if order.status == 'FILLED' and order.side == 'BUY': self.create_position(order)
+                # Create a new position if the buy order has been filled or is taking too long.
+                # If it took too long to fill, make sure it was at least partially filled.
+                if order.side == 'BUY' and (order.status == 'FILLED' or (float(order.executedQty) != 0.0 and float(order.time) - float(order.transactTime) >= 3e5)):
+                    self.create_position(order)
+                    self.orders.remove(order)
 
-                # Update and close a position if the sell order has been filled.
-                if order.status == 'FILLED' and order.side == 'SELL':
+                # Update and close a position if the sell order has been filled or is taking too long.
+                # If it took too long to fill, make sure it was at least partially filled.
+                elif order.side == 'SELL' and (order.status == 'FILLED' or (float(order.executedQty) != 0.0 and float(order.time) - float(order.transactTime) >= 3e5)):
                     for position in self.positions:
+
+                        # Make sure we are editting the correct position.
                         if position.sellId == order.orderId:
+
+                            # Update the position with the information returned from the order.
                             position.update(order.transactTime, order.price)
+
                             position.open = 'False'
+                            utilities.throw_info('Position Closed\n')
 
-                # Remove the order from our list if it was filled or cancelled. No new position needed.
-                if order.status == 'FILLED' or order.status == 'CANCELED': self.orders.remove(order)
+                            self.orders.remove(order)
 
-                # TODO: Handle orders that take too long and are never filled or are partially filled.
+                # Remove the order from our list if it was cancelled or took too long without being partially filled.
+                if order.status == 'CANCELED' or (float(order.executedQty) == 0.0 and float(order.time) - float(order.transactTime) >= 3e5):
+                    self.orders.remove(order)
+
+                    # Reset the sellId of the position if it were a sell order.
+                    if order.side == 'SELL':
+                        for position in self.positions:
+                            if position.sellId == order.orderId: position.sellId = 'None'
+
         except:
             self.sockets.close_socket_manager()
             utilities.throw_error('Failed to Update the Orders', True)
@@ -198,12 +215,43 @@ class Live:
     # Provide a simple function for triggering all framework related updates
     # This will also export the necessary information
     def update(self):
-        self.update_positions()
         self.update_orders()
         self.update_balances()
+        self.update_positions()
 
         self.export_positions()
         self.export_orders()
+
+        # Output the current status to the user after updating everything.
+        self.current_status('New Iteration at Time: ' + str(datetime.datetime.now()))
+
+    # Output to the user the current status of everything in the Live framework
+    # header - The starting text to the output
+    def current_status(self, header):
+
+        # Build the continuous output string starting with the header.
+        output = header
+
+        # Add the current BTC account balance.
+        output += '\n\tBalances:\n\t\tBTC: ' + str(self.balances['BTC'].free)
+
+        # Add on the remaining asset balances.
+        for coinpair in self.coinpairs:
+            output += '\n\t\t' + coinpair[:-3] + ': ' + str(self.balances[coinpair[:-3]].free)
+
+        output += '\n\tOpen Orders: ' + str(len(self.orders))
+
+        # Output how many open positions there are and what they are.
+        open = 0
+        tempOutput = ''
+        for position in self.positions:
+            if position.open == 'True':
+                open += 1
+                tempOutput += '\n\t\tTime: ' + str(position.time) + '\tResult: ' + str(position.result)
+        output += '\n\tCurrent Open Positions: ' + str(open) + tempOutput + '\n'
+
+        # Log this information.
+        utilities.throw_info(output)
 
     # Create a limit buy order on the provided coinpair at the provided price
     # coinpair - The coinpair we're buying with
@@ -211,25 +259,50 @@ class Live:
     def buy(self, coinpair, price):
 
         # Validate whether a valid buy order can be made and return the correct values to use.
-        buyQuantity, buyPrice = self.data[coinpair].validate_buy(float(self.balances['BTC'].free) * 0.5, float(price))
+        buyQuantity, buyPrice = self.data[coinpair].validate_order('buy', float(self.balances['BTC'].free), float(price))
 
         # Do not attempt a buy order if an invalid quantity was returned.
         if buyQuantity == '-1' or buyPrice == '-1': return False
 
         # Attempt a limit buy order.
         try:
-            utilities.throw_info('Creating a Buy Order on ' + coinpair + ' at price ' + buyPrice + '\n')
+            utilities.throw_info('Creating a Buy Order on ' + coinpair + ' for ' + str(buyQuantity) + ' quantity at price ' + buyPrice + '\n')
             self.orders.append(Order(self.client, self.client.order_limit_buy(symbol=coinpair, quantity=buyQuantity, price=buyPrice)))
         except:
             utilities.throw_error('Failed to Create a Buy Order', False)
             return False
 
+        # Update the balances after making this order.
+        self.update_balances()
+
         return True
 
     # Create a sell order on the provided position
     # position - The position being sold
-    # TODO: Do this.
     def sell(self, position):
-        utilities.throw_info('Selling Position\n')
 
-        position.open = False
+        # Don't sell a position twice.
+        if position.sellId != 'None': return False
+
+        # Validate whether a valid sell order can be made and return the correct values to use.
+        sellQuantity, sellPrice = self.data[position.coinpair].validate_order('sell', float(self.balances[position.coinpair[:-3]].free), float(position.current))
+
+        # Do not attempt a sell order if an invalid quantity was returned.
+        if sellQuantity == '-1' or sellPrice == '-1': return False
+
+        # Attempt a limit sell order.
+        try:
+            utilities.throw_info('Creating a Sell Order on ' + position.coinpair + ' for ' + str(sellQuantity) + ' quantity at price ' + sellPrice + '\n')
+            order = Order(self.client, self.client.order_limit_sell(symbol=position.coinpair, quantity=sellQuantity, price=sellPrice))
+
+            # Update the necessary information.
+            position.sellId = order.orderId
+            self.orders.append(order)
+        except:
+            utilities.throw_error('Failed to Create a Sell Order', False)
+            return False
+
+        # Update the balances after making this order.
+        self.update_balances()
+
+        return True
