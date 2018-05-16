@@ -21,7 +21,7 @@ class Sockets:
         for coinpair in live.coinpairs:
 
             # The kline_socket connection consistently returns the latest price info for a coinpair.
-            self.manager.start_kline_socket(coinpair, self.kline_callback, interval=Client.KLINE_INTERVAL_1MINUTE)
+            self.manager.start_kline_socket(coinpair, self.kline_callback, interval=Client.KLINE_INTERVAL_5MINUTE)
 
         # Start all socket connections.
         self.manager.start()

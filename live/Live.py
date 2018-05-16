@@ -36,7 +36,7 @@ class Live:
                 self.data[coinpair] = Coinpair(coinpair)
 
                 # Query the API for the latest 1000 entry points.
-                tempData = pandas.DataFrame(self.client.get_klines(symbol=coinpair, interval=Client.KLINE_INTERVAL_1MINUTE), columns=utilities.COLUMN_STRUCTURE)
+                tempData = pandas.DataFrame(self.client.get_klines(symbol=coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
 
                 # Create a Candle and add it to the Coinpair for each entry returned by the API.
                 for index, candle in tempData.iterrows():
