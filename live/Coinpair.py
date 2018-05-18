@@ -1,17 +1,39 @@
-import talib, numpy, math
+import sys, pandas, talib, numpy, math, utilities
+
+from binance.client import Client
+
+sys.path.append(sys.path[0] + '/live')
+from Candle import Candle
 
 
 class Coinpair:
 
     # Initialize a new Coinpair with the required information
     # Add additional default values for other variables
-    def __init__(self, coinpair):
+    def __init__(self, client, coinpair):
+        self.client = client
+
         self.coinpair = coinpair
         self.data = []
         self.macd = []
         self.macdsignal = []
         self.upperband = []
         self.lowerband = []
+
+        # Query the API for the latest 1000 entry points.
+        tempData = pandas.DataFrame(self.client.get_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
+
+        # Create a Candle and add it to self.data for each entry returned by the API.
+        # Remove the last one as that's the current (incomplete) kline.
+        for index, candle in tempData.iterrows():
+            self.data.append(Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time'])))
+        self.data = self.data[:-1]
+
+        # Add the specific information associated with this Coinpair.
+        self.info = self.client.get_symbol_info(self.coinpair)
+
+        # Update the overhead information for this Coinpair.
+        self.update_overhead()
 
     # Update the overhead variables associated with the Coinpair
     def update_overhead(self):
@@ -30,17 +52,11 @@ class Coinpair:
 
     # Add a new Candle to the self.data
     # candle - The new Candle being added
-    # update - Update the overhead if this is True
-    def add_candle(self, candle, update):
+    def add_candle(self, candle):
         self.data.append(candle)
 
         # Keep the overhead information up to date.
-        if update: self.update_overhead()
-
-    # Add the coinpairs' specific information.
-    # info - The specific information, i.e. filters.
-    def add_info(self, info):
-        self.info = info
+        self.update_overhead()
 
     # Determines how many decimal places are used in a float value
     # I.E. 0.0001 returns 4
@@ -90,5 +106,5 @@ class Coinpair:
         if quantity * formatPrice < float(self.info['filters'][2]['minNotional']): valid = False
 
         # Return the desired trade quantity and price if all is valid.
-        if valid: return str(quantity), str(formatPrice)
-        else: return '-1', '-1'
+        if valid: return quantity, formatPrice
+        else: return -1, -1

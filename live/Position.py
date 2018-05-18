@@ -1,6 +1,3 @@
-import math
-
-
 class Position:
 
     # Initialize a new Position with the required information
