@@ -1,4 +1,4 @@
-import sys, pandas, talib, numpy, math, utilities
+import sys, pandas, ta, numpy, math, utilities
 
 from binance.client import Client
 
@@ -41,14 +41,11 @@ class Coinpair:
         # Use the close price of each Candle to calculate overhead information.
         closeData = [float(candle.close) for candle in self.data]
 
-        # Extremely small numbers (prices) break talib calculations, we must multiply and then divide by 1e6.
-        macd, macdsignal, macdhist = talib.MACDFIX(numpy.array(closeData) * 1e6, signalperiod=9)
-        upperband, middleband, lowerband = talib.BBANDS(numpy.array(closeData) * 1e6, timeperiod=14, nbdevup=2, nbdevdn=2, matype=0)
+        closeData = pandas.Series([float(candle.close) for candle in self.data])
 
-        self.macd = macd / 1e6
-        self.macdsignal = macdsignal / 1e6
-        self.upperband = upperband / 1e6
-        self.lowerband = lowerband / 1e6
+        self.macd = ta.trend.macd(closeData, n_fast=12, n_slow=26, fillna=True)
+        self.upperband = ta.volatility.bollinger_hband(closeData, n=14, ndev=2, fillna=True)
+        self.lowerband = ta.volatility.bollinger_lband(closeData, n=14, ndev=2, fillna=True)
 
     # Add a new Candle to the self.data
     # candle - The new Candle being added
