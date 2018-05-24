@@ -15,7 +15,7 @@ class Coinpair:
         self.client = client
 
         self.coinpair = coinpair
-        self.data = []
+        self.candles = []
         self.macd = []
         self.macdSignal = []
         self.macdDiff = []
@@ -25,11 +25,11 @@ class Coinpair:
         # Query the API for the latest 1000 entry points.
         tempData = pandas.DataFrame(self.client.get_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
 
-        # Create a Candle and add it to self.data for each entry returned by the API.
+        # Create a Candle and add it to self.candles for each entry returned by the API.
         # Remove the last one as that's the current (incomplete) kline.
         for index, candle in tempData.iterrows():
-            self.data.append(Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time'])))
-        self.data = self.data[:-1]
+            self.candles.append(Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time'])))
+        self.candles = self.candles[:-1]
 
         # Add the specific information associated with this Coinpair.
         self.info = self.client.get_symbol_info(self.coinpair)
@@ -41,7 +41,7 @@ class Coinpair:
     def update_overhead(self):
 
         # Use the close price of each Candle to calculate overhead information.
-        closeData = pandas.Series([float(candle.close) for candle in self.data])
+        closeData = pandas.Series([float(candle.close) for candle in self.candles])
 
         # Use the ta library to calculate the following pieces of overhead information.
         self.macd = ta.trend.macd(closeData, n_fast=12, n_slow=26, fillna=True)
@@ -50,10 +50,10 @@ class Coinpair:
         self.upperband = ta.volatility.bollinger_hband(closeData, n=14, ndev=2, fillna=True)
         self.lowerband = ta.volatility.bollinger_lband(closeData, n=14, ndev=2, fillna=True)
 
-    # Add a new Candle to the self.data array and keep the overhead information updated
+    # Add a new Candle to the self.candles array and keep the overhead information updated
     # candle - The new Candle being added
     def add_candle(self, candle):
-        self.data.append(candle)
+        self.candles.append(candle)
         self.update_overhead()
 
     # Determines how many decimal places are used in a float value
