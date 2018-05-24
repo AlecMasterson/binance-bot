@@ -3,6 +3,7 @@ class Order:
     # Initialize a new Order with the required information
     def __init__(self, client, order):
         self.client = client
+
         self.orderId = order['orderId']
         self.symbol = order['symbol']
         self.side = order['side']
@@ -23,8 +24,3 @@ class Order:
         self.executedQty = updated['executedQty']
         self.status = updated['status']
         self.time = updated['time']
-
-    # Return all data regarding the position as a comma separated String for exporting
-    def toCSV(self):
-        return str(self.orderId) + ',' + str(self.symbol) + ',' + str(self.side) + ',' + str(self.status) + ',' + str(self.transactTime) + ',' + str(self.price) + ',' + str(self.origQty) + ',' + str(
-            self.executedQty)

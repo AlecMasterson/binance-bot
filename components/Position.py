@@ -1,11 +1,14 @@
+import utilities
+
+
 class Position:
 
     # Initialize a new Position with the required information
     # Add additional default values for other variables
     def __init__(self, buyId, time, coinpair, amount, price):
-        self.open = 'True'
+        self.open = True
         self.buyId = buyId
-        self.sellId = 'None'
+        self.sellId = ''
         self.time = time
         self.age = 0
         self.coinpair = coinpair
@@ -15,27 +18,25 @@ class Position:
         self.fee = 0.0
         self.result = 0.0
         self.peak = 0.0
-        self.stopLoss = 'False'
+        self.stopLoss = False
 
     # Update the percent gain/loss of this Position and the highest % reached
     # Mark self.stopLoss if threshold is met
     def update_result(self):
-        self.result = str((float(self.current) - float(self.fee)) / float(self.price))
+        self.result = (self.current - self.fee) / self.price
 
         # Update the peak if needed.
-        if float(self.result) > float(self.peak): self.peak = self.result
+        if self.result > self.peak: self.peak = self.result
 
-        # NOTE: 1.01 means a 1% gain was reached. This value can be changed.
-        if float(self.result) >= 1.01: self.stopLoss = 'True'
+        # Trigger a stopLoss if the peak threshold was reached and we have since fallen a certain amount.
+        if self.peak > utilities.STOP_LOSS_ARM and self.peak - self.result > utilities.STOP_LOSS: self.stopLoss = True
 
-    # Update all attributes of the Position
+    # Update all attributes of the Position and update the result
     # time - New time, in milliseconds, associated with the Position
     # price - New price associated with the Position
     def update(self, time, price):
-        self.age = str(float(time) - float(self.time))
+        self.age = time - self.time
         self.current = price
-
-        # Handle our % gain/loss on the Position
         self.update_result()
 
     # Return a String interpretation of the Position for visualizing

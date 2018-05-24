@@ -1,22 +1,24 @@
-import sys, pandas, ta, numpy, math, utilities
+import pandas, ta, math
 
 from binance.client import Client
 
-sys.path.append(sys.path[0] + '/live')
-from Candle import Candle
+import utilities
+from components.Candle import Candle
 
 
 class Coinpair:
 
     # Initialize a new Coinpair with the required information
     # Add additional default values for other variables
+    # NOTE: This has 2 API calls
     def __init__(self, client, coinpair):
         self.client = client
 
         self.coinpair = coinpair
         self.data = []
         self.macd = []
-        self.macdsignal = []
+        self.macdSignal = []
+        self.macdDiff = []
         self.upperband = []
         self.lowerband = []
 
@@ -39,20 +41,19 @@ class Coinpair:
     def update_overhead(self):
 
         # Use the close price of each Candle to calculate overhead information.
-        closeData = [float(candle.close) for candle in self.data]
-
         closeData = pandas.Series([float(candle.close) for candle in self.data])
 
+        # Use the ta library to calculate the following pieces of overhead information.
         self.macd = ta.trend.macd(closeData, n_fast=12, n_slow=26, fillna=True)
+        self.macdSignal = ta.trend.macd_signal(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+        self.macdDiff = ta.trend.macd_diff(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
         self.upperband = ta.volatility.bollinger_hband(closeData, n=14, ndev=2, fillna=True)
         self.lowerband = ta.volatility.bollinger_lband(closeData, n=14, ndev=2, fillna=True)
 
-    # Add a new Candle to the self.data
+    # Add a new Candle to the self.data array and keep the overhead information updated
     # candle - The new Candle being added
     def add_candle(self, candle):
         self.data.append(candle)
-
-        # Keep the overhead information up to date.
         self.update_overhead()
 
     # Determines how many decimal places are used in a float value
