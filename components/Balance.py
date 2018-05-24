@@ -1,9 +1,8 @@
 class Balance:
 
     # Initialize a new Balance with the required information
-    def __init__(self, client, online, asset, val):
+    def __init__(self, client, asset, val):
         self.client = client
-        self.online = True
         self.asset = asset
 
         # Update the amount available.
@@ -11,9 +10,10 @@ class Balance:
 
     # Update the free amount available for the asset
     # This chooses between online and offline mode
-    # val - The optional new amount of available asset
+    # Parameters are required online for offline mode
+    # val - The new amount of available asset
     def update(self, val):
-        if self.online: self.update_online()
+        if self.client != None: self.update_online()
         else self.update_offline(val)
 
     # The online updating function
