@@ -6,22 +6,11 @@ class Balance:
         self.asset = asset
 
         # Update the amount available.
-        self.update(val)
+        # If using this offline, manually set the starting value.
+        if self.client != None: self.update()
+        else: self.free = val
 
     # Update the free amount available for the asset
-    # This chooses between online and offline mode
-    # Parameters are required online for offline mode
-    # val - The new amount of available asset
-    def update(self, val):
-        if self.client != None: self.update_online()
-        else self.update_offline(val)
-
-    # The online updating function
     # NOTE: This has an API call
-    def update_online(self):
+    def update(self):
         self.free = self.client.get_asset_balance(asset=self.asset)['free']
-
-    # The offline updating function
-    # val - The new amount available
-    def update_offline(self, val):
-        self.free = val

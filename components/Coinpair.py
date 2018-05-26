@@ -1,9 +1,7 @@
-import pandas, ta, math
-
 from binance.client import Client
-
-import utilities
 from components.Candle import Candle
+import pandas, ta, math
+import utilities
 
 
 class Coinpair:
@@ -66,8 +64,8 @@ class Coinpair:
             count += 1
         return count
 
-    # Determine the correct quantity and price of the asset we can buy or sell
-    # Returns -1 and -1 if unable to meet trading requirements
+    # Determine the correct quantity and price of the asset we can buy or sell and how much we're using to do so
+    # Returns -1 and -1 and -1 if unable to meet trading requirements
     # type - Whether it's a buy or sell order
     # balance - How much of the base asset we have available
     # price - The price we want to buy or sell the asset at
@@ -84,9 +82,9 @@ class Coinpair:
         # Convert the quantity of our desired asset to the correct format for this coinpair.
         decimalsMinQty = self.num_decimals(float(self.info['filters'][1]['minQty']))
 
-        # Use specific multiply/divide rules for the type of order to determine the quanity being used.
-        if type == 'buy': using = available / formatPrice
-        elif type == 'sell': using = available
+        # Use specific multiply/divide rules for the type of order to determine the quantity being used.
+        if type == 'BUY': using = available / formatPrice
+        elif type == 'SELL': using = available
 
         quantity = using // float(self.info['filters'][1]['minQty']) / pow(10, decimalsMinQty)
 
@@ -103,6 +101,6 @@ class Coinpair:
 
         if quantity * formatPrice < float(self.info['filters'][2]['minNotional']): valid = False
 
-        # Return the desired trade quantity and price if all is valid.
-        if valid: return quantity, formatPrice
-        else: return -1, -1
+        # Return the desired trade quantity, price, and how much of the base asset was used if all is valid.
+        if valid: return quantity, formatPrice, available
+        else: return -1, -1, -1

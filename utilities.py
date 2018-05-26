@@ -21,11 +21,18 @@ DIRS_INTERVALS = [{
 }]
 ACTIVE_DIR = DIRS_INTERVALS[1]
 
-COINPAIRS = ['BNBBTC', 'CMTBTC', 'EOSBTC', 'ETHBTC', 'GTOBTC', 'ICNBTC', 'ICXBTC', 'INSBTC', 'NAVBTC', 'OMGBTC', 'REQBTC', 'SNMBTC', 'WTCBTC', 'XLMBTC']
+COINPAIRS = ['BNBBTC']
 ASSETS = ['BNB', 'BTC', 'CMT', 'EOS', 'ETH', 'GTO', 'ICN', 'ICX', 'INS', 'NAV', 'OMG', 'REQ', 'SNM', 'WTC', 'XLM']
 
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 POSITION_STRUCTURE = ['buy_id', 'sell_id', 'open', 'time', 'age', 'pair', 'amount', 'price', 'current', 'fee', 'result', 'peak', 'stop-loss']
+
+PUBLIC_KEY = 'lfeDDamF6ckP7A2uWrd7uJ5nV0aJedQwD2H0HGujNuxmGgtyQQt0kL3lS6UFlRLS'
+SECRET_KEY = 'phpomS4lCMKuIxF0BgrP4d5N9rEPzf8Dy4ZRVjJ0XeO4Wn7PmOC7uhYsyypi9gFJ'
+
+ORDER_TIME_LIMIT = 9e5
+STOP_LOSS_ARM = 1.01
+STOP_LOSS = 0.003
 
 
 # Setup the logging interface with the correct formatting and log file
