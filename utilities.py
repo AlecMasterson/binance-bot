@@ -19,13 +19,15 @@ DIRS_INTERVALS = [{
     'dir': 'data_2_hour/',
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
+
+# TODO: Not sure if using these 3.
+POSITION_STRUCTURE = ['buy_id', 'sell_id', 'open', 'time', 'age', 'pair', 'amount', 'price', 'current', 'fee', 'result', 'peak', 'stop-loss']
+ASSETS = ['BNB', 'BTC', 'CMT', 'EOS', 'ETH', 'GTO', 'ICN', 'ICX', 'INS', 'NAV', 'OMG', 'REQ', 'SNM', 'WTC', 'XLM']
 ACTIVE_DIR = DIRS_INTERVALS[1]
 
 COINPAIRS = ['BNBBTC']
-ASSETS = ['BNB', 'BTC', 'CMT', 'EOS', 'ETH', 'GTO', 'ICN', 'ICX', 'INS', 'NAV', 'OMG', 'REQ', 'SNM', 'WTC', 'XLM']
 
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
-POSITION_STRUCTURE = ['buy_id', 'sell_id', 'open', 'time', 'age', 'pair', 'amount', 'price', 'current', 'fee', 'result', 'peak', 'stop-loss']
 
 PUBLIC_KEY = 'lfeDDamF6ckP7A2uWrd7uJ5nV0aJedQwD2H0HGujNuxmGgtyQQt0kL3lS6UFlRLS'
 SECRET_KEY = 'phpomS4lCMKuIxF0BgrP4d5N9rEPzf8Dy4ZRVjJ0XeO4Wn7PmOC7uhYsyypi9gFJ'
