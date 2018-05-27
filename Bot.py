@@ -4,7 +4,10 @@ from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
-import utilities, csv, pandas
+
+import strategy
+import sys, utilities, csv, pandas
+
 import plotly.offline as py
 import plotly.graph_objs as go
 import plotly.tools as pytools
@@ -263,3 +266,22 @@ class Bot:
         ]
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline'):
+        utilities.throw_error('Command Usage Options:\n\t\'python Bot.py --online\'\n\t\'python Bot.py --offline\'', True)
+
+    if sys.argv[1] == '--offline':
+        bot = Bot(False)
+        for coinpair in utilities.COINPAIRS:
+            for index, candle in enumerate(bot.data[coinpair].candles):
+                if index == 0: continue
+
+                bot.recent[coinpair].append(bot.data[coinpair].candles[index - 1])
+                bot.update()
+
+                for position in bot.positions:
+                    if position.open: strategy.check_sell(bot, position, index)
+
+                strategy.check_buy(bot, coinpair, index)
