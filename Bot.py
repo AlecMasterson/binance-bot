@@ -36,6 +36,7 @@ class Bot:
             try:
                 self.sockets = Sockets(self)
             except:
+                self.sockets.close_socket_manager()
                 utilities.throw_error('Failed to Start Socket Manager', True)
             utilities.throw_info('Successfully Finished Starting the Socket Manager')
 
@@ -58,6 +59,7 @@ class Bot:
             except FileNotFoundError:
                 utilities.throw_info('positions.csv FileNotFound... not importing Positions')
             except:
+                self.sockets.close_socket_manager()
                 utilities.throw_error('Failed to Import Positions', True)
             utilities.throw_info('Successfully Imported Positions')
 
@@ -71,6 +73,7 @@ class Bot:
             except FileNotFoundError:
                 utilities.throw_info('orders.csv FileNotFound... not importing Orders')
             except:
+                self.sockets.close_socket_manager()
                 utilities.throw_error('Failed to Import Orders', True)
             utilities.throw_info('Successfully Imported Orders')
 
