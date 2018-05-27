@@ -4,10 +4,16 @@ from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
-import utilities, csv
+import utilities, csv, pandas
 
 
-class Frame:
+# Convert a time from milliseconds to a pandas.DateTime object
+# time - The time in milliseconds
+def to_datetime(time):
+    return pandas.to_datetime(time, unit='ms')
+
+
+class Bot:
 
     def __init__(self, online):
         self.online = online
@@ -87,47 +93,52 @@ class Frame:
     def update_positions(self):
         for position in self.positions:
             if position.open and position.sellId == '' and len(self.recent[position.coinpair]) > 0:
-                position.update(self.recent[position.coinpair][-1].closeTime, self.recent[position.coinpair][-1].close)
+                if self.online: position.update(self.recent[position.coinpair][-1]['time'], self.recent[position.coinpair][-1]['price'])
+                else: position.update(self.recent[position.coinpair][-1].closeTime, self.recent[position.coinpair][-1].close)
 
     def update_orders(self):
         for order in self.orders:
             # TODO: Check if the order time is changed with every online update.
             if self.online:
                 order.update()
-            elif order.price < self.data[order.symbol].candles[-1].high and order.price > self.data[order.symbol].candles[-1].low:
-                order.status = 'FILLED'
-
-            if self.data[order.symbol].candles[-1].closeTime - order.transactTime > utilities.ORDER_TIME_LIMIT:
-                if self.online:
+                if order.status != 'FILLED' and self.recent[order.symbol][-1]['time'] - order.transactTime > utilities.ORDER_TIME_LIMIT:
                     try:
                         self.client.cancel_order(symbol=order.symbol, orderId=order.orderId)
                     except:
                         utilities.throw_error('Failed to Cancel Order', False)
-                else:
-                    order.status = 'CANCELED'
+            elif order.price < self.recent[order.symbol][-1].high and order.price > self.recent[order.symbol][-1].low:
+                order.status = 'FILLED'
+            elif self.recent[order.symbol][-1].closeTime - order.transactTime > utilities.ORDER_TIME_LIMIT:
+                order.status = 'CANCELED'
 
             if order.side == 'BUY':
                 if order.status == 'FILLED':
+                    if self.online: utilities.throw_info('Buy Order Filled')
                     if not self.online: self.balances[order.symbol[:-3]] += order.executedQty
                     self.positions.append(Position(order.orderId, order.transactTime, order.symbol, order.executedQty, order.price))
                     self.orders.remove(order)
+                    if self.online: utilities.throw_info('New Position Created for Coinpair ' + order.symbol)
                 elif order.status == 'CANCELED':
                     self.orders.remove(order)
                     if not self.online: self.balances['BTC'] += order.used
+                    if self.online: utilities.throw_info('Buy Order Cancelled for Coinpair ' + order.symbol)
             elif order.side == 'SELL':
                 if order.status == 'FILLED':
+                    if self.online: utilities.throw_info('Sell Order Filled')
                     for position in self.positions:
                         if position.sellId == order.orderId:
                             if not self.online: self.balances['BTC'] += order.executedQty * order.price
                             position.update(order.transactTime, order.price)
                             position.open = False
                             self.orders.remove(order)
+                            utilities.throw_info('Position Closed for Coinpair ' + order.symbol + ' with Result: ' + str(position.result))
                 elif order.status == 'CANCELED':
                     self.orders.remove(order)
                     for position in self.positions:
                         if position.sellId == order.orderId:
                             position.sellId = ''
                             if not self.online: self.balances[order.symbol[:-3]] += order.used
+                            if self.online: utilities.throw_info('Sell Order Cancelled for Coinpair ' + order.symbol)
 
     def export_data(self):
         if not self.online: return
@@ -169,13 +180,15 @@ class Frame:
                         'symbol': coinpair,
                         'side': 'BUY',
                         'status': 'NEW',
-                        'transactTime': self.data[coinpair].candles[-1].closeTime,
+                        'transactTime': self.recent[coinpair][-1].closeTime,
                         'price': buyPrice,
                         'origQty': buyQuantity,
                         'executedQty': buyQuantity
                     }, btcUsed))
 
             self.balances['BTC'] -= btcUsed
+
+        if self.online: utilities.throw_info('Buy Order Created for Coinpair ' + coinpair + ' at Time: ' + str(to_datetime(self.recent[coinpair][-1]['time'])))
 
         self.update_balances()
 
@@ -203,13 +216,15 @@ class Frame:
                         'symbol': position.coinpair,
                         'side': 'SELL',
                         'status': 'NEW',
-                        'transactTime': self.data[coinpair].candles[-1].closeTime,
+                        'transactTime': self.recent[position.coinpair][-1].closeTime,
                         'price': sellPrice,
                         'origQty': sellQuantity,
                         'executedQty': sellQuantity
                     }, assetUsed))
             position.sellId = str(len(self.positions)) + '-SELL'
             self.balances[position.coinpair[:-3]] -= assetUsed
+
+        if self.online: utilities.throw_info('Sell Order Created for Coinpair ' + position.coinpair + ' at Time: ' + str(to_datetime(self.recent[position.coinpair][-1]['time'])))
 
         self.update_balances()
 

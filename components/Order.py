@@ -10,10 +10,10 @@ class Order:
         self.symbol = order['symbol']
         self.side = order['side']
         self.status = order['status']
-        self.transactTime = order['transactTime']
-        self.price = order['price']
-        self.origQty = order['origQty']
-        self.executedQty = order['executedQty']
+        self.transactTime = int(order['transactTime'])
+        self.price = float(order['price'])
+        self.origQty = float(order['origQty'])
+        self.executedQty = float(order['executedQty'])
 
         self.used = used
 
@@ -26,8 +26,8 @@ class Order:
             updated = self.client.get_order(symbol=self.symbol, orderId=self.orderId)
 
             # These are the only three values that we want to update.
-            self.executedQty = updated['executedQty']
-            self.status = updated['status']
-            self.time = updated['time']
+            self.executedQty = float(updated['executedQty'])
+            self.status = float(updated['status'])
+            self.time = int(updated['time'])
         except:
             utilities.throw_error('Failed to Update Order', False)
