@@ -6,7 +6,7 @@ from components.Position import Position
 from components.Sockets import Sockets
 
 import strategy
-import sys, utilities, csv, pandas
+import sys, utilities, csv, pandas, time
 
 import plotly.offline as py
 import plotly.graph_objs as go
@@ -274,6 +274,8 @@ if __name__ == '__main__':
 
     if sys.argv[1] == '--offline':
         bot = Bot(False)
+
+        # TODO: Support backtesting across multiple coinpairs
         for coinpair in utilities.COINPAIRS:
             for index, candle in enumerate(bot.data[coinpair].candles):
                 if index == 0: continue
@@ -285,3 +287,12 @@ if __name__ == '__main__':
                     if position.open: strategy.check_sell(bot, position, index)
 
                 strategy.check_buy(bot, coinpair, index)
+            bot.plot(coinpair)
+
+    elif sys.argv[1] == '--online':
+        bot = Bot(True)
+
+        while True:
+            bot.update()
+
+            time.sleep(30)
