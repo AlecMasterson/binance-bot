@@ -11,7 +11,6 @@ class Coinpair:
     # NOTE: This has 2 API calls
     def __init__(self, client, coinpair):
         self.client = client
-
         self.coinpair = coinpair
         self.candles = []
         self.macd = []
@@ -24,15 +23,17 @@ class Coinpair:
         tempData = pandas.DataFrame(self.client.get_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
 
         # Create a Candle and add it to self.candles for each entry returned by the API.
-        # Remove the last one as that's the current (incomplete) kline.
+        # Remove the last one as that's the current (incomplete) Candle.
         for index, candle in tempData.iterrows():
             self.candles.append(Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time'])))
         self.candles = self.candles[:-1]
 
         # Add the specific information associated with this Coinpair.
+        # This is used below to verify trading precision.
         self.info = self.client.get_symbol_info(self.coinpair)
 
         # Update the overhead information for this Coinpair.
+        # Overhead information includes the MACD, Bollinger Bands, etc.
         self.update_overhead()
 
     # Update the overhead variables associated with the Coinpair
@@ -55,6 +56,7 @@ class Coinpair:
         self.update_overhead()
 
     # Determines how many decimal places are used in a float value
+    # This is only used to help validate trading precision
     # I.E. 0.0001 returns 4
     # number - The float value
     def num_decimals(self, number):
@@ -64,28 +66,27 @@ class Coinpair:
             count += 1
         return count
 
-    # Determine the correct quantity and price of the asset we can buy or sell and how much we're using to do so
-    # Returns -1 and -1 and -1 if unable to meet trading requirements
+    # Determine the correct quantity and price we can buy/sell
+    # Returns -1 and -1 if unable to meet trading requirements
     # type - Whether it's a buy or sell order
-    # balance - How much of the base asset we have available
-    # price - The price we want to buy or sell the asset at
+    # balance - How much of the asset being used to buy/sell we have available
+    # price - The price we want to buy/sell the asset at
     def validate_order(self, type, balance, price):
 
         # Convert the price we want to order at to the correct format for this coinpair.
         decimalsMinPrice = self.num_decimals(float(self.info['filters'][0]['minPrice']))
         formatPrice = price // float(self.info['filters'][0]['minPrice']) / pow(10, decimalsMinPrice)
 
-        # Convert the amount of the base asset we want to use to the correct format for this coinpair.
+        # Convert the balance amount provided to use to the correct format for this coinpair.
         # NOTE: Using all available BTC for every buy.
         available = math.floor(balance * pow(10, float(self.info['baseAssetPrecision']))) / pow(10, float(self.info['baseAssetPrecision']))
 
-        # Convert the quantity of our desired asset to the correct format for this coinpair.
-        decimalsMinQty = self.num_decimals(float(self.info['filters'][1]['minQty']))
-
-        # Use specific multiply/divide rules for the type of order to determine the quantity being used.
+        # The quantity value is determine by price in a buy scenario.
         if type == 'BUY': using = available / formatPrice
         elif type == 'SELL': using = available
 
+        # Convert the quantity of our desired asset to the correct format for this coinpair.
+        decimalsMinQty = self.num_decimals(float(self.info['filters'][1]['minQty']))
         quantity = using // float(self.info['filters'][1]['minQty']) / pow(10, decimalsMinQty)
 
         # Test the trading policy filters provided by the symbols dictionary.
@@ -101,6 +102,6 @@ class Coinpair:
 
         if quantity * formatPrice < float(self.info['filters'][2]['minNotional']): valid = False
 
-        # Return the desired trade quantity, price, and how much of the base asset was used if all is valid.
-        if valid: return quantity, formatPrice, available
-        else: return -1, -1, -1
+        # Return the desired trade quantity and price if all is valid.
+        if valid: return quantity, formatPrice
+        else: return -1, -1
