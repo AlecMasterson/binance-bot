@@ -67,7 +67,7 @@ class Coinpair:
         return count
 
     # Determine the correct quantity and price we can buy/sell
-    # Returns -1 and -1 if unable to meet trading requirements
+    # Returns -1, -1, and -1 if unable to meet trading requirements
     # type - Whether it's a buy or sell order
     # balance - How much of the asset being used to buy/sell we have available
     # price - The price we want to buy/sell the asset at
@@ -103,5 +103,6 @@ class Coinpair:
         if quantity * formatPrice < float(self.info['filters'][2]['minNotional']): valid = False
 
         # Return the desired trade quantity and price if all is valid.
-        if valid: return quantity, formatPrice
-        else: return -1, -1
+        # Also return the formatted amount of the balance being used.
+        if valid: return quantity, formatPrice, available
+        else: return -1, -1, -1

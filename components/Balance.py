@@ -1,16 +1,20 @@
+import utilities
+
+
 class Balance:
 
     # Initialize a new Balance with the required information
-    def __init__(self, client, asset, val):
+    def __init__(self, client, asset):
         self.client = client
         self.asset = asset
 
         # Update the amount available.
-        # If using this offline, manually set the starting value.
-        if self.client != None: self.update()
-        else: self.free = val
+        self.update()
 
     # Update the free amount available for the asset
     # NOTE: This has an API call
     def update(self):
-        self.free = self.client.get_asset_balance(asset=self.asset)['free']
+        try:
+            self.free = self.client.get_asset_balance(asset=self.asset)['free']
+        except:
+            utilities.throw_error('Failed to Update Balance', True)
