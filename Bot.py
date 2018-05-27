@@ -7,8 +7,6 @@ from components.Sockets import Sockets
 import utilities, csv, pandas
 
 
-# Convert a time from milliseconds to a pandas.DateTime object
-# time - The time in milliseconds
 def to_datetime(time):
     return pandas.to_datetime(time, unit='ms')
 
@@ -43,7 +41,7 @@ class Bot:
         self.positions = []
         if self.online:
             try:
-                with open('positions.csv', newline='\n') as file:
+                with open('data/positions.csv', newline='\n') as file:
                     reader = csv.reader(file, delimiter=',')
                     for row in reader:
                         position = Position(row[1], int(row[3]), row[5], float(row[6]), float(row[7]))
@@ -66,7 +64,7 @@ class Bot:
         self.orders = []
         if self.online:
             try:
-                with open('orders.csv', newline='\n') as file:
+                with open('data/orders.csv', newline='\n') as file:
                     reader = csv.reader(file, delimiter=',')
                     for row in reader:
                         self.orders.append(Order(self.client, self.client.get_order(symbol=row[0], orderId=row[1])))
@@ -147,13 +145,13 @@ class Bot:
         if not self.online: return
 
         try:
-            with open('positions.csv', 'w') as file:
+            with open('data/positions.csv', 'w') as file:
                 for position in self.positions:
                     file.write(position.toCSV() + '\n')
         except:
             utilities.throw_error('Failed to Export Positions', False)
         try:
-            with open('orders.csv', 'w') as file:
+            with open('data/orders.csv', 'w') as file:
                 for order in self.orders:
                     file.write(order.symbol + ',' + order.orderId + '\n')
         except:
