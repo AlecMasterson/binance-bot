@@ -5,6 +5,9 @@ from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
 import utilities, csv, pandas
+import plotly.offline as py
+import plotly.graph_objs as go
+import plotly.tools as pytools
 
 
 def to_datetime(time):
@@ -230,3 +233,33 @@ class Bot:
         self.update_balances()
 
         return True
+
+    def plot(self, coinpair):
+        plotData = [
+            go.Candlestick(
+                name='Candle Data',
+                x=[to_datetime(candle.openTime) for candle in self.data[coinpair].candles],
+                open=[candle.open for candle in self.data[coinpair].candles],
+                high=[candle.high for candle in self.data[coinpair].candles],
+                low=[candle.low for candle in self.data[coinpair].candles],
+                close=[candle.close for candle in self.data[coinpair].candles],
+                text=['MACD: ' + str(macd) for macd in self.data[coinpair].macd]),
+            go.Scatter(name='Upper Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[upperband for upperband in self.data[coinpair].upperband]),
+            go.Scatter(name='Lower Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[lowerband for lowerband in self.data[coinpair].lowerband]),
+            go.Scatter(
+                name='Bought',
+                x=[to_datetime(position.time) for position in self.positions],
+                y=[position.price for position in self.positions],
+                mode='markers',
+                marker=dict(size=12, color='orange'),
+                text=[position.price for position in self.positions]),
+            go.Scatter(
+                name='Sold',
+                x=[to_datetime(position.time + position.age) for position in self.positions],
+                y=[position.price * position.result for position in self.positions],
+                mode='markers',
+                marker=dict(size=12, color='blue'),
+                text=[position.price + position.age for position in self.positions])
+        ]
+        layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
+        py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
