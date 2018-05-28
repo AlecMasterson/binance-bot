@@ -17,6 +17,13 @@ def to_datetime(time):
     return pandas.to_datetime(time, unit='ms')
 
 
+def combined_total(data, balances):
+    total = balances['BTC']
+    for coinpair in utilities.COINPAIRS:
+        total += data[coinpair].candles[-1].close * balances[coinpair[:-3]]
+    return total
+
+
 class Bot:
 
     def __init__(self, online):
@@ -273,10 +280,9 @@ if __name__ == '__main__':
         utilities.throw_error('Command Usage Options:\n\t\'python Bot.py --online\'\n\t\'python Bot.py --offline\'', True)
 
     if sys.argv[1] == '--offline':
-        bot = Bot(False)
-
         # TODO: Support backtesting across multiple coinpairs
         for coinpair in utilities.COINPAIRS:
+            bot = Bot(False)
             for index, candle in enumerate(bot.data[coinpair].candles):
                 if index == 0: continue
 
@@ -288,6 +294,9 @@ if __name__ == '__main__':
 
                 strategy.check_buy(bot, coinpair, index)
             bot.plot(coinpair)
+
+            utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
+            utilities.throw_info('Total Balance: ' + str(combined_total(bot.data, bot.balances)))
 
     elif sys.argv[1] == '--online':
         bot = Bot(True)
