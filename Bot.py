@@ -128,7 +128,7 @@ class Bot:
             if order.side == 'BUY':
                 if order.status == 'FILLED':
                     if self.online: utilities.throw_info('Buy Order Filled')
-                    if not self.online: self.balances[order.symbol[:-3]] += order.executedQty
+                    if not self.online: self.balances[order.symbol[:-3]] += order.executedQty * 0.999
                     self.positions.append(Position(order.orderId, order.transactTime, order.symbol, order.executedQty, order.price))
                     self.orders.remove(order)
                     if self.online: utilities.throw_info('New Position Created for Coinpair ' + order.symbol)
@@ -141,7 +141,7 @@ class Bot:
                     if self.online: utilities.throw_info('Sell Order Filled')
                     for position in self.positions:
                         if position.sellId == order.orderId:
-                            if not self.online: self.balances['BTC'] += order.executedQty * order.price
+                            if not self.online: self.balances['BTC'] += order.executedQty * order.price * 0.999
                             position.update(order.transactTime, order.price)
                             position.open = False
                             self.orders.remove(order)
