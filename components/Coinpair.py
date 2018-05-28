@@ -25,15 +25,17 @@ class Coinpair:
         else:
             try:
                 tempData = pandas.read_csv('data/history/' + coinpair + '.csv')
+                saveToFile = False
             except FileNotFoundError:
                 utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound... using API...')
                 tempData = pandas.DataFrame(
                     self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1516428000000'), columns=utilities.COLUMN_STRUCTURE)
+                saveToFile = True
             except:
                 utilities.throw_error('Failed to Retrieve Historical Data', True)
 
             try:
-                tempData.to_csv('data/history/' + coinpair + '.csv', index=False)
+                if saveToFile: tempData.to_csv('data/history/' + coinpair + '.csv', index=False)
             except:
                 utilities.throw_error('Failed to Save Historical Data', False)
 
