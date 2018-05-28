@@ -24,10 +24,25 @@ def combined_total(data, balances):
     return total
 
 
+def run_backtest(bot, coinpair):
+    for index, candle in enumerate(bot.data[coinpair].candles):
+        if index == 0: continue
+
+        bot.recent[coinpair].append(bot.data[coinpair].candles[index - 1])
+        bot.update()
+
+        for position in bot.positions:
+            if position.open: strategy.check_sell(bot, position, index)
+
+        strategy.check_buy(bot, coinpair, index)
+    return combined_total(bot.data, bot.balances)
+
+
 class Bot:
 
-    def __init__(self, online):
+    def __init__(self, online, optimize):
         self.online = online
+        self.optimize = optimize
 
         try:
             self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
@@ -99,6 +114,20 @@ class Bot:
         for coinpair in utilities.COINPAIRS:
             self.recent[coinpair] = []
 
+    def reset(self):
+        if not self.online:
+            self.positions = []
+            self.orders = []
+
+            self.balances = {}
+            for coinpair in utilities.COINPAIRS:
+                self.balances[coinpair[:-3]] = 0.0
+            self.balances['BTC'] = 1.0
+
+            self.recent = {}
+            for coinpair in utilities.COINPAIRS:
+                self.recent[coinpair] = []
+
     def update_balances(self):
         if self.online:
             for balance in self.balances:
@@ -145,7 +174,7 @@ class Bot:
                             position.update(order.transactTime, order.price)
                             position.open = False
                             self.orders.remove(order)
-                            utilities.throw_info('Position Closed for Coinpair ' + order.symbol + ' with Result: ' + str(position.result))
+                            if not self.optimize: utilities.throw_info('Position Closed for Coinpair ' + order.symbol + ' with Result: ' + str(position.result))
                 elif order.status == 'CANCELED':
                     self.orders.remove(order)
                     for position in self.positions:
@@ -281,26 +310,18 @@ if __name__ == '__main__':
 
     if sys.argv[1] == '--offline':
         # TODO: Support backtesting across multiple coinpairs
-        for coinpair in utilities.COINPAIRS:
-            bot = Bot(False)
-            for index, candle in enumerate(bot.data[coinpair].candles):
-                if index == 0: continue
+        coinpair = utilities.COINPAIRS[0]
+        bot = Bot(False, False)
 
-                bot.recent[coinpair].append(bot.data[coinpair].candles[index - 1])
-                bot.update()
+        total = run_backtest(bot, coinpair)
 
-                for position in bot.positions:
-                    if position.open: strategy.check_sell(bot, position, index)
+        utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
+        utilities.throw_info('Total Balance: ' + str(total))
 
-                strategy.check_buy(bot, coinpair, index)
-
-            utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
-            utilities.throw_info('Total Balance: ' + str(combined_total(bot.data, bot.balances)))
-
-            bot.plot(coinpair)
+        bot.plot(coinpair)
 
     elif sys.argv[1] == '--online':
-        bot = Bot(True)
+        bot = Bot(True, False)
 
         while True:
             bot.update()
