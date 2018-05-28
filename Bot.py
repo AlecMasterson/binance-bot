@@ -38,7 +38,7 @@ class Bot:
         self.data = {}
         try:
             for coinpair in utilities.COINPAIRS:
-                self.data[coinpair] = Coinpair(self.client, coinpair)
+                self.data[coinpair] = Coinpair(self.client, coinpair, self.online)
         except:
             utilities.throw_error('Failed to Get Historical Data', True)
         utilities.throw_info('Successfully Finished Getting Historical Data')
@@ -293,10 +293,11 @@ if __name__ == '__main__':
                     if position.open: strategy.check_sell(bot, position, index)
 
                 strategy.check_buy(bot, coinpair, index)
-            bot.plot(coinpair)
 
             utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
             utilities.throw_info('Total Balance: ' + str(combined_total(bot.data, bot.balances)))
+
+            bot.plot(coinpair)
 
     elif sys.argv[1] == '--online':
         bot = Bot(True)

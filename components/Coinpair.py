@@ -9,7 +9,7 @@ class Coinpair:
     # Initialize a new Coinpair with the required information
     # Add additional default values for other variables
     # NOTE: This has 2 API calls
-    def __init__(self, client, coinpair):
+    def __init__(self, client, coinpair, online):
         self.client = client
         self.coinpair = coinpair
         self.candles = []
@@ -19,8 +19,23 @@ class Coinpair:
         self.upperband = []
         self.lowerband = []
 
-        # Query the API for the latest 1000 entry points.
-        tempData = pandas.DataFrame(self.client.get_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
+        # Query the API for the latest 500 entry points.
+        if online:
+            tempData = pandas.DataFrame(self.client.get_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
+        else:
+            try:
+                tempData = pandas.read_csv('data/history/' + coinpair + '.csv')
+            except FileNotFoundError:
+                utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound... using API...')
+                tempData = pandas.DataFrame(
+                    self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1516428000000'), columns=utilities.COLUMN_STRUCTURE)
+            except:
+                utilities.throw_error('Failed to Retrieve Historical Data', True)
+
+            try:
+                tempData.to_csv('data/history/' + coinpair + '.csv', index=False)
+            except:
+                utilities.throw_error('Failed to Save Historical Data', False)
 
         # Create a Candle and add it to self.candles for each entry returned by the API.
         # Remove the last one as that's the current (incomplete) Candle.
