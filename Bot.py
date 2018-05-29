@@ -324,6 +324,7 @@ if __name__ == '__main__':
 
         bot.plot(coinpair)
 
+    # TODO: Complete and test...
     elif sys.argv[1] == '--online':
         bot = Bot(True, False)
 
