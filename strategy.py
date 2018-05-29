@@ -25,7 +25,7 @@ def check_sell(bot, position, index):
 
     sell = False
     if status != 'hold' and position.stopLoss: sell = True
-    elif position.age > 9e5 and position.result < 0.9975: sell = True
+    elif position.age > 9e5 and position.result < utilities.DROP: sell = True
     elif status == 'sell': sell = True
 
     if sell: bot.sell(position)

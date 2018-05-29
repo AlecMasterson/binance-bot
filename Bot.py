@@ -26,9 +26,13 @@ def combined_total(data, balances):
 
 class Bot:
 
-    def __init__(self, online, optimize):
+    def __init__(self, online, optimize, args):
         self.online = online
         self.optimize = optimize
+
+        if self.optimize:
+            for key in args.keys():
+                utilities.key = args[key]
 
         try:
             self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
@@ -314,18 +318,18 @@ if __name__ == '__main__':
     if sys.argv[1] == '--offline':
         # TODO: Support backtesting across multiple coinpairs
         coinpair = utilities.COINPAIRS[0]
-        bot = Bot(False, False)
+        bot = Bot(False, True, {})
 
         total = bot.run_backtest(coinpair)
 
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
         utilities.throw_info('Total Balance: ' + str(total))
 
-        bot.plot(coinpair)
+        #bot.plot(coinpair)
 
     # TODO: Complete and test...
     elif sys.argv[1] == '--online':
-        bot = Bot(True, False)
+        bot = Bot(True, False, {})
 
         while True:
             bot.update()

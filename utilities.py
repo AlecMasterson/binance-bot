@@ -33,8 +33,9 @@ PUBLIC_KEY = 'lfeDDamF6ckP7A2uWrd7uJ5nV0aJedQwD2H0HGujNuxmGgtyQQt0kL3lS6UFlRLS'
 SECRET_KEY = 'phpomS4lCMKuIxF0BgrP4d5N9rEPzf8Dy4ZRVjJ0XeO4Wn7PmOC7uhYsyypi9gFJ'
 
 ORDER_TIME_LIMIT = 9e5
-STOP_LOSS_ARM = 1.01
+STOP_LOSS_ARM = 1.0100
 STOP_LOSS = 0.003
+DROP = 0.9975
 
 
 # Setup the logging interface with the correct formatting and log file
