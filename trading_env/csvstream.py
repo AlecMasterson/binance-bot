@@ -1,4 +1,5 @@
 import csv
+from random import choice
 
 
 class CSVStreamer():
@@ -12,12 +13,12 @@ class CSVStreamer():
 
     def __init__(self, filename, header=False):
         self.filename = filename
-        self.csvfile = open(filename, "r")
-        self.file_length = sum(1 for line in open(filename, "r"))
+        self.csvfile = open(self.filename, "r")
+        self.file_length = sum(1 for line in open(self.filename, "r"))
         self.csv = csv.DictReader(self.csvfile)
 
     def rewind(self):
-        return self.__init__(self.filename)
+        self.__init__(self.filename)
 
     def next(self):
         return next(self.csv)
