@@ -35,7 +35,11 @@ def run_backtest(bot, coinpair):
             if position.open: strategy.check_sell(bot, position, index)
 
         strategy.check_buy(bot, coinpair, index)
-    return combined_total(bot.data, bot.balances)
+
+    total = combined_total(bot.data, bot.balances)
+    if bot.optimize: bot.reset()
+
+    return total
 
 
 class Bot:
