@@ -1,16 +1,20 @@
+import csv
+import sys
+import time
+
+import pandas
+import plotly.graph_objs as go
+import plotly.offline as py
+import plotly.tools as pytools
 from binance.client import Client
+
+import strategy
+import utilities
 from components.Balance import Balance
 from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
-
-import strategy
-import sys, utilities, csv, pandas, time
-
-import plotly.offline as py
-import plotly.graph_objs as go
-import plotly.tools as pytools
 
 
 def to_datetime(time):
@@ -305,6 +309,9 @@ class Bot:
         if self.optimize: self.reset()
 
         return total
+
+    def print_optimize(self):
+        print(utilities.ORDER_TIME_LIMIT, utilities.STOP_LOSS_ARM, utilities.STOP_LOSS)
 
 
 if __name__ == '__main__':

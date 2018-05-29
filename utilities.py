@@ -1,5 +1,7 @@
+import logging
+import sys
+
 from binance.client import Client
-import sys, logging
 
 DIRS = ['data_15_min/', 'data_30_min/', 'data_1_hour/', 'data_2_hour/']
 INTERVALS = [Client.KLINE_INTERVAL_15MINUTE, Client.KLINE_INTERVAL_30MINUTE, Client.KLINE_INTERVAL_1HOUR, Client.KLINE_INTERVAL_2HOUR]
@@ -35,6 +37,15 @@ SECRET_KEY = 'phpomS4lCMKuIxF0BgrP4d5N9rEPzf8Dy4ZRVjJ0XeO4Wn7PmOC7uhYsyypi9gFJ'
 ORDER_TIME_LIMIT = 9e5
 STOP_LOSS_ARM = 1.01
 STOP_LOSS = 0.003
+
+
+def set_optimized(otl, sla, sl):
+    global ORDER_TIME_LIMIT
+    ORDER_TIME_LIMIT = otl
+    global STOP_LOSS_ARM
+    STOP_LOSS_ARM = sla
+    global STOP_LOSS
+    STOP_LOSS = sl
 
 
 # Setup the logging interface with the correct formatting and log file
