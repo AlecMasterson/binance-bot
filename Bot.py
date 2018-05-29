@@ -134,14 +134,14 @@ class Bot:
             # TODO: Check if the order time is changed with every online update.
             if self.online:
                 order.update()
-                if order.status != 'FILLED' and self.recent[order.symbol][-1]['time'] - order.transactTime > utilities.ORDER_TIME_LIMIT:
+                if order.status != 'FILLED' and self.recent[order.symbol][-1]['time'] - order.transactTime > utilities.ORDER_TIME_LIMIT * 3e5:
                     try:
                         self.client.cancel_order(symbol=order.symbol, orderId=order.orderId)
                     except:
                         utilities.throw_error('Failed to Cancel Order', False)
             elif order.price < self.recent[order.symbol][-1].high and order.price > self.recent[order.symbol][-1].low:
                 order.status = 'FILLED'
-            elif self.recent[order.symbol][-1].closeTime - order.transactTime > utilities.ORDER_TIME_LIMIT:
+            elif self.recent[order.symbol][-1].closeTime - order.transactTime > utilities.ORDER_TIME_LIMIT * 3e5:
                 order.status = 'CANCELED'
 
             if order.side == 'BUY':
