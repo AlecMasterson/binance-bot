@@ -24,24 +24,6 @@ def combined_total(data, balances):
     return total
 
 
-def run_backtest(bot, coinpair):
-    for index, candle in enumerate(bot.data[coinpair].candles):
-        if index == 0: continue
-
-        bot.recent[coinpair].append(bot.data[coinpair].candles[index - 1])
-        bot.update()
-
-        for position in bot.positions:
-            if position.open: strategy.check_sell(bot, position, index)
-
-        strategy.check_buy(bot, coinpair, index)
-
-    total = combined_total(bot.data, bot.balances)
-    if bot.optimize: bot.reset()
-
-    return total
-
-
 class Bot:
 
     def __init__(self, online, optimize):
@@ -307,6 +289,23 @@ class Bot:
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
 
+    def run_backtest(self, coinpair):
+        for index, candle in enumerate(self.data[coinpair].candles):
+            if index == 0: continue
+
+            self.recent[coinpair].append(self.data[coinpair].candles[index - 1])
+            self.update()
+
+            for position in self.positions:
+                if position.open: strategy.check_sell(self, position, index)
+
+            strategy.check_buy(self, coinpair, index)
+
+        total = combined_total(self.data, self.balances)
+        if self.optimize: self.reset()
+
+        return total
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline'):
@@ -317,7 +316,7 @@ if __name__ == '__main__':
         coinpair = utilities.COINPAIRS[0]
         bot = Bot(False, False)
 
-        total = run_backtest(bot, coinpair)
+        total = bot.run_backtest(coinpair)
 
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
         utilities.throw_info('Total Balance: ' + str(total))
