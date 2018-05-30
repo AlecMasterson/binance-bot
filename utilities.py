@@ -1,5 +1,7 @@
+import logging
+import sys
+
 from binance.client import Client
-import sys, logging
 
 DIRS = ['data_15_min/', 'data_30_min/', 'data_1_hour/', 'data_2_hour/']
 INTERVALS = [Client.KLINE_INTERVAL_15MINUTE, Client.KLINE_INTERVAL_30MINUTE, Client.KLINE_INTERVAL_1HOUR, Client.KLINE_INTERVAL_2HOUR]
@@ -36,6 +38,15 @@ ORDER_TIME_LIMIT = 3
 STOP_LOSS_ARM = 1.0100
 STOP_LOSS = 0.003
 DROP = 0.9975
+
+
+def set_optimized(otl, sla, sl):
+    global ORDER_TIME_LIMIT
+    ORDER_TIME_LIMIT = otl
+    global STOP_LOSS_ARM
+    STOP_LOSS_ARM = sla
+    global STOP_LOSS
+    STOP_LOSS = sl
 
 
 # Setup the logging interface with the correct formatting and log file

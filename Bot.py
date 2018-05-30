@@ -310,6 +310,9 @@ class Bot:
 
         return total
 
+    def print_optimize(self):
+        print(utilities.ORDER_TIME_LIMIT, utilities.STOP_LOSS_ARM, utilities.STOP_LOSS)
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline'):
