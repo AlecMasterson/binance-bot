@@ -20,22 +20,16 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-# TODO: Not sure if using these 3.
-POSITION_STRUCTURE = ['buy_id', 'sell_id', 'open', 'time', 'age', 'pair', 'amount', 'price', 'current', 'fee', 'result', 'peak', 'stop-loss']
-ASSETS = ['BNB', 'BTC', 'CMT', 'EOS', 'ETH', 'GTO', 'ICN', 'ICX', 'INS', 'NAV', 'OMG', 'REQ', 'SNM', 'WTC', 'XLM']
-ACTIVE_DIR = DIRS_INTERVALS[1]
-
 COINPAIRS = ['BNBBTC']
-
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
-PUBLIC_KEY = 'lfeDDamF6ckP7A2uWrd7uJ5nV0aJedQwD2H0HGujNuxmGgtyQQt0kL3lS6UFlRLS'
-SECRET_KEY = 'phpomS4lCMKuIxF0BgrP4d5N9rEPzf8Dy4ZRVjJ0XeO4Wn7PmOC7uhYsyypi9gFJ'
+PUBLIC_KEY = ''
+SECRET_KEY = ''
 
-ORDER_TIME_LIMIT = 3
-STOP_LOSS_ARM = 1.0100
-STOP_LOSS = 0.003
-DROP = 0.9975
+ORDER_TIME_LIMIT = 3        # [1, 12] Integers
+STOP_LOSS_ARM = 1.0100        # [1.0030, 1.0500] 4 Decimal places
+STOP_LOSS = 0.003        # [0.000, 0.050] 3 Decimal places
+DROP = 0.9975        # [0.9500, 0.9999] # 4 Decimal places
 
 
 def set_optimized(otl, sla, sl):
