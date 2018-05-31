@@ -321,7 +321,7 @@ if __name__ == '__main__':
     if sys.argv[1] == '--offline':
         # TODO: Support backtesting across multiple coinpairs
         coinpair = utilities.COINPAIRS[0]
-        bot = Bot(False, True, {})
+        bot = Bot(False, False, {})
 
         total = bot.run_backtest(coinpair)
 
