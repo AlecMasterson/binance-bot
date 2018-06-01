@@ -1,20 +1,16 @@
-import csv
-import sys
-import time
-
-import pandas
-import plotly.graph_objs as go
-import plotly.offline as py
-import plotly.tools as pytools
 from binance.client import Client
-
-import strategy
-import utilities
 from components.Balance import Balance
 from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
+
+import strategy
+import sys, utilities, csv, pandas, time
+
+import plotly.offline as py
+import plotly.graph_objs as go
+import plotly.tools as pytools
 
 
 def to_datetime(time):
@@ -30,9 +26,13 @@ def combined_total(data, balances):
 
 class Bot:
 
-    def __init__(self, online, optimize):
+    def __init__(self, online, optimize, args):
         self.online = online
         self.optimize = optimize
+
+        if self.optimize:
+            for key in args.keys():
+                utilities.key = args[key]
 
         try:
             self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
@@ -134,14 +134,14 @@ class Bot:
             # TODO: Check if the order time is changed with every online update.
             if self.online:
                 order.update()
-                if order.status != 'FILLED' and self.recent[order.symbol][-1]['time'] - order.transactTime > utilities.ORDER_TIME_LIMIT:
+                if order.status != 'FILLED' and self.recent[order.symbol][-1]['time'] - order.transactTime > utilities.ORDER_TIME_LIMIT * 3e5:
                     try:
                         self.client.cancel_order(symbol=order.symbol, orderId=order.orderId)
                     except:
                         utilities.throw_error('Failed to Cancel Order', False)
             elif order.price < self.recent[order.symbol][-1].high and order.price > self.recent[order.symbol][-1].low:
                 order.status = 'FILLED'
-            elif self.recent[order.symbol][-1].closeTime - order.transactTime > utilities.ORDER_TIME_LIMIT:
+            elif self.recent[order.symbol][-1].closeTime - order.transactTime > utilities.ORDER_TIME_LIMIT * 3e5:
                 order.status = 'CANCELED'
 
             if order.side == 'BUY':
@@ -321,18 +321,18 @@ if __name__ == '__main__':
     if sys.argv[1] == '--offline':
         # TODO: Support backtesting across multiple coinpairs
         coinpair = utilities.COINPAIRS[0]
-        bot = Bot(False, False)
+        bot = Bot(False, False, {})
 
         total = bot.run_backtest(coinpair)
 
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
         utilities.throw_info('Total Balance: ' + str(total))
 
-        bot.plot(coinpair)
+        #bot.plot(coinpair)
 
     # TODO: Complete and test...
     elif sys.argv[1] == '--online':
-        bot = Bot(True, False)
+        bot = Bot(True, False, {})
 
         while True:
             bot.update()
