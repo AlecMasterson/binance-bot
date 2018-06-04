@@ -43,11 +43,14 @@ class Bot:
         if self.online and self.optimize:
             utilities.throw_error('Cannot Be Online AND Optimizing...', True)
 
-        try:
-            self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
-        except:
-            utilities.throw_error('Failed to Connect to Binance API', True)
-        utilities.throw_info('Successfully Finished Connecting to Binance Client')
+        if not self.optimize:
+            try:
+                self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
+            except:
+                utilities.throw_error('Failed to Connect to Binance API', True)
+            utilities.throw_info('Successfully Finished Connecting to Binance Client')
+        else:
+            self.client = None
 
         self.data = {}
         try:

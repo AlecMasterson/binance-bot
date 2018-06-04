@@ -28,6 +28,7 @@ class Coinpair:
                 tempData = pandas.read_csv('data/history/' + coinpair + '.csv')
                 saveToFile = False
             except FileNotFoundError:
+                if client == None: raise Exception('No Client')
                 utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound... using API...')
                 tempData = pandas.DataFrame(
                     self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1516428000000'), columns=utilities.COLUMN_STRUCTURE)
@@ -47,6 +48,7 @@ class Coinpair:
                     self.info = json.load(json_file)
                 saveToFile = False
             except FileNotFoundError:
+                if client == None: raise Exception('No Client')
                 utilities.throw_info('data/coinpair/' + coinpair + '.json FileNotFound... using API...')
                 self.info = self.client.get_symbol_info(self.coinpair)
                 saveToFile = True
