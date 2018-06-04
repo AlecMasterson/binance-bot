@@ -30,6 +30,9 @@ class Bot:
         self.online = online
         self.optimize = optimize
 
+        if self.online and self.optimize:
+            utilities.throw_error('Cannot Be Online AND Optimizing...', True)
+
         if self.optimize:
             for key in args.keys():
                 utilities.key = args[key]
@@ -315,8 +318,8 @@ class Bot:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline'):
-        utilities.throw_error('Command Usage Options:\n\t\'python Bot.py --online\'\n\t\'python Bot.py --offline\'', True)
+    if len(sys.argv) > 3 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline') or (len(sys.argv) == 3 and sys.argv[2] != '--plot'):
+        utilities.throw_error('Command Usage Options:\n\t\'python Bot.py --online\'\n\t\'python Bot.py --offline\'\n\t\'python Bot.py --offline --plot\'', True)
 
     if sys.argv[1] == '--offline':
         # TODO: Support backtesting across multiple coinpairs
@@ -328,7 +331,7 @@ if __name__ == '__main__':
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
         utilities.throw_info('Total Balance: ' + str(total))
 
-        #bot.plot(coinpair)
+        if len(sys.argv) == 3: bot.plot(coinpair)
 
     # TODO: Complete and test...
     elif sys.argv[1] == '--online':
