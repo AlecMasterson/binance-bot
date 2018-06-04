@@ -1,5 +1,7 @@
+import logging
+import sys
+
 from binance.client import Client
-import sys, logging
 
 DIRS = ['data_15_min/', 'data_30_min/', 'data_1_hour/', 'data_2_hour/']
 INTERVALS = [Client.KLINE_INTERVAL_15MINUTE, Client.KLINE_INTERVAL_30MINUTE, Client.KLINE_INTERVAL_1HOUR, Client.KLINE_INTERVAL_2HOUR]
@@ -20,7 +22,7 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['BNBBTC']
+COINPAIRS = ['BNBBTC', 'ADABTC', 'LTCBTC', 'ETHBTC', 'IOTAETH']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
@@ -36,13 +38,15 @@ TRIGGER_DECAY = 0.085        # [0.001, 1 / NUM_TRIGGERS] 3 Decimal Places
 TRIGGER_THRESHOLD = 0.8        # [1 / NUM_TRIGGERS, 0.999] 3 Decimal Places
 
 
-def set_optimized(otl, sla, sl):
+def set_optimized(otl, sla, sl, dp):
     global ORDER_TIME_LIMIT
     ORDER_TIME_LIMIT = otl
     global STOP_LOSS_ARM
     STOP_LOSS_ARM = sla
     global STOP_LOSS
     STOP_LOSS = sl
+    global DROP
+    DROP = dp
 
 
 # Setup the logging interface with the correct formatting and log file
