@@ -26,10 +26,14 @@ COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Clos
 PUBLIC_KEY = ''
 SECRET_KEY = ''
 
-ORDER_TIME_LIMIT = 3        # [1, 12] Integers
-STOP_LOSS_ARM = 1.0100        # [1.0030, 1.0500] 4 Decimal places
-STOP_LOSS = 0.003        # [0.000, 0.050] 3 Decimal places
-DROP = 0.9975        # [0.9500, 0.9999] # 4 Decimal places
+ORDER_TIME_LIMIT = 1        # [1, 12] Integers
+STOP_LOSS_ARM = 1.087        # [1.0030, 1.0500] 4 Decimal Places
+STOP_LOSS = 0.04        # [0.000, 0.050] 3 Decimal Places
+DROP = 0.7976        # [0.9500, 0.9999] 4 Decimal Places
+
+NUM_TRIGGERS = 3
+TRIGGER_DECAY = 0.085        # [0.001, 1 / NUM_TRIGGERS] 3 Decimal Places
+TRIGGER_THRESHOLD = 0.8        # [1 / NUM_TRIGGERS, 0.999] 3 Decimal Places
 
 
 def set_optimized(otl, sla, sl):
