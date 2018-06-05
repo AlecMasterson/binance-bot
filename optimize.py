@@ -34,9 +34,11 @@ def ga_mutate(individual, mu=1):
     g3 = round(rand_norm(individual['genes'][3], 0.00, 1.5), 4)        # [0.9500, 0.9999] # 4 Decimal places
     g4 = round(rand_norm(individual['genes'][4], 0.001, 1.000), 3)        # [0.001, 1.000] 3 Decimal Places
     g5 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
-    g6 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
-    g7 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
-    g8 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
+
+    # These 3 need to sum to 1.0 or close to. 0.999 works too.
+    g6 = round(rand_norm(individual['genes'][6], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
+    g7 = round(rand_norm(individual['genes'][7], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
+    g8 = round(rand_norm(individual['genes'][8], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
     genes = [g0, g1, g2, g3, g4, g5, g6, g7, g8]
     individual['genes'] = genes
     return individual
