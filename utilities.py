@@ -54,9 +54,9 @@ def set_optimized(otl, sla, sl, dp, td, tt, t1, t2, t3):
     global TRIGGER_1
     TRIGGER_1 = t1
     global TRIGGER_2
-    TRIGGER_1 = t2
+    TRIGGER_2 = t2
     global TRIGGER_3
-    TRIGGER_1 = t3
+    TRIGGER_3 = t3
 
 
 # Setup the logging interface with the correct formatting and log file

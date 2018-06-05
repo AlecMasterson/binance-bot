@@ -15,11 +15,11 @@ def check_buy(bot, coinpair, index):
     if index < 2: return
 
     if within_range(bot.data[coinpair].candles[index - 1].low, bot.data[coinpair].lowerband[index - 1], -0.002):
-        bot.triggers[0] = 1 / utilities.NUM_TRIGGERS
+        bot.triggers[0] = utilities.TRIGGER_1
     if bot.data[coinpair].candles[index - 1].close < bot.data[coinpair].lowerband[index - 1]:
-        bot.triggers[1] = 1 / utilities.NUM_TRIGGERS
+        bot.triggers[1] = utilities.TRIGGER_2
     if bot.data[coinpair].macd[index - 2] < 0 and bot.data[coinpair].macd[index - 1] > 0:
-        bot.triggers[2] = 1 / utilities.NUM_TRIGGERS
+        bot.triggers[2] = utilities.TRIGGER_3
 
     if sum(bot.triggers) >= utilities.TRIGGER_THRESHOLD:
         bot.testingB.append({'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
