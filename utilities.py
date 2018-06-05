@@ -22,7 +22,7 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['BNBBTC', 'ADABTC', 'LTCBTC', 'ETHBTC', 'IOTAETH']
+COINPAIRS = ['BNBBTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
@@ -34,11 +34,11 @@ STOP_LOSS = 0.04        # [0.000, 0.050] 3 Decimal Places
 DROP = 0.7976        # [0.9500, 0.9999] 4 Decimal Places
 
 NUM_TRIGGERS = 3
-TRIGGER_DECAY = 0.085        # [0.001, 1 / NUM_TRIGGERS] 3 Decimal Places
-TRIGGER_THRESHOLD = 0.8        # [1 / NUM_TRIGGERS, 0.999] 3 Decimal Places
+TRIGGER_DECAY = 0.085        # [0.001, 1.000] 3 Decimal Places
+TRIGGER_THRESHOLD = 0.8        # [0.000, 0.999] 3 Decimal Places
 
 
-def set_optimized(otl, sla, sl, dp):
+def set_optimized(otl, sla, sl, dp, td, tt, t1, t2, t3):
     global ORDER_TIME_LIMIT
     ORDER_TIME_LIMIT = otl
     global STOP_LOSS_ARM
@@ -47,6 +47,16 @@ def set_optimized(otl, sla, sl, dp):
     STOP_LOSS = sl
     global DROP
     DROP = dp
+    global TRIGGER_DECAY
+    TRIGGER_DECAY = td
+    global TRIGGER_THRESHOLD
+    TRIGGER_THRESHOLD = tt
+    global TRIGGER_1
+    TRIGGER_1 = t1
+    global TRIGGER_2
+    TRIGGER_1 = t2
+    global TRIGGER_3
+    TRIGGER_1 = t3
 
 
 # Setup the logging interface with the correct formatting and log file

@@ -14,7 +14,7 @@ from Bot import Bot
 
 # from deap import algorithms, base, creator, tools
 
-bot = Bot(online=False, optimize=True, args=[])
+bot = Bot(online=False, optimize=True)
 
 
 def ga_mutate(individual, mu=1):
@@ -32,7 +32,12 @@ def ga_mutate(individual, mu=1):
     g1 = round(rand_norm(individual['genes'][1], 0, 1.5), 4)        # [1.0030, 1.0500] 4 Decimal places
     g2 = round(rand_norm(individual['genes'][2], 0.000, 1.5), 3)        # [0.000, 0.050] 3 Decimal places
     g3 = round(rand_norm(individual['genes'][3], 0.00, 1.5), 4)        # [0.9500, 0.9999] # 4 Decimal places
-    genes = [g0, g1, g2, g3]
+    g4 = round(rand_norm(individual['genes'][4], 0.001, 1.000), 3)        # [0.001, 1.000] 3 Decimal Places
+    g5 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
+    g6 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
+    g7 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
+    g8 = round(rand_norm(individual['genes'][5], 0.000, 0.999), 3)        # [0.000, 0.999] 3 Decimal Places
+    genes = [g0, g1, g2, g3, g4, g5, g6, g7, g8]
     individual['genes'] = genes
     return individual
 
@@ -53,7 +58,7 @@ def ga_evaluate_genetics(individual, MEMOIZED_EVALS):
     try:
         individual['fitness'] = MEMOIZED_EVALS[str(genes)]
     except:
-        utilities.set_optimized(genes[0], genes[1], genes[2], genes[3])
+        utilities.set_optimized(genes[0], genes[1], genes[2], genes[3], genes[4], genes[5], genes[6], genes[7], genes[8])
         fitness = np.mean([bot.run_backtest(pair) for pair in utilities.COINPAIRS])
         MEMOIZED_EVALS[str(genes)] = fitness
         individual['fitness'] = fitness
@@ -89,7 +94,7 @@ def ga_optimize(seed=False, population_size=100, generations=100):
             population += [ga_mutate({'genes': seed, 'fitness': -1})]
     else:
         for _ in range(population_size * 5):
-            population += [ga_mutate({'genes': [1, 1, 1, 1], 'fitness': -1})]
+            population += [ga_mutate({'genes': [1, 1, 1, 1, 1, 1, 1, 1, 1], 'fitness': -1})]
 
     gen = 0
     history = {'min': [], 'p25': [], 'p50': [], 'p75': [], 'max': []}
@@ -109,7 +114,7 @@ def ga_optimize(seed=False, population_size=100, generations=100):
         if population[0]['fitness'] > best['fitness']:
             print('Old Best', best, best_bot_performance)
             best = deepcopy(population[0])
-            utilities.set_optimized(best['genes'][0], best['genes'][1], best['genes'][2], best['genes'][3])
+            utilities.set_optimized(best['genes'][0], best['genes'][1], best['genes'][2], best['genes'][3], best['genes'][4], best['genes'][5], best['genes'][6], best['genes'][7], best['genes'][8])
             best_bot_performance = list(zip(utilities.COINPAIRS, [bot.run_backtest(pair) for pair in utilities.COINPAIRS]))
             print('New Best', best, best_bot_performance)
         population += [deepcopy(best)]
@@ -139,4 +144,4 @@ def ga_optimize(seed=False, population_size=100, generations=100):
 ### MORE COINS
 # {'genes': [1, 1.2723, 0.03, 0.7178], 'fitness': 1.058437639641258} [('BNBBTC', 1.5033769119700002), ('ADABTC', 0.6343256048600001), ('LTCBTC', 1.0173513836522903), ('ETHBTC', 0.9831574233939997), ('IOTAETH', 1.1539768743300003)]
 if __name__ == "__main__":
-    ga_optimize(seed=[1, 1.2723, 0.03, 0.7178], population_size=200, generations=1000)
+    ga_optimize(seed=[1, 1.2723, 0.03, 0.7178, 0.085, 0.8, 0.3, 0.3, 0.3], population_size=25, generations=1000)
