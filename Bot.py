@@ -175,7 +175,7 @@ class Bot:
                             position.update(order.transactTime, order.price)
                             position.open = False
                             self.orders.remove(order)
-                            if self.online: : utilities.throw_info('Position Closed for Coinpair ' + order.symbol + ' with Result: ' + str(position.result))
+                            if self.online: utilities.throw_info('Position Closed for Coinpair ' + order.symbol + ' with Result: ' + str(position.result))
                 elif order.status == 'CANCELED':
                     self.orders.remove(order)
                     for position in self.positions:
