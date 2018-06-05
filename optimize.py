@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
     for coinpair in utilities.COINPAIRS:
-        tempData = pandas.DataFrame(client.get_klines(symbol=coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
+        tempData = pandas.DataFrame(client.get_historical_klines(symbol=coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1516428000000'), columns=utilities.COLUMN_STRUCTURE)
         tempData.to_csv('data/history/' + coinpair + '.csv', index=False)
 
         info = client.get_symbol_info(coinpair)
