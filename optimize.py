@@ -4,6 +4,8 @@ import multiprocessing
 import random
 import time
 from copy import deepcopy
+from binance.client import Client
+import json, pandas
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -146,4 +148,14 @@ def ga_optimize(seed=False, population_size=100, generations=100):
 ### MORE COINS
 # {'genes': [1, 1.2723, 0.03, 0.7178], 'fitness': 1.058437639641258} [('BNBBTC', 1.5033769119700002), ('ADABTC', 0.6343256048600001), ('LTCBTC', 1.0173513836522903), ('ETHBTC', 0.9831574233939997), ('IOTAETH', 1.1539768743300003)]
 if __name__ == "__main__":
+
+    client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
+    for coinpair in utilities.COINPAIRS:
+        tempData = pandas.DataFrame(client.get_klines(symbol=coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
+        tempData.to_csv('data/history/' + coinpair + '.csv', index=False)
+
+        info = client.get_symbol_info(coinpair)
+        with open('data/coinpair/' + coinpair + '.json', 'w') as json_file:
+            json.dump(info, json_file)
+
     ga_optimize(seed=[1, 1.2723, 0.03, 0.7178, 0.085, 0.8, 0.3, 0.3, 0.3], population_size=25, generations=1000)
