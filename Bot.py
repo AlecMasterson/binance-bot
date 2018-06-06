@@ -34,9 +34,6 @@ class Bot:
         self.online = online
         self.optimize = optimize
 
-        self.testingB = []
-        self.testingS = []
-
         if self.online and self.optimize:
             utilities.throw_error('Cannot Be Online AND Optimizing...', True)
 
@@ -113,7 +110,9 @@ class Bot:
         for coinpair in utilities.COINPAIRS:
             self.recent[coinpair] = []
 
-        self.triggers = [0.0] * utilities.NUM_TRIGGERS
+        self.buy_triggers = [0.0] * utilities.NUM_TRIGGERS
+        self.sell_triggers = [0.0] * utilities.NUM_TRIGGERS
+        self.plot_triggers = []
 
     def reset(self):
         if not self.online:
@@ -299,21 +298,9 @@ class Bot:
                 y=[position.price * position.result for position in self.positions],
                 mode='markers',
                 marker=dict(size=12, color='blue'),
-                text=[position.price + position.age for position in self.positions]),
+                text=[position.price for position in self.positions]),
             go.Scatter(
-                name='Test Bought',
-                x=[to_datetime(test['time']) for test in self.testingB],
-                y=[test['price'] for test in self.testingB],
-                mode='markers',
-                marker=dict(size=12, color='orange'),
-                text=[test['price'] for test in self.testingB]),
-            go.Scatter(
-                name='Test Sold',
-                x=[to_datetime(test['time']) for test in self.testingS],
-                y=[test['price'] for test in self.testingS],
-                mode='markers',
-                marker=dict(size=12, color='blue'),
-                text=[test['price'] for test in self.testingS])
+                name='Triggers', x=[to_datetime(point['time']) for point in self.plot_triggers], y=[point['price'] for point in self.plot_triggers], mode='markers', marker=dict(size=9, color='red'))
         ]
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
