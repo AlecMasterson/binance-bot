@@ -112,7 +112,8 @@ class Bot:
 
         self.buy_triggers = [0.0] * utilities.NUM_TRIGGERS
         self.sell_triggers = [0.0] * utilities.NUM_TRIGGERS
-        self.plot_triggers = []
+        self.plot_buy_triggers = []
+        self.plot_sell_triggers = []
 
     def reset(self):
         if not self.online:
@@ -300,7 +301,17 @@ class Bot:
                 marker=dict(size=12, color='blue'),
                 text=[position.price for position in self.positions]),
             go.Scatter(
-                name='Triggers', x=[to_datetime(point['time']) for point in self.plot_triggers], y=[point['price'] for point in self.plot_triggers], mode='markers', marker=dict(size=9, color='red'))
+                name='Buy Triggers',
+                x=[to_datetime(point['time']) for point in self.plot_buy_triggers],
+                y=[point['price'] for point in self.plot_buy_triggers],
+                mode='markers',
+                marker=dict(size=9, color='purple')),
+            go.Scatter(
+                name='Sell Triggers',
+                x=[to_datetime(point['time']) for point in self.plot_sell_triggers],
+                y=[point['price'] for point in self.plot_sell_triggers],
+                mode='markers',
+                marker=dict(size=9, color='blue'))
         ]
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
