@@ -1,0 +1,10 @@
+Required Libraries:
+
+pandas
+plotly
+python-binance
+ta
+
+Currently Required:
+matplotlib
+bayesian-optimization
