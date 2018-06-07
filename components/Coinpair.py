@@ -31,8 +31,7 @@ class Coinpair:
                 if client == None: raise Exception('No Client')
                 utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound... using API...')
                 tempData = pandas.DataFrame(
-                    self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1527724800000', end_str='1528070400000'),
-                    columns=utilities.COLUMN_STRUCTURE)
+                    self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1526515200000'), columns=utilities.COLUMN_STRUCTURE)
                 saveToFile = True
             except:
                 utilities.throw_error('Failed to Retrieve Historical Data', True)

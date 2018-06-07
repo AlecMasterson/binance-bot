@@ -12,59 +12,69 @@ def within_range(num1, num2, range):
 
 
 def check_buy(bot, coinpair, index):
-    # Create an hour buffer before allowing trading.
-    if index < 24: return
+    # Create a 3 hour buffer before allowing trading.
+    if index < 36: return
 
     maxPrice = -1000.0
+    maxPriceIndex = 0
     maxMACD = -1000.0
     minPrice = 1000.0
+    minPriceIndex = 0
     minMACD = 1000.0
     minLower = 1000.0
-    buy = False
 
-    for i in range(2, 24):
+    # Get the above values for the past 3 hours.
+    for i in range(1, 37):
         if bot.data[coinpair].candles[index - i].close > maxPrice:
             maxPrice = bot.data[coinpair].candles[index - i].close
+            maxPriceIndex = index - i
         if bot.data[coinpair].macd[index - i] > maxMACD:
             maxMACD = bot.data[coinpair].macd[index - i]
         if bot.data[coinpair].candles[index - i].close < minPrice:
             minPrice = bot.data[coinpair].candles[index - i].close
+            minPriceIndex = index - i
         if bot.data[coinpair].macd[index - i] < minMACD:
             minMACD = bot.data[coinpair].macd[index - i]
         if bot.data[coinpair].lowerband[index - i] < minLower:
             minLower = bot.data[coinpair].lowerband[index - i]
 
-    if maxPrice / bot.data[coinpair].candles[index - 1].close > 1.025:
-        bot.plot_buy_triggers.append({'color': 'green', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
-        bot.buy_triggers[3] += utilities.TRIGGER_3
-        bot.buy(coinpair, bot.recent[coinpair][-1].close)
-        return
+    # Don't buy if price is trending up or if price is trending down and not slowling down.
+    if bot.data[coinpair].macd[index - 1] > 0 or bot.data[coinpair].macd[index - 1] < bot.data[coinpair].macd[index - 2]: return
+    # Don't buy if price is in the top half of the upper/lower BollingerBand range.
+    if bot.data[coinpair].candles[index - 1].close >= ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]: return
 
-    #if bot.data[coinpair].macd[index - 1] > 0: return
     #if bot.data[coinpair].macd[index - 2] - bot.data[coinpair].macd[index - 1] > bot.data[coinpair].macd[index - 3] - bot.data[coinpair].macd[index - 2]: return
-    #if bot.data[coinpair].candles[index - 1].close > ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]: return
-    if bot.data[coinpair].lowerband[index - 2] == minLower and bot.data[coinpair].lowerband[index - 2] > bot.data[coinpair].lowerband[index - 1]: return
+
+    #if bot.data[coinpair].lowerband[index - 2] == minLower and bot.data[coinpair].lowerband[index - 2] > bot.data[coinpair].lowerband[index - 1]: return
+
+    if minPriceIndex > maxPriceIndex and maxPrice / bot.data[coinpair].candles[index - 1].close > 1.025:
+        if bot.data[coinpair].candles[index - 1].close / minPrice > 1.005:
+            bot.plot_buy_triggers.append({'color': 'blue', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+        #bot.plot_buy_triggers.append({'color': 'green', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+        bot.buy_triggers[3] += utilities.TRIGGER_3
+        #bot.buy(coinpair, bot.recent[coinpair][-1].close)
+        return
 
     if bot.data[coinpair].candles[index - 1].close < bot.data[coinpair].lowerband[index - 1]:
         bot.plot_buy_triggers.append({'color': 'purple', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
         bot.buy_triggers[0] += utilities.TRIGGER_0
-        bot.buy(coinpair, bot.recent[coinpair][-1].close)
+        #bot.buy(coinpair, bot.recent[coinpair][-1].close)
         return
     if bot.data[coinpair].macd[index - 2] < 0 and bot.data[coinpair].macd[index - 1] > 0:
         bot.plot_buy_triggers.append({'color': 'purple', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
         bot.buy_triggers[1] += utilities.TRIGGER_1
-        bot.buy(coinpair, bot.recent[coinpair][-1].close)
+        #bot.buy(coinpair, bot.recent[coinpair][-1].close)
         return
 
     if bot.data[coinpair].macd[index - 1] < 0 and bot.data[coinpair].macd[index - 1] == minMACD:
         bot.plot_buy_triggers.append({'color': 'purple', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
         bot.buy_triggers[2] += utilities.TRIGGER_2
-        bot.buy(coinpair, bot.recent[coinpair][-1].close)
+        #bot.buy(coinpair, bot.recent[coinpair][-1].close)
         return
     if bot.data[coinpair].candles[index - 2].close == minPrice and bot.data[coinpair].candles[index - 2].close < bot.data[coinpair].candles[index - 1].close:
         bot.plot_buy_triggers.append({'color': 'purple', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
         bot.buy_triggers[3] += utilities.TRIGGER_3
-        bot.buy(coinpair, bot.recent[coinpair][-1].close)
+        #bot.buy(coinpair, bot.recent[coinpair][-1].close)
         return
 
     return
@@ -137,7 +147,6 @@ def check_sell(bot, position, index):
             minPrice = bot.data[coinpair].candles[index - i].close
         if bot.data[coinpair].macd[index - i] < minMACD:
             minMACD = bot.data[coinpair].macd[index - i]
-
     '''if bot.data[coinpair].candles[index - 1].close / minPrice > 1.025:
         bot.plot_sell_triggers.append({'color': 'red', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
         bot.sell_triggers[3] += utilities.TRIGGER_3
