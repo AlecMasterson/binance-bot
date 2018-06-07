@@ -305,13 +305,13 @@ class Bot:
                 x=[to_datetime(point['time']) for point in self.plot_buy_triggers],
                 y=[point['price'] for point in self.plot_buy_triggers],
                 mode='markers',
-                marker=dict(size=9, color='purple')),
+                marker=dict(size=9, color=[point['color'] for point in self.plot_buy_triggers])),
             go.Scatter(
                 name='Sell Triggers',
                 x=[to_datetime(point['time']) for point in self.plot_sell_triggers],
                 y=[point['price'] for point in self.plot_sell_triggers],
                 mode='markers',
-                marker=dict(size=9, color='blue'))
+                marker=dict(size=9, color=[point['color'] for point in self.plot_sell_triggers]))
         ]
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
