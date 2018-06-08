@@ -65,7 +65,8 @@ class Coinpair:
         # Create a Candle and add it to self.candles for each entry returned by the API.
         # Remove the last one as that's the current (incomplete) Candle.
         for index, candle in tempData.iterrows():
-            self.candles.append(Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time'])))
+            self.candles.append(
+                Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades'])))
         self.candles = self.candles[:-1]
 
         # Update the overhead information for this Coinpair.

@@ -110,7 +110,7 @@ class Bot:
         for coinpair in utilities.COINPAIRS:
             self.recent[coinpair] = []
 
-        self.buy_triggers = [0.0] * utilities.NUM_TRIGGERS
+        self.buy_trigger = 0.0
         self.sell_triggers = [0.0] * utilities.NUM_TRIGGERS
         self.plot_buy_triggers = []
         self.plot_sell_triggers = []
@@ -275,6 +275,15 @@ class Bot:
         return True
 
     def plot(self, coinpair):
+
+        max = -1e10
+        min = 1e10
+        for candle in self.data[coinpair].candles:
+            if candle.numTrades > max: max = candle.numTrades
+            if candle.numTrades < min: min = candle.numTrades
+        for candle in self.data[coinpair].candles:
+            candle.numTrades = ((candle.numTrades - min) / (max - min) * 0.0025) + 0.0016
+
         plotData = [
             go.Candlestick(
                 name='Candle Data',
@@ -286,6 +295,7 @@ class Bot:
                 text=['MACD: ' + str(macd) for macd in self.data[coinpair].macd]),
             go.Scatter(name='Upper Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[upperband for upperband in self.data[coinpair].upperband]),
             go.Scatter(name='Lower Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[lowerband for lowerband in self.data[coinpair].lowerband]),
+        #go.Scatter(name='Number of Trades', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[candle.numTrades for candle in self.data[coinpair].candles]),
             go.Scatter(
                 name='Bought',
                 x=[to_datetime(position.time) for position in self.positions],

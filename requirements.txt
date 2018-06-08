@@ -8,3 +8,6 @@ ta
 Currently Required:
 matplotlib
 bayesian-optimization
+
+Dev Required:
+yapf
