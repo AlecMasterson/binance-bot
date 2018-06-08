@@ -1,8 +1,9 @@
 import csv
 import sys
 import time
-
+import argparse
 import pandas
+
 import plotly.graph_objs as go
 import plotly.offline as py
 import plotly.tools as pytools
@@ -327,10 +328,14 @@ class Bot:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 3 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline') or (len(sys.argv) == 3 and sys.argv[2] != '--plot'):
-        utilities.throw_error('Command Usage Options:\n\t\'python Bot.py --online\'\n\t\'python Bot.py --offline\'\n\t\'python Bot.py --offline --plot\'', True)
 
-    if sys.argv[1] == '--offline':
+    parser = argparse.ArgumentParser(description='An Automated Binance Exchange Trading Bot')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-o', '--online', help='run the Bot live on the exchange', action='store_true')
+    group.add_argument('-p', '--plot', help='plot results using Plotly', action='store_true')
+    args = parser.parse_args()
+
+    if not args.online:
         # TODO: Support backtesting across multiple coinpairs
         coinpair = utilities.COINPAIRS[0]
         bot = Bot()
@@ -340,10 +345,10 @@ if __name__ == '__main__':
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
         utilities.throw_info('Total Balance: ' + str(total))
 
-        if len(sys.argv) == 3: bot.plot(coinpair)
+        if args.plot: bot.plot(coinpair)
 
     # TODO: Complete and test...
-    elif sys.argv[1] == '--online':
+    else:
         bot = Bot(True)
 
         while True:
