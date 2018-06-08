@@ -29,6 +29,7 @@ PUBLIC_KEY = ''
 SECRET_KEY = ''
 
 # [12, 1.5, 0.018, 0.97, 0.22, 1.5, 0.21, 0.1, 0.32, 0.16], 'fitness': 1.12421001465}
+#[1, 1.02, 0.0, 0.97, 0.01, 0.04, 10, 4, 0.5, 0.1],
 ORDER_TIME_LIMIT = 12        # [1, 12] Integers
 STOP_LOSS_ARM = 1.5        # [1.0030, 1.0500] 4 Decimal Places
 STOP_LOSS = 0.018        # [0.000, 0.050] 3 Decimal Places
@@ -37,8 +38,8 @@ DROP = 0.97        # [0.9500, 0.9999] 4 Decimal Places
 NUM_TRIGGERS = 4
 TRIGGER_DECAY = 0.22
 TRIGGER_THRESHOLD = 1.5
-TRIGGER_0 = 0.21
-TRIGGER_1 = 0.1
+TRIGGER_0 = 10
+TRIGGER_1 = 4
 TRIGGER_2 = 0.32
 TRIGGER_3 = 0.16
 

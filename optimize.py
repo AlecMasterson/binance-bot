@@ -38,8 +38,8 @@ def ga_mutate(individual, mu=1):
     g5 = round(rand_norm(individual['genes'][5], 0.04, 1.5), 2)        # [0.000, 0.999] 2 Decimal Places
 
     # These 3 need to sum to 1.0 or close to. 0.999 works too.
-    g6 = round(rand_norm(individual['genes'][6], 0.1, 0.5), 2)        # [0.000, 0.999] 3 Decimal Places
-    g7 = round(rand_norm(individual['genes'][7], 0.1, 0.5), 2)        # [0.000, 0.999] 3 Decimal Places
+    g6 = int(rand_norm(individual['genes'][6], 2, 12))        # [0.000, 0.999] 3 Decimal Places
+    g7 = int(rand_norm(individual['genes'][7], 2, 12))        # [0.000, 0.999] 3 Decimal Places
     g8 = round(rand_norm(individual['genes'][8], 0.1, 0.5), 2)        # [0.000, 0.999] 3 Decimal Places
     g9 = round(rand_norm(individual['genes'][9], 0.1, 0.5), 2)
     genes = [g0, g1, g2, g3, g4, g5, g6, g7, g8, g9]
@@ -161,4 +161,4 @@ if __name__ == "__main__":
         with open('data/coinpair/' + coinpair + '.json', 'w') as json_file:
             json.dump(info, json_file)
 
-    ga_optimize(seed=[1, 1.2723, 0.03, 0.7178, 0.085, 0.8, 0.2, 0.2, 0.2, 0.2], population_size=50, generations=1000)
+    ga_optimize(seed=[1, 1.2723, 0.03, 0.7178, 0.085, 0.8, 2, 2, 0.2, 0.2], population_size=50, generations=1000)

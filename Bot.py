@@ -116,6 +116,9 @@ class Bot:
         self.plot_buy_triggers = []
         self.plot_sell_triggers = []
 
+        self.test = False
+        self.test2 = 0
+
     def reset(self):
         if not self.online:
             self.positions = []

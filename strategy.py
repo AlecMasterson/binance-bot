@@ -1,4 +1,4 @@
-import utilities
+import utilities, math
 
 
 # Returns True if num1 and num2 are with range % of each other
@@ -13,7 +13,7 @@ def within_range(num1, num2, range):
 
 def check_buy(bot, coinpair, index):
     # Create a 3 hour buffer before allowing trading.
-    if index < 70: return
+    if index < 36: return
 
     maxPrice = -1000.0
     maxPriceIndex = 0
@@ -31,6 +31,8 @@ def check_buy(bot, coinpair, index):
             maxPriceIndex = index - i
         if bot.data[coinpair].macd[index - i] > maxMACD:
             maxMACD = bot.data[coinpair].macd[index - i]
+        if bot.data[coinpair].candles[index - i].numTrades > maxTrades:
+            maxTrades = bot.data[coinpair].candles[index - i].numTrades
         if bot.data[coinpair].candles[index - i].close < minPrice:
             minPrice = bot.data[coinpair].candles[index - i].close
             minPriceIndex = index - i
@@ -39,18 +41,44 @@ def check_buy(bot, coinpair, index):
         if bot.data[coinpair].lowerband[index - i] < minLower:
             minLower = bot.data[coinpair].lowerband[index - i]
 
-    for i in range(1, 71):
-        if bot.data[coinpair].candles[index - i].numTrades > maxTrades:
-            maxTrades = bot.data[coinpair].candles[index - i].numTrades
-
     # Don't buy if price is trending up.
-    if bot.data[coinpair].macd[index - 1] > 0: return
-    # Don't buy if price is trending down and not slowling down.
-    if bot.data[coinpair].macd[index - 1] < bot.data[coinpair].macd[index - 2]: return
+    #if bot.data[coinpair].macd[index - 1] > 0: return
+    # TODO: Don't trade if the MACD is accelerating in the negative direction.
+
+    if bot.data[coinpair].candles[index - 1].close >= ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]: return
+
+    for x in range(1, utilities.TRIGGER_0):
+        v2 = (bot.data[coinpair].macd[index - 2] - bot.data[coinpair].macd[index - 2 - x])
+        good = True
+        for y in range(1, utilities.TRIGGER_1):
+            if (bot.data[coinpair].macd[index - (2 + y)] - bot.data[coinpair].macd[index - (2 + y) - x]) < v2: good = False
+            v2 = (bot.data[coinpair].macd[index - (2 + y)] - bot.data[coinpair].macd[index - (2 + y) - x])
+        v1 = (bot.data[coinpair].macd[index - 1] - bot.data[coinpair].macd[index - 1 - x])
+        if good and v1 > 0:
+            bot.buy(coinpair, bot.recent[coinpair][-1].close)
+            #f v1 < 0 and v2 < 0 and v3 > 0 and v3 - v2 > 0:
+            #bot.plot_buy_triggers.append({'color': colors[x - 4], 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+            #print(str(v2 - v1) + '\t' + str(v3 - v2))
+    return
+    a = (v2 - v1) / 12
+
+    if v1 < 0 and v2 < 0 and v3 > 0 and v3 - v2 > 1e-7:
+        bot.plot_buy_triggers.append({'color': 'purple', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+        print(str(v2 - v1) + '\t' + str(v3 - v2))
+
+    if a < -2e-7:
+        bot.test = True
+        bot.plot_buy_triggers.append({'color': 'black', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+    if bot.test and a > 0:
+        bot.test = False
+        print(str(v2) + '\t' + str(v1) + '\t' + str(a))
+        bot.plot_buy_triggers.append({'color': 'blue', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+
     # Don't buy if price is in the top half of the upper/lower BollingerBand range.
     if bot.data[coinpair].candles[index - 1].close >= ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]: return
     # Don't buy if the peak price happened after the min price.
     if minPriceIndex < maxPriceIndex: return
+    return
 
     if maxTrades == bot.data[coinpair].candles[index - 1].numTrades:
         bot.plot_buy_triggers.append({'color': 'black', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
