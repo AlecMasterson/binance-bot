@@ -16,6 +16,7 @@ from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
+import traceback
 
 
 def to_datetime(time):
@@ -51,7 +52,9 @@ class Bot:
         try:
             for coinpair in utilities.COINPAIRS:
                 self.data[coinpair] = Coinpair(self.client, coinpair, self.online)
-        except:
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
             utilities.throw_error('Failed to Get Historical Data', True)
         utilities.throw_info('Successfully Finished Getting Historical Data')
 
@@ -112,12 +115,14 @@ class Bot:
             self.recent[coinpair] = []
 
         self.buy_trigger = 0.0
-        self.sell_triggers = [0.0] * utilities.NUM_TRIGGERS
         self.plot_buy_triggers = []
         self.plot_sell_triggers = []
 
-        self.test = False
-        self.test2 = 0
+        self.minMACD = None
+        self.localMinMACD = None
+        self.aboveZero = False
+        self.belowHalf = False
+        self.primed = False
 
     def reset(self):
         if not self.online:

@@ -27,13 +27,19 @@ COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Clos
 
 PUBLIC_KEY = ''
 SECRET_KEY = ''
+[12, 1.056, 0.009, 0.95]
+ORDER_TIME_LIMIT = 12        # [1, 12] Integers = 12
+STOP_LOSS_ARM = 1.03        # [1.010, 1.050] 3 Decimal Places = 40
+STOP_LOSS = 0.005        # [0.001, 0.010] 3 Decimal Places = 10
+DROP = 0.960        # [0.950, 0.980] 3 Decimal Places = 30
+# 12 * 40 * 10 * 30 = 144,000
 
-# [12, 1.5, 0.018, 0.97, 0.22, 1.5, 0.21, 0.1, 0.32, 0.16], 'fitness': 1.12421001465}
-#[1, 1.02, 0.0, 0.97, 0.01, 0.04, 10, 4, 0.5, 0.1],
-ORDER_TIME_LIMIT = 12        # [1, 12] Integers
-STOP_LOSS_ARM = 1.5        # [1.0030, 1.0500] 4 Decimal Places
-STOP_LOSS = 0.018        # [0.000, 0.050] 3 Decimal Places
-DROP = 0.97        # [0.9500, 0.9999] 4 Decimal Places
+ONE = 0.8
+ONE_Y = 1
+TWO = 0.4
+TWO_Y = 1
+THREE = 0.005
+THREE_Y = 1
 
 NUM_TRIGGERS = 4
 TRIGGER_DECAY = 0.22
@@ -44,7 +50,7 @@ TRIGGER_2 = 0.32
 TRIGGER_3 = 0.16
 
 
-def set_optimized(otl, sla, sl, dp, td, tt, t0, t1, t2, t3):
+def set_optimized(otl, sla, sl, dp):
     global ORDER_TIME_LIMIT
     ORDER_TIME_LIMIT = otl
     global STOP_LOSS_ARM
@@ -53,18 +59,6 @@ def set_optimized(otl, sla, sl, dp, td, tt, t0, t1, t2, t3):
     STOP_LOSS = sl
     global DROP
     DROP = dp
-    global TRIGGER_DECAY
-    TRIGGER_DECAY = td
-    global TRIGGER_THRESHOLD
-    TRIGGER_THRESHOLD = tt
-    global TRIGGER_0
-    TRIGGER_0 = t0
-    global TRIGGER_1
-    TRIGGER_1 = t1
-    global TRIGGER_2
-    TRIGGER_2 = t2
-    global TRIGGER_3
-    TRIGGER_3 = t3
 
 
 # Setup the logging interface with the correct formatting and log file

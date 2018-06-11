@@ -12,46 +12,104 @@ def within_range(num1, num2, range):
 
 
 def check_buy(bot, coinpair, index):
-    # Create a 3 hour buffer before allowing trading.
-    if index < 36: return
+    if index < 3: return
+    elif index < 36:
+        if bot.minMACD == None or bot.data[coinpair].macd[index - 1] < bot.minMACD: bot.minMACD = bot.data[coinpair].macd[index - 1]
+        if bot.data[coinpair].macd[index - 1] > 0: bot.primed = True
+    valid = False
+    if bot.data[coinpair].macd[index - 3] < 0 and bot.data[coinpair].macdDiff[index - 3] < 0 and bot.data[coinpair].macd[index - 3] < 0 and bot.data[coinpair].macdDiff[index - 1] < 0:
+        if bot.data[coinpair].macdDiff[index - 2] < bot.data[coinpair].macdDiff[index - 3]:
+            if bot.data[coinpair].macdDiff[index - 1] > bot.data[coinpair].macdDiff[index - 2] and bot.data[coinpair].macdDiff[index - 2] < -2e-6:
+                valid = True
 
-    maxPrice = -1000.0
-    maxPriceIndex = 0
-    maxMACD = -1000.0
-    maxTrades = -1000.0
-    minPrice = 1000.0
-    minPriceIndex = 0
-    minMACD = 1000.0
-    minLower = 1000.0
+    if valid:
+        if bot.data[coinpair].candles[index - 1].close < ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]:
+            bot.buy(coinpair, bot.recent[coinpair][-1].close)
+    return
+    if bot.data[coinpair].macdDiff[index - 2] > 0 and bot.data[coinpair].macdDiff[index - 1] < 0:
+        bot.plot_buy_triggers.append({'color': 'black', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+    return
+
+    if bot.minMACD == None or bot.data[coinpair].macd[index - 1] < bot.minMACD: bot.minMACD = bot.data[coinpair].macd[index - 1]
+    if bot.data[coinpair].macd[index - 1] > 0:
+        bot.primed = True
+        bot.localMinMACD = None
+
+    if bot.data[coinpair].macd[index - 1] < 0:
+        if bot.localMinMACD == None or bot.data[coinpair].macd[index - 1] < bot.localMinMACD: bot.localMinMACD = bot.data[coinpair].macd[index - 1]
+        if bot.primed and bot.data[coinpair].macd[index - 1] > bot.localMinMACD:
+            bot.plot_buy_triggers.append({'color': 'blue', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+            bot.primed = False
+
+    return
+
+    # Never buy in the top half of the Bollinger Bands.
+    if bot.data[coinpair].candles[index - 1].close >= ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]: return
+
+    if bot.aboveZero and bot.data[coinpair].macd[index - 1] < bot.minMACD * 0.5:
+        bot.aboveZero = False
+        return
+
+    maxPrice = None
+    maxPriceIndex = None
+    maxMACD = None
+    maxTrades = None
+    minPrice = None
+    minPriceIndex = None
+    minMACD = None
+    minLower = None
 
     # Get the above values for the past 3 hours.
     for i in range(1, 37):
-        if bot.data[coinpair].candles[index - i].close > maxPrice:
+        if maxPrice == None or bot.data[coinpair].candles[index - i].close > maxPrice:
             maxPrice = bot.data[coinpair].candles[index - i].close
             maxPriceIndex = index - i
-        if bot.data[coinpair].macd[index - i] > maxMACD:
+        if maxMACD == None or bot.data[coinpair].macd[index - i] > maxMACD:
             maxMACD = bot.data[coinpair].macd[index - i]
-        if bot.data[coinpair].candles[index - i].numTrades > maxTrades:
+        if maxTrades == None or bot.data[coinpair].candles[index - i].numTrades > maxTrades:
             maxTrades = bot.data[coinpair].candles[index - i].numTrades
-        if bot.data[coinpair].candles[index - i].close < minPrice:
+        if minPrice == None or bot.data[coinpair].candles[index - i].close < minPrice:
             minPrice = bot.data[coinpair].candles[index - i].close
             minPriceIndex = index - i
-        if bot.data[coinpair].macd[index - i] < minMACD:
+        if minMACD == None or bot.data[coinpair].macd[index - i] < minMACD:
             minMACD = bot.data[coinpair].macd[index - i]
-        if bot.data[coinpair].lowerband[index - i] < minLower:
+        if minLower == None or bot.data[coinpair].lowerband[index - i] < minLower:
             minLower = bot.data[coinpair].lowerband[index - i]
 
-    # Don't buy if price is trending up.
-    #if bot.data[coinpair].macd[index - 1] > 0: return
-    # TODO: Don't trade if the MACD is accelerating in the negative direction.
+    if bot.data[coinpair].candles[index - 1].close / minPrice > 1.0125: return
+    #if bot.data[coinpair].macd[index - 2] - bot.data[coinpair].macd[index - 1] > bot.data[coinpair].macd[index - 3] - bot.data[coinpair].macd[index - 2]: return
 
+    if bot.data[coinpair].macd[index - 1] < bot.bottom * utilities.ONE:
+        if bot.data[coinpair].macd[index - 1] > bot.data[coinpair].macd[index - 3]:
+            bot.plot_buy_triggers.append({'color': 'blue', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+            if utilities.ONE_Y == 1: bot.buy(coinpair, bot.recent[coinpair][-1].close)
+    if bot.data[coinpair].macd[index - 1] < bot.bottom * utilities.TWO:
+        if bot.data[coinpair].candles[index - 1].close < bot.data[coinpair].lowerband[index - 1]:
+            bot.plot_buy_triggers.append({'color': 'black', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+            if utilities.TWO_Y == 1: bot.buy(coinpair, bot.recent[coinpair][-1].close)
+    elif bot.data[coinpair].macd[index - 1] < bot.bottom * utilities.THREE:
+        if bot.data[coinpair].candles[index - 1].close < bot.data[coinpair].lowerband[index - 1]:
+            bot.plot_buy_triggers.append({'color': 'purple', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+            if utilities.THREE_Y == 1: bot.buy(coinpair, bot.recent[coinpair][-1].close)
+
+        #else:
+        #bot.plot_buy_triggers.append({'color': 'black', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+
+        #bot.buy(coinpair, bot.recent[coinpair][-1].close)
+    #if bot.data[coinpair].macd[index - 1] > bot.top and bot.data[coinpair].candles[index - 1].close > bot.data[coinpair].upperband[index - 1]:
+    #bot.plot_buy_triggers.append({'color': 'blue', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+    return
+
+    #if bot.data[coinpair].macd[index - 1] > 0: return
     if bot.data[coinpair].candles[index - 1].close >= ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]: return
 
-    for x in range(1, utilities.TRIGGER_0):
+    for x in range(1, utilities.V_DISTANCE):
+        # Velocity between two candles ago and that minues x candles ago.
         v2 = (bot.data[coinpair].macd[index - 2] - bot.data[coinpair].macd[index - 2 - x])
-        good = True
-        for y in range(1, utilities.TRIGGER_1):
-            if (bot.data[coinpair].macd[index - (2 + y)] - bot.data[coinpair].macd[index - (2 + y) - x]) < v2: good = False
+        valid = True
+
+        for y in range(1, utilities.V_PAST):
+            if (bot.data[coinpair].macd[index - (2 + y)] - bot.data[coinpair].macd[index - (2 + y) - x]) < v2: valid = False
             v2 = (bot.data[coinpair].macd[index - (2 + y)] - bot.data[coinpair].macd[index - (2 + y) - x])
         v1 = (bot.data[coinpair].macd[index - 1] - bot.data[coinpair].macd[index - 1 - x])
         if good and v1 > 0:
@@ -165,6 +223,17 @@ def check_buy(bot, coinpair, index):
 def check_sell(bot, position, index):
     if index < 12: return
     coinpair = position.coinpair
+
+    if position.stopLoss: bot.sell(position)
+    elif position.result < utilities.DROP: bot.sell(position)
+    return
+
+    if sell: bot.sell(position)
+
+    if bot.data[coinpair].macd[index - 1] > bot.top and bot.data[coinpair].candles[index - 1].close > bot.data[coinpair].upperband[index - 1]:
+        bot.plot_buy_triggers.append({'color': 'blue', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+        bot.sell(position)
+    return
 
     maxPrice = -1000.0
     maxMACD = -1000.0

@@ -31,7 +31,7 @@ class Coinpair:
                 if client == None: raise Exception('No Client')
                 utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound... using API...')
                 tempData = pandas.DataFrame(
-                    self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1526515200000'), columns=utilities.COLUMN_STRUCTURE)
+                    self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1527984000000'), columns=utilities.COLUMN_STRUCTURE)
                 saveToFile = True
             except:
                 utilities.throw_error('Failed to Retrieve Historical Data', True)
@@ -66,7 +66,9 @@ class Coinpair:
         # Remove the last one as that's the current (incomplete) Candle.
         for index, candle in tempData.iterrows():
             self.candles.append(
-                Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades'])))
+                Candle(
+                    int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades']),
+                    float(candle['Volume'])))
         self.candles = self.candles[:-1]
 
         # Update the overhead information for this Coinpair.
