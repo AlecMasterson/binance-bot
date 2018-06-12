@@ -31,11 +31,12 @@ def ga_mutate(individual, mu=1):
             return nr
 
     g0 = int(rand_norm(individual['genes'][0], 5, 12))        # [5, 12] Integers = 12
-    g1 = round(rand_norm(individual['genes'][1], 1.01, 1.07), 3)        # [1.010, 1.070] 3 Decimal Places = 40
-    g2 = round(rand_norm(individual['genes'][2], 0.001, 0.01), 3)        # [0.001, 0.010] 3 Decimal Places = 10
-    g3 = round(rand_norm(individual['genes'][3], 0.95, 0.98), 3)        # [0.950, 0.980] 3 Decimal Places = 30
+    g1 = int(rand_norm(individual['genes'][1], 120, 240))        # [120, 240] Integers = 120
+    g2 = int(rand_norm(individual['genes'][2], 120, 240))        # [120, 240] Integers = 120
+    g3 = round(rand_norm(individual['genes'][3], 0.5, 0.95), 2)        # [0.5, 0.95] 2 Decimal Places = 45
+    g4 = round(rand_norm(individual['genes'][4], 0.5, 0.95), 2)        # [0.5, 0.95] 2 Decimal Places = 45
 
-    genes = [g0, g1, g2, g3]
+    genes = [g0, g1, g2, g3, g4]
     individual['genes'] = genes
     return individual
 
@@ -56,7 +57,7 @@ def ga_evaluate_genetics(individual, MEMOIZED_EVALS):
     try:
         individual['fitness'] = MEMOIZED_EVALS[str(genes)]
     except:
-        utilities.set_optimized(genes[0], genes[1], genes[2], genes[3])
+        utilities.set_optimized(genes[0], genes[1], genes[2], genes[3], genes[4])
         fitness = np.mean([bot.run_backtest(pair) for pair in utilities.COINPAIRS])
         MEMOIZED_EVALS[str(genes)] = fitness
         individual['fitness'] = fitness
@@ -92,7 +93,7 @@ def ga_optimize(seed=False, population_size=100, generations=100):
             population += [ga_mutate({'genes': seed, 'fitness': -1})]
     else:
         for _ in range(population_size * 5):
-            population += [ga_mutate({'genes': [1, 1, 1, 1], 'fitness': -1})]
+            population += [ga_mutate({'genes': [1, 1, 1, 1, 1], 'fitness': -1})]
 
     gen = 0
     history = {'min': [], 'p25': [], 'p50': [], 'p75': [], 'max': []}
@@ -112,7 +113,7 @@ def ga_optimize(seed=False, population_size=100, generations=100):
         if population[0]['fitness'] > best['fitness']:
             print('Old Best', best, best_bot_performance)
             best = deepcopy(population[0])
-            utilities.set_optimized(best['genes'][0], best['genes'][1], best['genes'][2], best['genes'][3])
+            utilities.set_optimized(best['genes'][0], best['genes'][1], best['genes'][2], best['genes'][3], best['genes'][4])
             best_bot_performance = list(zip(utilities.COINPAIRS, [bot.run_backtest(pair) for pair in utilities.COINPAIRS]))
             print('New Best', best, best_bot_performance)
         population += [deepcopy(best)]
@@ -152,4 +153,4 @@ if __name__ == "__main__":
         with open('data/coinpair/' + coinpair + '.json', 'w') as json_file:
             json.dump(info, json_file)
 
-    ga_optimize(seed=[7, 1.05, 0.004, 0.965], population_size=50, generations=1000)
+    ga_optimize(seed=[5, 150, 180, 0.67, 0.9], population_size=20, generations=1000)

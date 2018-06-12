@@ -121,8 +121,9 @@ class Bot:
         self.minMACD = None
         self.localMinMACD = None
         self.aboveZero = False
-        self.belowHalf = False
-        self.primed = False
+        self.belowZero = False
+        self.slopes = []
+        self.top_slopes = []
 
     def reset(self):
         if not self.online:
@@ -302,8 +303,6 @@ class Bot:
                 low=[candle.low for candle in self.data[coinpair].candles],
                 close=[candle.close for candle in self.data[coinpair].candles],
                 text=['MACD: ' + str(macd) for macd in self.data[coinpair].macd]),
-            go.Scatter(name='Upper Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[upperband for upperband in self.data[coinpair].upperband]),
-            go.Scatter(name='Lower Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[lowerband for lowerband in self.data[coinpair].lowerband]),
         #go.Scatter(name='Number of Trades', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[candle.numTrades for candle in self.data[coinpair].candles]),
             go.Scatter(
                 name='Bought',
@@ -318,19 +317,7 @@ class Bot:
                 y=[position.price * position.result for position in self.positions],
                 mode='markers',
                 marker=dict(size=12, color='blue'),
-                text=[position.price for position in self.positions]),
-            go.Scatter(
-                name='Buy Triggers',
-                x=[to_datetime(point['time']) for point in self.plot_buy_triggers],
-                y=[point['price'] for point in self.plot_buy_triggers],
-                mode='markers',
-                marker=dict(size=9, color=[point['color'] for point in self.plot_buy_triggers])),
-            go.Scatter(
-                name='Sell Triggers',
-                x=[to_datetime(point['time']) for point in self.plot_sell_triggers],
-                y=[point['price'] for point in self.plot_sell_triggers],
-                mode='markers',
-                marker=dict(size=9, color=[point['color'] for point in self.plot_sell_triggers]))
+                text=[position.price for position in self.positions])
         ]
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
@@ -372,6 +359,7 @@ if __name__ == '__main__':
         total = bot.run_backtest(coinpair)
 
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
+        #print(bot.orders[0].executedQty)
         utilities.throw_info('Total Balance: ' + str(total))
 
         if args.plot: bot.plot(coinpair)

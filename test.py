@@ -17,59 +17,103 @@ def slope(x1, x2, y1, y2):
 
 coinpair = Coinpair(None, 'BNBBTC', False)
 
-mins = []
-maxs = []
 markers = []
-localsMACD = [0, 0]
-marker_locals = [None, None]
+best_buys = []
+test_buys = []
+localInfo = [{'marker': None, 'value': 0}, {'marker': None, 'value': 0}]
+
+window = 120
+
+slopes = []
+top_slopes = []
 aboveZero = False
+belowZero = False
 for index, candle in enumerate(coinpair.candles):
-    if index < 3: continue
+    if index == 0: continue
 
     if coinpair.macdDiff[index - 1] > 0:
-        if localsMACD[0] != 0 and marker_locals[0] != None: markers.append(marker_locals[0])
-        mins.append(localsMACD[0])
-        localsMACD[0] = 0
+        if localInfo[0]['value'] != 0 and localInfo[0]['marker'] != None:
+            #markers.append(localInfo[0]['marker'])
+            best_buys.append(localInfo[0]['marker']['time'])
+        localInfo[0]['value'] = 0
         aboveZero = True
     elif coinpair.macdDiff[index - 1] < 0:
-        if localsMACD[1] != 0 and marker_locals[1] != None: markers.append(marker_locals[1])
-        maxs.append(localsMACD[1])
-        localsMACD[1] = 0
+        #if localInfo[1]['value'] != 0 and localInfo[1]['marker'] != None: markers.append(localInfo[1]['marker'])
+        localInfo[1]['value'] = 0
+        belowZero = True
 
-    if coinpair.macdDiff[index - 1] > localsMACD[1]:
-        localsMACD[1] = coinpair.macdDiff[index - 1]
-        marker_locals[1] = {'color': 'blue', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close}
-    elif coinpair.macdDiff[index - 1] < localsMACD[0]:
-        localsMACD[0] = coinpair.macdDiff[index - 1]
-        marker_locals[0] = {'color': 'purple', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close}
+    if coinpair.macdDiff[index - 1] > localInfo[1]['value']:
+        localInfo[1]['value'] = coinpair.macdDiff[index - 1]
+        localInfo[1]['marker'] = {'color': 'blue', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close}
+    elif coinpair.macdDiff[index - 1] < localInfo[0]['value']:
+        localInfo[0]['value'] = coinpair.macdDiff[index - 1]
+        localInfo[0]['marker'] = {'color': 'blue', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close}
+
+    if index < window: continue
+    minimum = min(coinpair.macdDiff[index - window:index])
 
     valid = False
+    alsoValid = False
 
-    # TODO: Attempt to predict if their slopes point to each other by seeing how close they are together.
+    # -2.7e-6
     macdSlope = slope(1, 2, coinpair.macd[index - 2], coinpair.macd[index - 1])
     signalSlope = slope(1, 2, coinpair.macdSignal[index - 2], coinpair.macdSignal[index - 1])
-    if aboveZero and coinpair.macdDiff[index - 1] < 0:
-        if macdSlope < signalSlope and coinpair.macd[index - 1] > coinpair.macdSignal[index - 1]:
+    if aboveZero and coinpair.macdDiff[index - 1] < minimum * 0.6 and coinpair.macdDiff[index - 2] < coinpair.macdDiff[index - 3]:
+        if coinpair.macd[index - 1] > coinpair.macdSignal[index - 1]:
+            if macdSlope > signalSlope: slopes.append(macdSlope - signalSlope)
+            else: valid = True
+        elif coinpair.macd[index - 1] < coinpair.macdSignal[index - 1]:
+            if macdSlope < signalSlope: slopes.append(signalSlope - macdSlope)
+            else: valid = True
+        if len(slopes) > 1 and slopes[-1] - (slopes[-2] - slopes[-1]) < 0:
             valid = True
-            aboveZero = False
-        elif macdSlope > signalSlope and coinpair.macd[index - 1] < coinpair.macdSignal[index - 1]:
-            valid = True
-            aboveZero = False
+    if aboveZero and coinpair.macdDiff[index - 1] < -2.9e-6 and coinpair.macdDiff[index - 2] < coinpair.macdDiff[index - 3]:
+        if coinpair.macd[index - 1] > coinpair.macdSignal[index - 1]:
+            if macdSlope > signalSlope: slopes.append(macdSlope - signalSlope)
+            else: alsoValid = True
+        elif coinpair.macd[index - 1] < coinpair.macdSignal[index - 1]:
+            if macdSlope < signalSlope: slopes.append(signalSlope - macdSlope)
+            else: alsoValid = True
+        if len(slopes) > 1 and slopes[-1] - (slopes[-2] - slopes[-1]) < 0:
+            alsoValid = True
+    '''
+    # TODO: Try numTrades as a method of finding buy/sell points
+    if coinpair.candles[index - 1].close < coinpair.lowerband[index - 1] and coinpair.candles[index - 1].numTrades > 300:
+        andValid = True
+    '''
 
-    if coinpair.macd[index - 3] < 0 and coinpair.macdDiff[index - 3] < 0 and coinpair.macd[index - 1] < 0 and coinpair.macdDiff[index - 1] < 0:
-        if coinpair.macdDiff[index - 2] < coinpair.macdDiff[index - 3]:
-            if coinpair.macdDiff[index - 1] > coinpair.macdDiff[index - 2] and coinpair.macdDiff[index - 1] < localsMACD[0] * 0.6:
-                print()
-            elif coinpair.macdDiff[index - 1] < localsMACD[0] * 0.85:
-                print()
+    if (valid or alsoValid) and coinpair.candles[index - 1].close < ((coinpair.upperband[index - 1] - coinpair.lowerband[index - 1]) / 2) + coinpair.lowerband[index - 1]:
+        if valid: markers.append({'color': 'black', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close})
+        elif alsoValid: markers.append({'color': 'purple', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close})
+        test_buys.append(coinpair.candles[index - 1].closeTime)
+        slopes = []
+        aboveZero = False
+    '''
+    valid = False
+    alsoValid = False
 
-    if valid and coinpair.candles[index - 1].close < ((coinpair.upperband[index - 1] - coinpair.lowerband[index - 1]) / 2) + coinpair.lowerband[index - 1]:
-        markers.append({'color': 'black', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close})
+    if belowZero and coinpair.macdDiff[index - 1] > 2.9e-6 and coinpair.macdDiff[index - 2] > coinpair.macdDiff[index - 3]:
+        if coinpair.macd[index - 1] > coinpair.macdSignal[index - 1]:
+            if macdSlope > signalSlope: top_slopes.append(macdSlope - signalSlope)
+            else: valid = True
+        elif coinpair.macd[index - 1] < coinpair.macdSignal[index - 1]:
+            if macdSlope < signalSlope: top_slopes.append(signalSlope - macdSlope)
+            else: valid = True
+        if len(top_slopes) > 1 and top_slopes[-1] - (top_slopes[-2] - top_slopes[-1]) < 0:
+            alsoValid = True
 
-print('Max Min: ' + str(max(mins)))
-print('Average Min: ' + str(sum(mins) / len(mins)) + '\n')
-print('Min Max: ' + str(min(maxs)))
-print('Average Max: ' + str(sum(maxs) / len(maxs)))
+    if (valid or alsoValid) and coinpair.candles[index - 1].close > ((coinpair.upperband[index - 1] - coinpair.lowerband[index - 1]) / 2) + coinpair.lowerband[index - 1]:
+        print(to_datetime(coinpair.candles[index].openTime))
+        if valid: markers.append({'color': 'blue', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close})
+        elif alsoValid: markers.append({'color': 'blue', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close})
+        top_slopes = []
+        belowZero = False
+    '''
+
+count = 0
+for time in best_buys:
+    if time in test_buys: count += 1
+print('Perfect Buy Percentage: ' + str(count / len(best_buys)))
 
 # ----------------------------------------
 # TRACES
