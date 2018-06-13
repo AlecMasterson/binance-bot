@@ -4,7 +4,7 @@ from plotly import tools
 
 from components.Coinpair import Coinpair
 
-import pandas, sys
+import utilities, pandas, sys
 
 
 def to_datetime(time):
@@ -33,7 +33,7 @@ for index, candle in enumerate(coinpair.candles):
 
     if coinpair.macdDiff[index - 1] > 0:
         if localInfo[0]['value'] != 0 and localInfo[0]['marker'] != None:
-            #markers.append(localInfo[0]['marker'])
+            markers.append(localInfo[0]['marker'])
             best_buys.append(localInfo[0]['marker']['time'])
         localInfo[0]['value'] = 0
         aboveZero = True
@@ -49,8 +49,8 @@ for index, candle in enumerate(coinpair.candles):
         localInfo[0]['value'] = coinpair.macdDiff[index - 1]
         localInfo[0]['marker'] = {'color': 'blue', 'time': coinpair.candles[index - 1].closeTime, 'price': coinpair.candles[index - 1].close}
 
-    if index < window: continue
-    minimum = min(coinpair.macdDiff[index - window:index])
+    if index < utilities.WINDOW: continue
+    minimum = min(coinpair.macdDiff[index - utilities.WINDOW:index])
 
     valid = False
     alsoValid = False
@@ -58,7 +58,7 @@ for index, candle in enumerate(coinpair.candles):
     # -2.7e-6
     macdSlope = slope(1, 2, coinpair.macd[index - 2], coinpair.macd[index - 1])
     signalSlope = slope(1, 2, coinpair.macdSignal[index - 2], coinpair.macdSignal[index - 1])
-    if aboveZero and coinpair.macdDiff[index - 1] < minimum * 0.6 and coinpair.macdDiff[index - 2] < coinpair.macdDiff[index - 3]:
+    if aboveZero and coinpair.macdDiff[index - 1] < minimum * utilities.PERCENT and coinpair.macdDiff[index - 2] < coinpair.macdDiff[index - 3]:
         if coinpair.macd[index - 1] > coinpair.macdSignal[index - 1]:
             if macdSlope > signalSlope: slopes.append(macdSlope - signalSlope)
             else: valid = True
@@ -67,15 +67,6 @@ for index, candle in enumerate(coinpair.candles):
             else: valid = True
         if len(slopes) > 1 and slopes[-1] - (slopes[-2] - slopes[-1]) < 0:
             valid = True
-    if aboveZero and coinpair.macdDiff[index - 1] < -2.9e-6 and coinpair.macdDiff[index - 2] < coinpair.macdDiff[index - 3]:
-        if coinpair.macd[index - 1] > coinpair.macdSignal[index - 1]:
-            if macdSlope > signalSlope: slopes.append(macdSlope - signalSlope)
-            else: alsoValid = True
-        elif coinpair.macd[index - 1] < coinpair.macdSignal[index - 1]:
-            if macdSlope < signalSlope: slopes.append(signalSlope - macdSlope)
-            else: alsoValid = True
-        if len(slopes) > 1 and slopes[-1] - (slopes[-2] - slopes[-1]) < 0:
-            alsoValid = True
     '''
     # TODO: Try numTrades as a method of finding buy/sell points
     if coinpair.candles[index - 1].close < coinpair.lowerband[index - 1] and coinpair.candles[index - 1].numTrades > 300:
