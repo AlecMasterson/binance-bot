@@ -1,48 +1,69 @@
 import utilities
 
 
-# Returns True if num1 and num2 are with range % of each other
-# num1 - The first number
-# num2 - The second number
-# range - Percent threshold to test
-def within_range(num1, num2, range):
-    if (num1 - num2) / num2 < range:
-        return True
-    return False
+def slope(x1, x2, y1, y2):
+    return (y2 - y1) / (x2 - x1)
 
 
 def check_buy(bot, coinpair, index):
-    if index < 2: return
+    if index < 3: return
 
-    if within_range(bot.data[coinpair].candles[index - 1].low, bot.data[coinpair].lowerband[index - 1], -0.002):
-        bot.triggers[0] = utilities.TRIGGER_1
-    if bot.data[coinpair].candles[index - 1].close < bot.data[coinpair].lowerband[index - 1]:
-        bot.triggers[1] = utilities.TRIGGER_2
-    if bot.data[coinpair].macd[index - 2] < 0 and bot.data[coinpair].macd[index - 1] > 0:
-        bot.triggers[2] = utilities.TRIGGER_3
+    if bot.data[coinpair].macdDiff[index - 1] > 0: bot.aboveZero = True
 
-    if sum(bot.triggers) >= utilities.TRIGGER_THRESHOLD:
-        bot.testingB.append({'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+    if index < utilities.WINDOW: return
+    minimum = min(bot.data[coinpair].macdDiff[index - utilities.WINDOW:index])
+
+    valid = False
+
+    macdSlope = slope(1, 2, bot.data[coinpair].macd[index - 2], bot.data[coinpair].macd[index - 1])
+    signalSlope = slope(1, 2, bot.data[coinpair].macdSignal[index - 2], bot.data[coinpair].macdSignal[index - 1])
+    if bot.aboveZero and bot.data[coinpair].macdDiff[index - 1] < (minimum * utilities.PERCENT) and bot.data[coinpair].macdDiff[index - 2] < bot.data[coinpair].macdDiff[index - 3]:
+        if bot.data[coinpair].macd[index - 1] > bot.data[coinpair].macdSignal[index - 1]:
+            if macdSlope > signalSlope: bot.slopes.append(macdSlope - signalSlope)
+            else: valid = True
+        elif bot.data[coinpair].macd[index - 1] < bot.data[coinpair].macdSignal[index - 1]:
+            if macdSlope < signalSlope: bot.slopes.append(signalSlope - macdSlope)
+            else: valid = True
+        if len(bot.slopes) > 1 and bot.slopes[-1] - (bot.slopes[-2] - bot.slopes[-1]) < 0:
+            valid = True
+
+    if valid and bot.data[coinpair].candles[index - 1].close < ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]:
         bot.buy(coinpair, bot.recent[coinpair][-1].close)
-
-    for index, strat in enumerate(bot.triggers):
-        bot.triggers[index] -= utilities.TRIGGER_DECAY
-        if bot.triggers[index] < 0.0: bot.triggers[index] = 0.0
+        bot.plot_buy_triggers.append({'color': 'black', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+        bot.slopes = []
+        bot.aboveZero = False
 
 
 def check_sell(bot, position, index):
-    if index < 2: return
+    coinpair = position.coinpair
 
-    if bot.data[position.coinpair].macd[index - 1] > bot.data[position.coinpair].macd[index - 2] and bot.data[position.coinpair].macd[index - 2] > 0.0:
-        status = 'hold'
-    elif bot.data[position.coinpair].macdDiff[index - 1] > bot.data[position.coinpair].macdDiff[index - 2] and bot.data[position.coinpair].macdDiff[index - 2] > 0.0:
-        status = 'hold'
-    else:
-        status = ''
+    if bot.data[coinpair].macdDiff[index - 1] < 0: bot.belowZero = True
 
-    sell = False
-    if status != 'hold' and position.stopLoss: sell = True
-    elif position.age > 9e5 and position.result < utilities.DROP: sell = True
-    elif status == 'sell': sell = True
+    if index < utilities.TOP_WINDOW: return
+    maximum = max(bot.data[coinpair].macdDiff[index - utilities.TOP_WINDOW:index])
 
-    if sell: bot.sell(position)
+    macdSlope = slope(1, 2, bot.data[coinpair].macd[index - 2], bot.data[coinpair].macd[index - 1])
+    signalSlope = slope(1, 2, bot.data[coinpair].macdSignal[index - 2], bot.data[coinpair].macdSignal[index - 1])
+
+    valid = False
+
+    if bot.belowZero and bot.data[coinpair].macdDiff[index - 1] > (maximum * utilities.TOP_PERCENT) and bot.data[coinpair].macdDiff[index - 2] > bot.data[coinpair].macdDiff[index - 3]:
+        if bot.data[coinpair].macd[index - 1] > bot.data[coinpair].macdSignal[index - 1]:
+            if macdSlope > signalSlope: bot.top_slopes.append(macdSlope - signalSlope)
+            else: valid = True
+        elif bot.data[coinpair].macd[index - 1] < bot.data[coinpair].macdSignal[index - 1]:
+            if macdSlope < signalSlope: bot.top_slopes.append(signalSlope - macdSlope)
+            else: valid = True
+        if len(bot.top_slopes) > 1 and bot.top_slopes[-1] - (bot.top_slopes[-2] - bot.top_slopes[-1]) < 0:
+            valid = True
+
+    if valid and bot.data[coinpair].candles[index - 1].close > ((bot.data[coinpair].upperband[index - 1] - bot.data[coinpair].lowerband[index - 1]) / 2) + bot.data[coinpair].lowerband[index - 1]:
+        bot.sell(position)
+        bot.plot_sell_triggers.append({'color': 'purple', 'time': bot.recent[coinpair][-1].closeTime, 'price': bot.recent[coinpair][-1].close})
+        bot.top_slopes = []
+        bot.belowZero = False
+
+    return
+
+    if position.stopLoss: bot.sell(position)
+    elif position.result < utilities.DROP: bot.sell(position)

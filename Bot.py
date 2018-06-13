@@ -111,9 +111,13 @@ class Bot:
         for coinpair in utilities.COINPAIRS:
             self.recent[coinpair] = []
 
-        self.buy_triggers = [0.0] * utilities.NUM_TRIGGERS
-        self.sell_triggers = [0.0] * utilities.NUM_TRIGGERS
-        self.plot_triggers = []
+        self.plot_buy_triggers = []
+        self.plot_sell_triggers = []
+
+        self.aboveZero = False
+        self.belowZero = False
+        self.slopes = []
+        self.top_slopes = []
 
     def reset(self):
         if not self.online:

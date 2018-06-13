@@ -22,41 +22,57 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['BNBBTC']
+COINPAIRS = ['ADABTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
 SECRET_KEY = ''
 
-ORDER_TIME_LIMIT = 1        # [1, 12] Integers
-STOP_LOSS_ARM = 1.087        # [1.0030, 1.0500] 4 Decimal Places
-STOP_LOSS = 0.04        # [0.000, 0.050] 3 Decimal Places
-DROP = 0.7976        # [0.9500, 0.9999] 4 Decimal Places
+START_DATE = '1516492800000'
 
-NUM_TRIGGERS = 3
-TRIGGER_DECAY = 0.085        # [0.001, 1.000] 3 Decimal Places
-TRIGGER_THRESHOLD = 0.8        # [0.000, 0.999] 3 Decimal Places
+ORDER_TIME_LIMIT = 5        # [1, 12] Integers = 12
+STOP_LOSS_ARM = 1.03        # [1.010, 1.050] 3 Decimal Places = 40
+STOP_LOSS = 0.005        # [0.001, 0.010] 3 Decimal Places = 10
+DROP = 0.960        # [0.950, 0.980] 3 Decimal Places = 30
+# 12 * 40 * 10 * 30 = 144,000
+
+#[11, 8.8, 4.4]
+#[5, 7.0, 4.0]
+#[10, 7.1, 4.1]
+
+#12, 7.0, 3.9
+#11, 7.1, 2.9
+TOP_THRESHOLD = 2.7
+BOTTOM_THRESHOLD = 2.9
+#{'genes': [5, 239, 216, 0.95, 0.57], 'fitness': 1.6762378136700034} [('ADABTC', 1.6762378136700034)]
+#11, 95, 180, 0.18, 0.82
+#5, 166, 179, 0.59, 0.9
+# [5, 150, 180, 0.67, 0.9]
+WINDOW = 139
+TOP_WINDOW = 173
+PERCENT = 0.67
+TOP_PERCENT = 0.93
+
+NUM_TRIGGERS = 4
+TRIGGER_DECAY = 0.22
+TRIGGER_THRESHOLD = 1.5
+TRIGGER_0 = 10
+TRIGGER_1 = 4
+TRIGGER_2 = 0.32
+TRIGGER_3 = 0.16
 
 
-def set_optimized(otl, sla, sl, dp, td, tt, t1, t2, t3):
+def set_optimized(otl, w, tw, p, tp):
     global ORDER_TIME_LIMIT
     ORDER_TIME_LIMIT = otl
-    global STOP_LOSS_ARM
-    STOP_LOSS_ARM = sla
-    global STOP_LOSS
-    STOP_LOSS = sl
-    global DROP
-    DROP = dp
-    global TRIGGER_DECAY
-    TRIGGER_DECAY = td
-    global TRIGGER_THRESHOLD
-    TRIGGER_THRESHOLD = tt
-    global TRIGGER_1
-    TRIGGER_1 = t1
-    global TRIGGER_2
-    TRIGGER_2 = t2
-    global TRIGGER_3
-    TRIGGER_3 = t3
+    global WINDOW
+    WINDOW = w
+    global TOP_WINDOW
+    TOP_WINDOW = tw
+    global PERCENT
+    PERCENT = p
+    global TOP_PERCENT
+    TOP_PERCENT = tp
 
 
 # Setup the logging interface with the correct formatting and log file
