@@ -16,6 +16,7 @@ from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
+import traceback
 
 
 def to_datetime(time):
@@ -51,7 +52,9 @@ class Bot:
         try:
             for coinpair in utilities.COINPAIRS:
                 self.data[coinpair] = Coinpair(self.client, coinpair, self.online)
-        except:
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
             utilities.throw_error('Failed to Get Historical Data', True)
         utilities.throw_info('Successfully Finished Getting Historical Data')
 
@@ -279,6 +282,15 @@ class Bot:
         return True
 
     def plot(self, coinpair):
+
+        max = -1e10
+        min = 1e10
+        for candle in self.data[coinpair].candles:
+            if candle.numTrades > max: max = candle.numTrades
+            if candle.numTrades < min: min = candle.numTrades
+        for candle in self.data[coinpair].candles:
+            candle.numTrades = ((candle.numTrades - min) / (max - min) * 0.0025) + 0.0016
+
         plotData = [
             go.Candlestick(
                 name='Candle Data',
@@ -288,8 +300,7 @@ class Bot:
                 low=[candle.low for candle in self.data[coinpair].candles],
                 close=[candle.close for candle in self.data[coinpair].candles],
                 text=['MACD: ' + str(macd) for macd in self.data[coinpair].macd]),
-            go.Scatter(name='Upper Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[upperband for upperband in self.data[coinpair].upperband]),
-            go.Scatter(name='Lower Bollinger Band', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[lowerband for lowerband in self.data[coinpair].lowerband]),
+        #go.Scatter(name='Number of Trades', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[candle.numTrades for candle in self.data[coinpair].candles]),
             go.Scatter(
                 name='Bought',
                 x=[to_datetime(position.time) for position in self.positions],
@@ -303,9 +314,7 @@ class Bot:
                 y=[position.price * position.result for position in self.positions],
                 mode='markers',
                 marker=dict(size=12, color='blue'),
-                text=[position.price for position in self.positions]),
-            go.Scatter(
-                name='Triggers', x=[to_datetime(point['time']) for point in self.plot_triggers], y=[point['price'] for point in self.plot_triggers], mode='markers', marker=dict(size=9, color='red'))
+                text=[position.price for position in self.positions])
         ]
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
@@ -347,6 +356,7 @@ if __name__ == '__main__':
         total = bot.run_backtest(coinpair)
 
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
+        #print(bot.orders[0].executedQty)
         utilities.throw_info('Total Balance: ' + str(total))
 
         if args.plot: bot.plot(coinpair)
