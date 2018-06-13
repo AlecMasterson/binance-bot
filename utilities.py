@@ -22,7 +22,7 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['BNBBTC']
+COINPAIRS = ['ADABTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
@@ -42,13 +42,14 @@ DROP = 0.960        # [0.950, 0.980] 3 Decimal Places = 30
 #11, 7.1, 2.9
 TOP_THRESHOLD = 2.7
 BOTTOM_THRESHOLD = 2.9
+#{'genes': [5, 239, 216, 0.95, 0.57], 'fitness': 1.6762378136700034} [('ADABTC', 1.6762378136700034)]
 #11, 95, 180, 0.18, 0.82
 #5, 166, 179, 0.59, 0.9
 # [5, 150, 180, 0.67, 0.9]
-WINDOW = 150
-TOP_WINDOW = 180
-PERCENT = 0.67
-TOP_PERCENT = 0.9
+WINDOW = 239
+TOP_WINDOW = 216
+PERCENT = 0.95
+TOP_PERCENT = 0.57
 
 NUM_TRIGGERS = 4
 TRIGGER_DECAY = 0.22

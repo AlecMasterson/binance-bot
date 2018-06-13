@@ -145,6 +145,7 @@ def ga_optimize(seed=False, population_size=100, generations=100):
 if __name__ == "__main__":
 
     client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
+    '''
     for coinpair in utilities.COINPAIRS:
         tempData = pandas.DataFrame(client.get_historical_klines(symbol=coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1516492800000'), columns=utilities.COLUMN_STRUCTURE)
         tempData.to_csv('data/history/' + coinpair + '.csv', index=False)
@@ -152,5 +153,6 @@ if __name__ == "__main__":
         info = client.get_symbol_info(coinpair)
         with open('data/coinpair/' + coinpair + '.json', 'w') as json_file:
             json.dump(info, json_file)
+    '''
 
-    ga_optimize(seed=[5, 150, 180, 0.67, 0.9], population_size=20, generations=1000)
+    ga_optimize(seed=[5, 150, 180, 0.67, 0.9], population_size=50, generations=1000)
