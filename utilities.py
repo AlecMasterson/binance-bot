@@ -28,6 +28,8 @@ COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Clos
 PUBLIC_KEY = ''
 SECRET_KEY = ''
 
+START_DATE = '1516492800000'
+
 ORDER_TIME_LIMIT = 5        # [1, 12] Integers = 12
 STOP_LOSS_ARM = 1.03        # [1.010, 1.050] 3 Decimal Places = 40
 STOP_LOSS = 0.005        # [0.001, 0.010] 3 Decimal Places = 10
