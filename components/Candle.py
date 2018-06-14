@@ -1,6 +1,5 @@
 class Candle:
 
-    # Initialize a new Candle with the required information
     def __init__(self, openTime, open, high, low, close, closeTime, numTrades, volume):
         self.openTime = openTime
         self.open = open

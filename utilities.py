@@ -28,7 +28,9 @@ COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Clos
 PUBLIC_KEY = ''
 SECRET_KEY = ''
 
-START_DATE = '1516492800000'
+START_DATE = 1516492800000        # The starting date, in milliseconds, that we begin backtesting from.
+TIME_INTERVAL = Client.KLINE_INTERVAL_5MINUTE        # The base interval for our data.
+CANDLE_INTERVAL = 300000        # The TIME_INTERVAL, in milliseconds, for each candlestick.
 
 ORDER_TIME_LIMIT = 5        # [1, 12] Integers = 12
 STOP_LOSS_ARM = 1.03        # [1.010, 1.050] 3 Decimal Places = 40

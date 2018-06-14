@@ -1,97 +1,58 @@
 from binance.client import Client
 from components.Candle import Candle
-import pandas, ta, math, json
+import pandas, os, json ta, math
 import utilities
 
 
 class Coinpair:
 
-    # Initialize a new Coinpair with the required information
-    # Add additional default values for other variables
-    # NOTE: This has 2 API calls
-    def __init__(self, client, coinpair, online):
+    def __init__(self, client, coinpair):
         self.client = client
         self.coinpair = coinpair
-        self.candles = []
-        self.macd = []
-        self.macdSignal = []
-        self.macdDiff = []
-        self.upperband = []
-        self.lowerband = []
+        self.candles = pandas.DataFrame(columns=['time', 'candle']).set_index('time')
+        self.overhead = pandas.DataFrame(columns=['time', 'macd', 'macdSignal', 'macdDiff', 'upperband', 'lowerband']).set_index('time')
 
-        # Query the API for the latest 500 entry points and the coinpair's specific info.
-        if online:
-            tempData = pandas.DataFrame(self.client.get_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
-            self.info = self.client.get_symbol_info(self.coinpair)
+        if client != None:
+            data = pandas.DataFrame(self.client.get_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL), columns=utilities.COLUMN_STRUCTURE)
+            self.info = self.client.get_symbol_info(coinpair)
         else:
             try:
-                tempData = pandas.read_csv('data/history/' + coinpair + '.csv')
-                saveToFile = False
-            except FileNotFoundError:
-                if client == None: raise Exception('No Client')
-                utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound... using API...')
-                tempData = pandas.DataFrame(
-                    self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1516492800000'), columns=utilities.COLUMN_STRUCTURE)
-                saveToFile = True
+                data = pandas.read_csv('data/history/' + coinpair + '.csv')
             except:
-                utilities.throw_error('Failed to Retrieve Historical Data', True)
+                utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound')
+                os.system('python get_history_new.py -c ' + coinpair)
 
             try:
-                if saveToFile: tempData.to_csv('data/history/' + coinpair + '.csv', index=False)
-            except:
-                utilities.throw_error('Failed to Save Historical Data', False)
-
-            # Add the specific information associated with this Coinpair.
-            # This is used below to verify trading precision.
-            try:
+                data = pandas.read_csv('data/history/' + coinpair + '.csv')
                 with open('data/coinpair/' + coinpair + '.json') as json_file:
                     self.info = json.load(json_file)
-                saveToFile = False
-            except FileNotFoundError:
-                if client == None: raise Exception('No Client')
-                utilities.throw_info('data/coinpair/' + coinpair + '.json FileNotFound... using API...')
-                self.info = self.client.get_symbol_info(self.coinpair)
-                saveToFile = True
             except:
-                utilities.throw_error('Failed to Coinpair Info', True)
+                utilities.throw_error('Failed to Import Coinpair History or Info', True)
 
-            try:
-                if saveToFile:
-                    with open('data/coinpair/' + coinpair + '.json', 'w') as json_file:
-                        json.dump(self.info, json_file)
-            except:
-                utilities.throw_error('Failed to Save Coinpair Info', False)
+        for index, candle in data.iterrows():
+            newCandle = Candle(
+                int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades']),
+                float(candle['Volume']))
+            self.candles = self.candles.append({'time': newCandle.openTime, 'candle': newCandle}, ignore_index=True)
 
-        # Create a Candle and add it to self.candles for each entry returned by the API.
-        # Remove the last one as that's the current (incomplete) Candle.
-        for index, candle in tempData.iterrows():
-            self.candles.append(
-                Candle(
-                    int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades']),
-                    float(candle['Volume'])))
-        self.candles = self.candles[:-1]
-
-        # Update the overhead information for this Coinpair.
-        # Overhead information includes the MACD, Bollinger Bands, etc.
         self.update_overhead()
 
-    # Update the overhead variables associated with the Coinpair
     def update_overhead(self):
+        closeData = pandas.Series([row['candle'].close for index, row in self.candles.iterrows()])
 
-        # Use the close price of each Candle to calculate overhead information.
-        closeData = pandas.Series([float(candle.close) for candle in self.candles])
+        macd = ta.trend.macd(closeData, n_fast=12, n_slow=26, fillna=True)
+        macdSignal = ta.trend.macd_signal(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+        macdDiff = ta.trend.macd_diff(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+        upperband = ta.volatility.bollinger_hband(closeData, n=14, ndev=2, fillna=True)
+        lowerband = ta.volatility.bollinger_lband(closeData, n=14, ndev=2, fillna=True)
 
-        # Use the ta library to calculate the following pieces of overhead information.
-        self.macd = ta.trend.macd(closeData, n_fast=12, n_slow=26, fillna=True)
-        self.macdSignal = ta.trend.macd_signal(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-        self.macdDiff = ta.trend.macd_diff(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-        self.upperband = ta.volatility.bollinger_hband(closeData, n=14, ndev=2, fillna=True)
-        self.lowerband = ta.volatility.bollinger_lband(closeData, n=14, ndev=2, fillna=True)
+        i = 0
+        for index, row in self.candles.iterrows():
+            self.overhead = self.overhead.append({'time': index, 'macd': macd[i], 'macdSignal': macdSignal[i], 'macdDiff': macdDiff[i], 'upperband': upperband[i], 'lowerband': lowerband[i]})
+            i += 1
 
-    # Add a new Candle to the self.candles array and keep the overhead information updated
-    # candle - The new Candle being added
     def add_candle(self, candle):
-        self.candles.append(candle)
+        self.candles = self.candles.append({'time': candle.openTime, 'candle': candle})
         self.update_overhead()
 
     # Determines how many decimal places are used in a float value
