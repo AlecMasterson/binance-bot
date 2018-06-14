@@ -331,6 +331,11 @@ class Bot:
 
             strategy.check_buy(self, coinpair, index)
 
+        results = pandas.DataFrame(columns=['startTime', 'endTime', 'startPrice', 'endPrice'])
+        for position in self.positions:
+            results = results.append({'startTime': position.time, 'endTime': position.time + position.age, 'startPrice': position.price, 'endPrice': position.current}, ignore_index=True)
+        results.to_csv('data/backtesting/' + position.coinpair + '.csv', index=False)
+
         total = combined_total(self.data, self.balances)
         if self.optimize: self.reset()
 

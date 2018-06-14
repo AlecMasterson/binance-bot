@@ -22,7 +22,7 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['ADABTC']
+COINPAIRS = ['BNBBTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
