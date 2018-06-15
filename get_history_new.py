@@ -8,6 +8,8 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--coinpairs', help='list of Coinpairs to get data for', nargs='+', type=str, action='append', dest='coinpairs', required=True)
     args = parser.parse_args()
 
+    utilities.throw_info('Data Acquisition Script Running for Coinpairs ' + str(args.coinpairs[0]))
+
     try:
         client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
     except:

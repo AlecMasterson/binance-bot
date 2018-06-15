@@ -1,6 +1,6 @@
 from binance.client import Client
 from components.Candle import Candle
-import pandas, os, json ta, math
+import pandas, os, json, ta, math
 import utilities
 
 
@@ -21,9 +21,9 @@ class Coinpair:
             except:
                 utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound')
                 os.system('python get_history_new.py -c ' + coinpair)
+                data = pandas.read_csv('data/history/' + coinpair + '.csv')
 
             try:
-                data = pandas.read_csv('data/history/' + coinpair + '.csv')
                 with open('data/coinpair/' + coinpair + '.json') as json_file:
                     self.info = json.load(json_file)
             except:
@@ -48,7 +48,15 @@ class Coinpair:
 
         i = 0
         for index, row in self.candles.iterrows():
-            self.overhead = self.overhead.append({'time': index, 'macd': macd[i], 'macdSignal': macdSignal[i], 'macdDiff': macdDiff[i], 'upperband': upperband[i], 'lowerband': lowerband[i]})
+            self.overhead = self.overhead.append(
+                {
+                    'time': index,
+                    'macd': macd[i],
+                    'macdSignal': macdSignal[i],
+                    'macdDiff': macdDiff[i],
+                    'upperband': upperband[i],
+                    'lowerband': lowerband[i]
+                }, ignore_index=True)
             i += 1
 
     def add_candle(self, candle):

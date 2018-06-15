@@ -51,12 +51,13 @@ class Bot:
         self.data = {}
         try:
             for coinpair in utilities.COINPAIRS:
-                self.data[coinpair] = Coinpair(self.client, coinpair, self.online)
+                self.data[coinpair] = Coinpair(self.client if self.online else None, coinpair)
         except Exception as e:
             print(e)
             traceback.print_exc()
             utilities.throw_error('Failed to Get Historical Data', True)
         utilities.throw_info('Successfully Finished Getting Historical Data')
+        sys.exit()
 
         if self.online:
             try:
@@ -320,6 +321,25 @@ class Bot:
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
 
     def run_backtest(self, coinpair):
+        curTime = utilities.START_DATE
+        endTime = time.time() * 1000
+
+        decisions = []
+        for coinpair in utilities.COINPAIRS:
+            decisions.append({'coinpair': coinpair, 'trade': False})
+
+        while curTime <= endTime:
+            '''for position in self.positions:
+                # TODO: Access data and query check_sell.
+                #if position.open: strategy.check_sell(self, position, index)
+
+            for coinpair in utilities.COINPAIRS:
+                # TODO: Access data and query check_buy. Update decisions appropriately.
+            # TODO: Of the coinpairs that should trade, determine the order in which they should trade.
+            # TODO: Trade for each coinpair in the order determined above.
+            '''
+            curTime += utilities.CANDLE_INTERVAL
+
         for index, candle in enumerate(self.data[coinpair].candles):
             if index == 0: continue
 
