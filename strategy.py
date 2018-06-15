@@ -5,12 +5,15 @@ def slope(x1, x2, y1, y2):
     return (y2 - y1) / (x2 - x1)
 
 
-def check_buy(bot, coinpair, index):
+def check_buy(bot, curTime, candles, overhead):
+    index = (curTime - utilities.START_DATE) / utilities.CANDLE_INTERVAL
     if index < 3: return
 
-    if bot.data[coinpair].macdDiff[index - 1] > 0: bot.aboveZero = True
+     if overhead.loc[curTime - utilities.CANDLE_INTERVAL]['macdDiff'] > 0: bot.aboveZero = True
 
     if index < utilities.WINDOW: return
+
+    # TODO: DO THIS LINE.
     minimum = min(bot.data[coinpair].macdDiff[index - utilities.WINDOW:index])
 
     valid = False

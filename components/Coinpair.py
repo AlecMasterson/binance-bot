@@ -9,8 +9,8 @@ class Coinpair:
     def __init__(self, client, coinpair):
         self.client = client
         self.coinpair = coinpair
-        self.candles = pandas.DataFrame(columns=['time', 'candle']).set_index('time')
-        self.overhead = pandas.DataFrame(columns=['time', 'macd', 'macdSignal', 'macdDiff', 'upperband', 'lowerband']).set_index('time')
+        self.candles = pandas.DataFrame(columns=['time', 'candle'])
+        self.overhead = pandas.DataFrame(columns=['time', 'macd', 'macdSignal', 'macdDiff', 'upperband', 'lowerband'])
 
         if client != None:
             data = pandas.DataFrame(self.client.get_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL), columns=utilities.COLUMN_STRUCTURE)
@@ -35,7 +35,9 @@ class Coinpair:
                 float(candle['Volume']))
             self.candles = self.candles.append({'time': newCandle.openTime, 'candle': newCandle}, ignore_index=True)
 
+        self.candles = self.candles.set_index('time')
         self.update_overhead()
+        self.overhead = self.overhead.set_index('time')
 
     def update_overhead(self):
         closeData = pandas.Series([row['candle'].close for index, row in self.candles.iterrows()])

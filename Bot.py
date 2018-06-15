@@ -57,7 +57,6 @@ class Bot:
             traceback.print_exc()
             utilities.throw_error('Failed to Get Historical Data', True)
         utilities.throw_info('Successfully Finished Getting Historical Data')
-        sys.exit()
 
         if self.online:
             try:
@@ -320,6 +319,11 @@ class Bot:
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
 
+    def get_candle(self, df, time):
+        print(type(df.loc[df['time'] == time]))
+        print(df.loc[df['time'] == time]['candle'])
+        return df.loc[df['time'] == time]['candle'][0]
+
     def run_backtest(self, coinpair):
         curTime = utilities.START_DATE
         endTime = time.time() * 1000
@@ -329,11 +333,13 @@ class Bot:
             decisions.append({'coinpair': coinpair, 'trade': False})
 
         while curTime <= endTime:
+            print(self.data[coinpair].candles.loc[curTime]['candle'].openTime)
             '''for position in self.positions:
                 # TODO: Access data and query check_sell.
                 #if position.open: strategy.check_sell(self, position, index)
 
             for coinpair in utilities.COINPAIRS:
+                strategy.check_buy(self, curTime, self.data[coinpair].candles, self.data[coinpair].overhead)
                 # TODO: Access data and query check_buy. Update decisions appropriately.
             # TODO: Of the coinpairs that should trade, determine the order in which they should trade.
             # TODO: Trade for each coinpair in the order determined above.
@@ -343,13 +349,13 @@ class Bot:
         for index, candle in enumerate(self.data[coinpair].candles):
             if index == 0: continue
 
-            self.recent[coinpair].append(self.data[coinpair].candles[index - 1])
+            #self.recent[coinpair].append(self.data[coinpair].candles[index - 1])
             self.update()
 
             for position in self.positions:
                 if position.open: strategy.check_sell(self, position, index)
 
-            strategy.check_buy(self, coinpair, index)
+            strategy.check_buy(self, curTime, candles, overhead)
 
         results = pandas.DataFrame(columns=['startTime', 'endTime', 'startPrice', 'endPrice'])
         for position in self.positions:
