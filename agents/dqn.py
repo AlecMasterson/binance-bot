@@ -23,14 +23,7 @@ from trading_env.trading_env import TradingEnv
 
 EPISODES = 10000000
 batch_size = 16
-data_csvs = [
-    'data_5_min/ADABTC.csv',
-    'data_5_min/BNBBTC.csv',
-    'data_5_min/ETHBTC.csv',
-    'data_5_min/ICXBTC.csv',
-    'data_5_min/LTCBTC.csv',
-    'data_5_min/IOTAETH.csv'
-]
+data_csvs = ['data_5_min/ADABTC.csv', 'data_5_min/BNBBTC.csv', 'data_5_min/ETHBTC.csv', 'data_5_min/ICXBTC.csv', 'data_5_min/LTCBTC.csv', 'data_5_min/IOTAETH.csv']
 
 
 class DQNAgent:
@@ -83,7 +76,7 @@ class DQNAgent:
         simple_output = LeakyReLU(alpha=0.3)(simple_output)
         simple_output = Dense(self.action_size)(simple_output)
         simple_output = LeakyReLU(alpha=0.3)(simple_output)
-        brain = Model(input=simple_input, output=simple_output)
+        brain = Model(inputs=simple_input, outputs=simple_output)
         brain.compile(optimizer=Adam(lr=self.learning_rate), loss='mae', metrics=['mae'])
 
         plot_model(brain, show_shapes=True, to_file='brain.png')
@@ -173,7 +166,8 @@ if __name__ == "__main__":
 
         episode_end_time = time()
         print("episode: {}/{}, time: {:.4}, e: {:.4}, steps: {}, total reward: {}, total value: {}, buy: {}, hold: {}, source: {}".format(
-            e, EPISODES, episode_end_time - episode_start_time, agent.epsilon, env.iteration, env.total_reward, env.total_value, env.action_history[:].count(0), env.action_history[:].count(1), generator.filename))
+            e, EPISODES, episode_end_time - episode_start_time, agent.epsilon, env.iteration, env.total_reward, env.total_value, env.action_history[:].count(0), env.action_history[:].count(1),
+            generator.filename))
 
         done = False
         if e % 10 == 0:
