@@ -16,12 +16,14 @@ if __name__ == "__main__":
         utilities.throw_error('Failed to Connect to Binance API', True)
     utilities.throw_info('Successfully Finished Connecting to Binance Client')
 
+    errors = 0
     for coinpair in args.coinpairs[0]:
         try:
             utilities.throw_info('Getting Historical Data for ' + coinpair + '...')
             data = pandas.DataFrame(client.get_historical_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL, start_str=utilities.START_DATE), columns=utilities.COLUMN_STRUCTURE)
             data.to_csv('data/history/' + coinpair + '.csv', index=False)
         except:
+            errors += 1
             utilities.throw_error('Failed to Update Historical Data for ' + coinpair, False)
 
         try:
@@ -30,6 +32,7 @@ if __name__ == "__main__":
             with open('data/coinpair/' + coinpair + '.json', 'w') as json_file:
                 json.dump(info, json_file)
         except:
+            errors += 1
             utilities.throw_error('Failed to Update Coinpair Info for ' + coinpair, False)
 
-    utilities.throw_info('Successfully Finished Updating all Coinpairs')
+    utilities.throw_info('Successfully Finished Updating all Coinpairs with ' + str(errors) + ' Errors')
