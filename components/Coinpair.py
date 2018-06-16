@@ -13,14 +13,17 @@ class Coinpair:
         self.overhead = pandas.DataFrame(columns=['time', 'macd', 'macdSignal', 'macdDiff', 'upperband', 'lowerband'])
 
         if client != None:
-            data = pandas.DataFrame(self.client.get_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL), columns=utilities.COLUMN_STRUCTURE)
-            self.info = self.client.get_symbol_info(coinpair)
+            try:
+                data = pandas.DataFrame(self.client.get_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL), columns=utilities.COLUMN_STRUCTURE)
+                self.info = self.client.get_symbol_info(coinpair)
+            except:
+                utilities.throw_error('Failed to Import Coinpair History and Info', True)
         else:
             try:
                 data = pandas.read_csv('data/history/' + coinpair + '.csv')
             except:
                 utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound')
-                os.system('python get_history_new.py -c ' + coinpair)
+                os.system('python get_history.py -c ' + coinpair)
                 data = pandas.read_csv('data/history/' + coinpair + '.csv')
 
             try:
@@ -34,8 +37,8 @@ class Coinpair:
                 int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades']),
                 float(candle['Volume']))
             self.candles = self.candles.append({'time': newCandle.openTime, 'candle': newCandle}, ignore_index=True)
-
         self.candles = self.candles.set_index('time')
+
         self.update_overhead()
         self.overhead = self.overhead.set_index('time')
 
