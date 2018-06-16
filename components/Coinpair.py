@@ -27,7 +27,7 @@ class Coinpair:
                 with open('data/coinpair/' + coinpair + '.json') as json_file:
                     self.info = json.load(json_file)
             except:
-                utilities.throw_error('Failed to Import Coinpair History or Info', True)
+                utilities.throw_error('Failed to Import Coinpair History and Info', True)
 
         for index, candle in data.iterrows():
             newCandle = Candle(
@@ -64,6 +64,12 @@ class Coinpair:
     def add_candle(self, candle):
         self.candles = self.candles.append({'time': candle.openTime, 'candle': candle})
         self.update_overhead()
+
+    def get_candle(self, time):
+        return self.candles.loc[time]['candle']
+
+    def get_overhead(self, time, item):
+        return self.overhead.loc[time][item]
 
     # Determines how many decimal places are used in a float value
     # This is only used to help validate trading precision
