@@ -3,6 +3,7 @@ import sys
 import time
 import argparse
 import pandas
+import datetime
 
 import plotly.graph_objs as go
 import plotly.offline as py
@@ -37,7 +38,7 @@ class Bot:
         self.optimize = optimize
 
         if self.online and self.optimize:
-            utilities.throw_error('Cannot Be Online AND Optimizing...', True)
+            utilities.throw_error('Cannot Be Online AND Optimizing', True)
 
         if not self.optimize:
             try:
@@ -51,12 +52,11 @@ class Bot:
         self.data = {}
         try:
             for coinpair in utilities.COINPAIRS:
+                utilities.throw_info('Importing History and Info for ' + coinpair + '...')
                 self.data[coinpair] = Coinpair(self.client if self.online else None, coinpair)
-        except Exception as e:
-            print(e)
-            traceback.print_exc()
+        except:
             utilities.throw_error('Failed to Get Historical Data', True)
-        utilities.throw_info('Successfully Finished Getting Historical Data')
+        utilities.throw_info('Successfully Finished Getting All Historical Data')
 
         if self.online:
             try:
@@ -117,29 +117,30 @@ class Bot:
         self.plot_buy_triggers = []
         self.plot_sell_triggers = []
 
-        self.aboveZero = False
-        self.belowZero = False
-        self.slopes = []
-        self.top_slopes = []
+        self.perm = {'aboveZero': False, 'belowZero': False, 'slopes': [], 'top_slopes': []}
 
+    # OFFLINE ONLY
     def reset(self):
-        if not self.online:
-            self.positions = []
-            self.orders = []
+        if self.online: return
 
-            self.balances = {}
-            for coinpair in utilities.COINPAIRS:
-                self.balances[coinpair[:-3]] = 0.0
-            self.balances['BTC'] = 1.0
+        self.positions = []
+        self.orders = []
 
-            self.recent = {}
-            for coinpair in utilities.COINPAIRS:
-                self.recent[coinpair] = []
+        self.balances = {}
+        for coinpair in utilities.COINPAIRS:
+            self.balances[coinpair[:-3]] = 0.0
+        self.balances['BTC'] = 1.0
 
+        self.recent = {}
+        for coinpair in utilities.COINPAIRS:
+            self.recent[coinpair] = []
+
+    # ONLINE ONLY
     def update_balances(self):
-        if self.online:
-            for balance in self.balances:
-                balance.update()
+        if not self.online: return
+
+        for balance in self.balances:
+            balance.update()
 
     def update_positions(self):
         for position in self.positions:
@@ -191,6 +192,7 @@ class Bot:
                             if not self.online: self.balances[order.symbol[:-3]] += order.used
                             if self.online: utilities.throw_info('Sell Order Cancelled for Coinpair ' + order.symbol)
 
+    # ONLINE ONLY
     def export_data(self):
         if not self.online: return
 
@@ -281,122 +283,84 @@ class Bot:
 
         return True
 
-    def plot(self, coinpair):
-
-        max = -1e10
-        min = 1e10
-        for candle in self.data[coinpair].candles:
-            if candle.numTrades > max: max = candle.numTrades
-            if candle.numTrades < min: min = candle.numTrades
-        for candle in self.data[coinpair].candles:
-            candle.numTrades = ((candle.numTrades - min) / (max - min) * 0.0025) + 0.0016
-
-        plotData = [
-            go.Candlestick(
-                name='Candle Data',
-                x=[to_datetime(candle.openTime) for candle in self.data[coinpair].candles],
-                open=[candle.open for candle in self.data[coinpair].candles],
-                high=[candle.high for candle in self.data[coinpair].candles],
-                low=[candle.low for candle in self.data[coinpair].candles],
-                close=[candle.close for candle in self.data[coinpair].candles],
-                text=['MACD: ' + str(macd) for macd in self.data[coinpair].macd]),
-        #go.Scatter(name='Number of Trades', x=[to_datetime(candle.closeTime) for candle in self.data[coinpair].candles], y=[candle.numTrades for candle in self.data[coinpair].candles]),
-            go.Scatter(
-                name='Bought',
-                x=[to_datetime(position.time) for position in self.positions],
-                y=[position.price for position in self.positions],
-                mode='markers',
-                marker=dict(size=12, color='orange'),
-                text=[position.price for position in self.positions]),
-            go.Scatter(
-                name='Sold',
-                x=[to_datetime(position.time + position.age) for position in self.positions],
-                y=[position.price * position.result for position in self.positions],
-                mode='markers',
-                marker=dict(size=12, color='blue'),
-                text=[position.price for position in self.positions])
-        ]
-        layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
-        py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
-
-    def get_candle(self, df, time):
-        print(type(df.loc[df['time'] == time]))
-        print(df.loc[df['time'] == time]['candle'])
-        return df.loc[df['time'] == time]['candle'][0]
-
-    def run_backtest(self, coinpair):
+    def run_backtest(self):
         curTime = utilities.START_DATE
         endTime = time.time() * 1000
 
-        decisions = []
-        for coinpair in utilities.COINPAIRS:
-            decisions.append({'coinpair': coinpair, 'trade': False})
-
+        curMonth = -1
         while curTime <= endTime:
-            print(self.data[coinpair].candles.loc[curTime]['candle'].openTime)
-            '''for position in self.positions:
-                # TODO: Access data and query check_sell.
-                #if position.open: strategy.check_sell(self, position, index)
+            testMonth = datetime.datetime.fromtimestamp(curTime / 1000.0).month
+            if curMonth != testMonth:
+                curMonth = testMonth
+                utilities.throw_info('Now Backtesting Month: ' + str(curMonth))
+
+            if not curTime in self.data[utilities.COINPAIRS[0]].info.index: print(curTime)
 
             for coinpair in utilities.COINPAIRS:
-                strategy.check_buy(self, curTime, self.data[coinpair].candles, self.data[coinpair].overhead)
-                # TODO: Access data and query check_buy. Update decisions appropriately.
-            # TODO: Of the coinpairs that should trade, determine the order in which they should trade.
-            # TODO: Trade for each coinpair in the order determined above.
-            '''
-            curTime += utilities.CANDLE_INTERVAL
+                prevCandle = self.data[coinpair].get_item(curTime - utilities.CANDLE_INTERVAL, 'candle')
+                if prevCandle != None: self.recent[coinpair].append(prevCandle)
 
-        for index, candle in enumerate(self.data[coinpair].candles):
-            if index == 0: continue
-
-            #self.recent[coinpair].append(self.data[coinpair].candles[index - 1])
             self.update()
 
             for position in self.positions:
-                if position.open: strategy.check_sell(self, position, index)
+                if position.open and strategy.check_sell(self.perm, curTime, self.data[position.coinpair]): self.sell(position)
 
-            strategy.check_buy(self, curTime, candles, overhead)
+            # TODO: Make an ordering system to buy the most potential profitable coinpairs first.
+            for coinpair in utilities.COINPAIRS:
+                price = strategy.check_buy(self.perm, curTime, self.data[coinpair])
+                if price != None: self.buy(coinpair, price)
 
-        results = pandas.DataFrame(columns=['startTime', 'endTime', 'startPrice', 'endPrice'])
+            curTime += utilities.CANDLE_INTERVAL
+
+        # -------------------------------------------------
+        # EXPORT POSITION RESULTS FOR ANALYZING OR PLOTTING
+        # -------------------------------------------------
+
+        results = pandas.DataFrame(columns=['coinpair', 'startTime', 'endTime', 'startPrice', 'endPrice', 'result'])
         for position in self.positions:
-            results = results.append({'startTime': position.time, 'endTime': position.time + position.age, 'startPrice': position.price, 'endPrice': position.current}, ignore_index=True)
-        results.to_csv('data/backtesting/' + position.coinpair + '.csv', index=False)
+            results = results.append(
+                {
+                    'coinpair': position.coinpair,
+                    'startTime': position.time,
+                    'endTime': position.time + position.age,
+                    'startPrice': position.price,
+                    'endPrice': position.current,
+                    'result': position.result
+                },
+                ignore_index=True)
+        results.to_csv('data/backtesting/results.csv', index=False)
 
-        total = combined_total(self.data, self.balances)
+        # ----------------------------
+        # RETURN TOTAL ACCOUNT BALANCE
+        # ----------------------------
+
+        #result = combined_total(self.data, self.balances)
+        print(self.balances)
+        result = 0.0
         if self.optimize: self.reset()
 
-        return total
-
-    def print_optimize(self):
-        print(utilities.ORDER_TIME_LIMIT, utilities.STOP_LOSS_ARM, utilities.STOP_LOSS)
+        return result
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='An Automated Binance Exchange Trading Bot')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-o', '--online', help='run the Bot live on the exchange', action='store_true')
-    group.add_argument('-p', '--plot', help='plot results using Plotly', action='store_true')
+    parser.add_argument('-o', '--online', help='run the Bot live on the exchange', action='store_true')
     args = parser.parse_args()
 
     if not args.online:
-        # TODO: Support backtesting across multiple coinpairs
-        coinpair = utilities.COINPAIRS[0]
         bot = Bot()
 
-        total = bot.run_backtest(coinpair)
+        utilities.throw_info('Starting Backtesting...')
+        result = bot.run_backtest()
+        utilities.throw_info('Successfully Completed Backtesting')
+
+        # TODO: Cancel any open orders.
 
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
-        #print(bot.orders[0].executedQty)
-        utilities.throw_info('Total Balance: ' + str(total))
-
-        if args.plot: bot.plot(coinpair)
+        utilities.throw_info('Total Balance: ' + str(result))
 
     # TODO: Complete and test...
     else:
-        bot = Bot(True)
-
-        while True:
-            bot.update()
-
-            time.sleep(30)
+        sys.exit()
