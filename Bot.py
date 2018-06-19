@@ -25,10 +25,14 @@ def to_datetime(time):
 
 
 def combined_total(data, balances):
-    total = balances['BTC']
+    total = balances['BTC'].free
     for coinpair in utilities.COINPAIRS:
-        total += data[coinpair].candles[-1].close * balances[coinpair[:-3]]
+        total += data[coinpair].candles[-1].close * balances[coinpair[:-3]].free
     return total
+
+
+def get_time(position):
+    return position.time
 
 
 class Bot:
@@ -40,7 +44,7 @@ class Bot:
         if self.online and self.optimize:
             utilities.throw_error('Cannot Be Online AND Optimizing', True)
 
-        if not self.optimize:
+        if self.online:
             try:
                 self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
             except:
@@ -105,10 +109,8 @@ class Bot:
 
         self.balances = {}
         for coinpair in utilities.COINPAIRS:
-            if self.online: self.balances[coinpair[:-3]] = Balance(self.client, coinpair[:-3])
-            else: self.balances[coinpair[:-3]] = 0.0
-        if self.online: self.balances['BTC'] = Balance(self.client, 'BTC')
-        else: self.balances['BTC'] = 1.0
+            self.balances[coinpair[:-3]] = Balance(self.client, coinpair[:-3], None if self.online else 0.0)
+        self.balances['BTC'] = Balance(self.client, 'BTC', None if self.online else 1.0)
 
         self.recent = {}
         for coinpair in utilities.COINPAIRS:
@@ -128,19 +130,21 @@ class Bot:
 
         self.balances = {}
         for coinpair in utilities.COINPAIRS:
-            self.balances[coinpair[:-3]] = 0.0
-        self.balances['BTC'] = 1.0
+            self.balances[coinpair[:-3]] = Balance(self.client, coinpair[:-3], None if self.online else 0.0)
+        self.balances['BTC'] = Balance(self.client, 'BTC', None if self.online else 1.0)
 
         self.recent = {}
         for coinpair in utilities.COINPAIRS:
             self.recent[coinpair] = []
 
-    # ONLINE ONLY
-    def update_balances(self):
-        if not self.online: return
+        self.perm = {'aboveZero': False, 'belowZero': False, 'slopes': [], 'top_slopes': []}
 
-        for balance in self.balances:
-            balance.update()
+    def update_balances(self, asset=None, amount=None):
+        if not self.online and asset != None and amount != None:
+            self.balances[asset].update(amount)
+        elif self.online:
+            for balance in self.balances:
+                balance.update()
 
     def update_positions(self):
         for position in self.positions:
@@ -166,20 +170,20 @@ class Bot:
             if order.side == 'BUY':
                 if order.status == 'FILLED':
                     if self.online: utilities.throw_info('Buy Order Filled')
-                    if not self.online: self.balances[order.symbol[:-3]] += order.executedQty * 0.999
+                    if not self.online: self.update_balances(order.symbol[:-3], order.executedQty * 0.999)
                     self.positions.append(Position(order.orderId, order.transactTime, order.symbol, order.executedQty, order.price))
                     self.orders.remove(order)
                     if self.online: utilities.throw_info('New Position Created for Coinpair ' + order.symbol)
                 elif order.status == 'CANCELED':
                     self.orders.remove(order)
-                    if not self.online: self.balances['BTC'] += order.used
+                    if not self.online: self.update_balances('BTC', order.used)
                     if self.online: utilities.throw_info('Buy Order Cancelled for Coinpair ' + order.symbol)
             elif order.side == 'SELL':
                 if order.status == 'FILLED':
                     if self.online: utilities.throw_info('Sell Order Filled')
                     for position in self.positions:
                         if position.sellId == order.orderId:
-                            if not self.online: self.balances['BTC'] += order.executedQty * order.price * 0.999
+                            if not self.online: self.update_balances('BTC', order.executedQty * order.price * 0.999)
                             position.update(order.transactTime, order.price)
                             position.open = False
                             self.orders.remove(order)
@@ -189,7 +193,7 @@ class Bot:
                     for position in self.positions:
                         if position.sellId == order.orderId:
                             position.sellId = ''
-                            if not self.online: self.balances[order.symbol[:-3]] += order.used
+                            if not self.online: self.update_balances(order.symbol[:-3], order.used)
                             if self.online: utilities.throw_info('Sell Order Cancelled for Coinpair ' + order.symbol)
 
     # ONLINE ONLY
@@ -217,100 +221,102 @@ class Bot:
         self.export_data()
 
     def buy(self, coinpair, price):
-        buyQuantity, buyPrice, btcUsed = self.data[coinpair].validate_order('BUY', self.balances['BTC'].free if self.online else self.balances['BTC'], price)
+        buyQuantity, buyPrice, btcUsed = coinpair.validate_order('BUY', self.balances['BTC'].free, price)
         if buyQuantity == -1 or buyPrice == -1: return False
 
-        if self.online:
-            try:
-                self.orders.append(Order(self.client, self.client.order_limit_buy(symbol=coinpair, quantity=buyQuantity, price=buyPrice)))
-            except:
-                utilities.throw_error('Failed to Create a Buy Order', False)
-        else:
+        if not self.online:
             self.orders.append(
                 Order(
                     None, {
                         'orderId': str(len(self.positions)) + '-BUY',
-                        'symbol': coinpair,
+                        'symbol': coinpair.coinpair,
                         'side': 'BUY',
                         'status': 'NEW',
-                        'transactTime': self.recent[coinpair][-1].closeTime,
+                        'transactTime': self.recent[coinpair.coinpair][-1].closeTime,
                         'price': buyPrice,
                         'origQty': buyQuantity,
                         'executedQty': buyQuantity
                     }, btcUsed))
+        else:
+            try:
+                self.orders.append(Order(self.client, self.client.order_limit_buy(symbol=coinpair.coinpair, quantity=buyQuantity, price=buyPrice)))
+                utilities.throw_info('Buy Order Created for Coinpair ' + coinpair + ' at Time: ' + str(to_datetime(self.recent[coinpair][-1]['time'])))
+            except:
+                utilities.throw_error('Failed to Create a Buy Order', False)
 
-            self.balances['BTC'] -= btcUsed
-
-        if self.online: utilities.throw_info('Buy Order Created for Coinpair ' + coinpair + ' at Time: ' + str(to_datetime(self.recent[coinpair][-1]['time'])))
-
-        self.update_balances()
-
+        self.update_balances(None if self.online else 'BTC', None if self.online else (-1 * btcUsed))
         return True
 
-    def sell(self, position):
+    def sell(self, position, coinpair):
         if position.sellId != '': return False
 
-        sellQuantity, sellPrice, assetUsed = self.data[position.coinpair].validate_order('SELL', self.balances[position.coinpair[:-3]].free
-                                                                                         if self.online else self.balances[position.coinpair[:-3]], position.current)
+        sellQuantity, sellPrice, assetUsed = coinpair.validate_order('SELL', self.balances[coinpair.coinpair[:-3]].free, position.current)
         if sellQuantity == -1 or sellPrice == -1: return False
 
-        if self.online:
-            try:
-                order = Order(self.client, self.client.order_limit_sell(symbol=position.coinpair, quantity=sellQuantity, price=sellPrice))
-                position.sellId = order.orderId
-                self.orders.append(order)
-            except:
-                utilities.throw_error('Failed to Create a Sell Order', False)
-        else:
+        if not self.online:
             self.orders.append(
                 Order(
                     None, {
                         'orderId': str(len(self.positions)) + '-SELL',
-                        'symbol': position.coinpair,
+                        'symbol': coinpair.coinpair,
                         'side': 'SELL',
                         'status': 'NEW',
-                        'transactTime': self.recent[position.coinpair][-1].closeTime,
+                        'transactTime': self.recent[coinpair.coinpair][-1].closeTime,
                         'price': sellPrice,
                         'origQty': sellQuantity,
                         'executedQty': sellQuantity
                     }, assetUsed))
             position.sellId = str(len(self.positions)) + '-SELL'
-            self.balances[position.coinpair[:-3]] -= assetUsed
+        else:
+            try:
+                order = Order(self.client, self.client.order_limit_sell(symbol=coinpair.coinpair, quantity=sellQuantity, price=sellPrice))
+                position.sellId = order.orderId
+                self.orders.append(order)
+                utilities.throw_info('Sell Order Created for Coinpair ' + position.coinpair + ' at Time: ' + str(to_datetime(self.recent[position.coinpair][-1]['time'])))
+            except:
+                utilities.throw_error('Failed to Create a Sell Order', False)
 
-        if self.online: utilities.throw_info('Sell Order Created for Coinpair ' + position.coinpair + ' at Time: ' + str(to_datetime(self.recent[position.coinpair][-1]['time'])))
-
-        self.update_balances()
-
+        self.update_balances(None if self.online else coinpair.coinpair[:-3], None if self.online else (-1 * assetUsed))
         return True
 
     def run_backtest(self):
-        curTime = utilities.START_DATE
-        endTime = time.time() * 1000
+        final_positions = []
+        for coinpair in utilities.COINPAIRS:
+            for index, candle in enumerate(self.data[coinpair].candles):
+                if index == 0: continue
 
-        curMonth = -1
-        while curTime <= endTime:
-            testMonth = datetime.datetime.fromtimestamp(curTime / 1000.0).month
-            if curMonth != testMonth:
-                curMonth = testMonth
-                utilities.throw_info('Now Backtesting Month: ' + str(curMonth))
+                self.recent[coinpair].append(self.data[coinpair].candles[index - 1])
+                self.update()
 
-            if not curTime in self.data[utilities.COINPAIRS[0]].info.index: print(curTime)
+                for position in self.positions:
+                    if position.open and strategy.check_sell(position, self.perm, self.data[coinpair], index): self.sell(position, self.data[position.coinpair])
 
-            for coinpair in utilities.COINPAIRS:
-                prevCandle = self.data[coinpair].get_item(curTime - utilities.CANDLE_INTERVAL, 'candle')
-                if prevCandle != None: self.recent[coinpair].append(prevCandle)
-
-            self.update()
+                price = strategy.check_buy(self.perm, self.data[coinpair], index)
+                if price != None: self.buy(self.data[coinpair], price)
+            return combined_total(self.data, self.balances)
+            utilities.throw_info('Backtesting ' + coinpair + ' Finished with ' + str(combined_total(self.data, self.balances)) + ' BTC')
 
             for position in self.positions:
-                if position.open and strategy.check_sell(self.perm, curTime, self.data[position.coinpair]): self.sell(position)
+                if not position.open: final_positions.append(position)
+            self.reset()
 
-            # TODO: Make an ordering system to buy the most potential profitable coinpairs first.
-            for coinpair in utilities.COINPAIRS:
-                price = strategy.check_buy(self.perm, curTime, self.data[coinpair])
-                if price != None: self.buy(coinpair, price)
-
-            curTime += utilities.CANDLE_INTERVAL
+        final_positions = sorted(final_positions, key=get_time)
+        test = 0.0
+        prevPos = None
+        usedPos = []
+        for position in final_positions:
+            if prevPos == None:
+                prevPos = position
+                usedPos.append(position)
+            elif position.time < prevPos.time + prevPos.age:
+                continue
+            if position.result > 1.0:
+                test += position.result - 1.0
+                prevPos = position
+                usedPos.append(position)
+        print(test)
+        for pos in usedPos:
+            print(pos.toString() + '\tEndTime: ' + str(to_datetime(pos.time + pos.age)))
 
         # -------------------------------------------------
         # EXPORT POSITION RESULTS FOR ANALYZING OR PLOTTING
@@ -335,7 +341,6 @@ class Bot:
         # ----------------------------
 
         #result = combined_total(self.data, self.balances)
-        print(self.balances)
         result = 0.0
         if self.optimize: self.reset()
 

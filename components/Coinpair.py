@@ -9,7 +9,8 @@ class Coinpair:
     def __init__(self, client, coinpair):
         self.client = client
         self.coinpair = coinpair
-        self.info = pandas.DataFrame(columns=['time', 'candle', 'macd', 'macdSignal', 'macdDiff', 'upperband', 'lowerband'])
+        self.candles = []
+        self.overhead = []
 
         if client != None:
             try:
@@ -31,20 +32,17 @@ class Coinpair:
             except:
                 utilities.throw_error('Failed to Import Coinpair History and Info', True)
 
-        tempData = []
         for index, candle in data.iterrows():
-            newCandle = Candle(
-                int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades']),
-                float(candle['Volume']))
-            tempData.append({'time': newCandle.openTime, 'candle': newCandle})
+            self.candles.append(
+                Candle(
+                    int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades']),
+                    float(candle['Volume'])))
 
-        self.info = pandas.concat([self.info, pandas.DataFrame(tempData, columns=['time', 'candle'])], sort=True, ignore_index=True)
-        self.info = self.info.set_index('time')
-
-        self.update_overhead()
+        if not self.update_overhead():
+            utilities.throw_error('Failed to Update Coinpair Overhead', True)
 
     def update_overhead(self):
-        closeData = pandas.Series([row['candle'].close for index, row in self.info.iterrows()])
+        closeData = pandas.Series([candle.close for candle in self.candles])
 
         macd = ta.trend.macd(closeData, n_fast=12, n_slow=26, fillna=True)
         macdSignal = ta.trend.macd_signal(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
@@ -52,22 +50,20 @@ class Coinpair:
         upperband = ta.volatility.bollinger_hband(closeData, n=14, ndev=2, fillna=True)
         lowerband = ta.volatility.bollinger_lband(closeData, n=14, ndev=2, fillna=True)
 
-        i = 0
-        for index, row in self.info.iterrows():
-            row['macd'] = macd[i]
-            row['macdSignal'] = macdSignal[i]
-            row['macdDiff'] = macdDiff[i]
-            row['upperband'] = upperband[i]
-            row['lowerband'] = lowerband[i]
-            i += 1
+        if len(self.candles) != len(macdSignal): return False
+        if len(self.candles) != len(macdSignal): return False
+        if len(self.candles) != len(macdDiff): return False
+        if len(self.candles) != len(upperband): return False
+        if len(self.candles) != len(lowerband): return False
+
+        for i in range(0, len(self.candles)):
+            self.overhead.append({'macd': macd[i], 'macdSignal': macdSignal[i], 'macdDiff': macdDiff[i], 'upperband': upperband[i], 'lowerband': lowerband[i]})
+        return True
 
     def add_candle(self, candle):
-        self.info = self.info.append({'time': candle.openTime, 'candle': candle})
-        self.update_overhead()
-
-    def get_item(self, time, item):
-        if time in self.info.index: return self.info.loc[time][item]
-        else: return None
+        self.candles.append(candle)
+        if not self.update_overhead():
+            utilities.throw_error('Failed to Update Coinpair Overhead', True)
 
     # Determines how many decimal places are used in a float value
     # This is only used to help validate trading precision

@@ -22,7 +22,8 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['BNBBTC']
+#COINPAIRS = ['BNBBTC', 'ADABTC', 'ETHBTC', 'ICXBTC']
+COINPAIRS = ['ADABTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
@@ -30,7 +31,6 @@ SECRET_KEY = ''
 
 START_DATE = 1516514400000        # The starting date, in milliseconds, that we begin backtesting from.
 TIME_INTERVAL = Client.KLINE_INTERVAL_5MINUTE        # The base interval for our data.
-CANDLE_INTERVAL = 300000        # The TIME_INTERVAL, in milliseconds, for each candlestick.
 
 ORDER_TIME_LIMIT = 5        # [1, 12] Integers = 12
 STOP_LOSS_ARM = 1.03        # [1.010, 1.050] 3 Decimal Places = 40
@@ -46,14 +46,12 @@ DROP = 0.960        # [0.950, 0.980] 3 Decimal Places = 30
 #11, 7.1, 2.9
 TOP_THRESHOLD = 2.7
 BOTTOM_THRESHOLD = 2.9
-#{'genes': [5, 239, 216, 0.95, 0.57], 'fitness': 1.6762378136700034} [('ADABTC', 1.6762378136700034)]
-#11, 95, 180, 0.18, 0.82
-#5, 166, 179, 0.59, 0.9
-# [5, 150, 180, 0.67, 0.9]
-WINDOW = 139
-TOP_WINDOW = 173
-PERCENT = 0.67
-TOP_PERCENT = 0.93
+# BNB [5, 139, 173, 0.67, 0.93]
+# ADA [5, 223, 203, 0.5, 0.5]
+WINDOW = 223
+TOP_WINDOW = 203
+PERCENT = 0.5
+TOP_PERCENT = 0.5
 
 NUM_TRIGGERS = 4
 TRIGGER_DECAY = 0.22

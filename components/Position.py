@@ -1,4 +1,8 @@
-import utilities
+import utilities, pandas
+
+
+def to_datetime(time):
+    return pandas.to_datetime(time, unit='ms')
 
 
 class Position:
@@ -43,7 +47,7 @@ class Position:
     # Return a String interpretation of the Position for visualizing
     # Only include necessary information
     def toString(self):
-        return 'Open: ' + str(self.open) + '\tTime: ' + str(self.time) + '\tCoinPair: ' + str(self.coinpair) + '\tResult: ' + str(self.result)
+        return 'Open: ' + str(self.open) + '\tTime: ' + str(to_datetime(self.time)) + '\tCoinPair: ' + str(self.coinpair) + '\tResult: ' + str(self.result)
 
     # Return all data regarding the Position as a comma separated String for exporting
     def toCSV(self):

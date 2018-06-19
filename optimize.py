@@ -58,7 +58,7 @@ def ga_evaluate_genetics(individual, MEMOIZED_EVALS):
         individual['fitness'] = MEMOIZED_EVALS[str(genes)]
     except:
         utilities.set_optimized(genes[0], genes[1], genes[2], genes[3], genes[4])
-        fitness = np.mean([bot.run_backtest(pair) for pair in utilities.COINPAIRS])
+        fitness = np.mean([bot.run_backtest() for pair in utilities.COINPAIRS])
         MEMOIZED_EVALS[str(genes)] = fitness
         individual['fitness'] = fitness
     return individual, MEMOIZED_EVALS
@@ -114,7 +114,7 @@ def ga_optimize(seed=False, population_size=100, generations=100):
             print('Old Best', best, best_bot_performance)
             best = deepcopy(population[0])
             utilities.set_optimized(best['genes'][0], best['genes'][1], best['genes'][2], best['genes'][3], best['genes'][4])
-            best_bot_performance = list(zip(utilities.COINPAIRS, [bot.run_backtest(pair) for pair in utilities.COINPAIRS]))
+            best_bot_performance = list(zip(utilities.COINPAIRS, [bot.run_backtest() for pair in utilities.COINPAIRS]))
             print('New Best', best, best_bot_performance)
         population += [deepcopy(best)]
         population += [ga_randx_breed(pair[0], pair[1]) for pair in zip(np.random.choice(population, int(len(population) / 2)), np.random.choice(population, int(len(population) / 2)))]
