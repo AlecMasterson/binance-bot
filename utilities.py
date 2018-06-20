@@ -22,14 +22,16 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-#COINPAIRS = ['BNBBTC', 'ADABTC', 'ETHBTC', 'ICXBTC']
-COINPAIRS = ['ADABTC']
+COINPAIRS = ['BNBBTC', 'ADABTC', 'ETHBTC', 'ICXBTC', 'EOSBTC', 'TRXBTC']
+#COINPAIRS = ['BNBBTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
 SECRET_KEY = ''
 
-START_DATE = 1516514400000        # The starting date, in milliseconds, that we begin backtesting from.
+# January 21, 2018 = 1516514400000
+# June 1, 2018 = 1527829200000
+START_DATE = 1527829200000        # The starting date, in milliseconds, that we begin backtesting from.
 TIME_INTERVAL = Client.KLINE_INTERVAL_5MINUTE        # The base interval for our data.
 
 ORDER_TIME_LIMIT = 5        # [1, 12] Integers = 12
@@ -48,10 +50,10 @@ TOP_THRESHOLD = 2.7
 BOTTOM_THRESHOLD = 2.9
 # BNB [5, 139, 173, 0.67, 0.93]
 # ADA [5, 223, 203, 0.5, 0.5]
-WINDOW = 223
-TOP_WINDOW = 203
-PERCENT = 0.5
-TOP_PERCENT = 0.5
+WINDOW = 139
+TOP_WINDOW = 173
+PERCENT = 0.67
+TOP_PERCENT = 0.93
 
 NUM_TRIGGERS = 4
 TRIGGER_DECAY = 0.22
@@ -73,6 +75,10 @@ def set_optimized(otl, w, tw, p, tp):
     PERCENT = p
     global TOP_PERCENT
     TOP_PERCENT = tp
+
+
+def to_datetime(time):
+    return pandas.to_datetime(time, unit='ms')
 
 
 # Setup the logging interface with the correct formatting and log file
