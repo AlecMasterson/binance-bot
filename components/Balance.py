@@ -5,7 +5,7 @@ class Balance:
 
     def __init__(self, client, asset):
         self.client = client
-        self.asset = asset
+        self.asset = str(asset)
 
         self.update()
 

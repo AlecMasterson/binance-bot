@@ -8,7 +8,7 @@ class Coinpair:
 
     def __init__(self, client, coinpair):
         self.client = client
-        self.coinpair = coinpair
+        self.coinpair = str(coinpair)
         self.candles = []
         self.overhead = []
 
@@ -17,12 +17,12 @@ class Coinpair:
                 data = pandas.DataFrame(self.client.get_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL), columns=utilities.COLUMN_STRUCTURE)
                 self.policies = self.client.get_symbol_info(coinpair)
             except:
-                utilities.throw_error('Failed to Import Coinpair History and Info', True)
+                utilities.throw_error('Failed to Import Coinpair Historical Data and Info for \'' + coinpair + '\'', True)
         else:
             try:
                 data = pandas.read_csv('data/history/' + coinpair + '.csv')
             except:
-                utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound')
+                utilities.throw_error('data/history/' + coinpair + '.csv FileNotFound', False)
                 os.system('python get_history.py -c ' + coinpair)
                 data = pandas.read_csv('data/history/' + coinpair + '.csv')
 
@@ -30,16 +30,14 @@ class Coinpair:
                 with open('data/coinpair/' + coinpair + '.json') as json_file:
                     self.policies = json.load(json_file)
             except:
-                utilities.throw_error('Failed to Import Coinpair History and Info', True)
+                utilities.throw_error('Failed to Import Coinpair Historical Data and Info for \'' + coinpair + '\'', True)
 
         for index, candle in data.iterrows():
             self.candles.append(
-                Candle(
-                    int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time']), int(candle['Number Trades']),
-                    float(candle['Volume'])))
+                Candle(candle['Open Time'], candle['Open'], candle['High'], candle['Low'], candle['Close'], candle['Close Time'], candle['Number Trades'], candle['Volume']))
 
         if not self.update_overhead():
-            utilities.throw_error('Failed to Update Coinpair Overhead', True)
+            utilities.throw_error('Failed to Update Coinpair Overhead for \'' coinpair + '\'', True)
 
     def update_overhead(self):
         closeData = pandas.Series([candle.close for candle in self.candles])
@@ -56,6 +54,7 @@ class Coinpair:
         if len(self.candles) != len(upperband): return False
         if len(self.candles) != len(lowerband): return False
 
+        self.overhead = []
         for i in range(0, len(self.candles)):
             self.overhead.append({'macd': macd[i], 'macdSignal': macdSignal[i], 'macdDiff': macdDiff[i], 'upperband': upperband[i], 'lowerband': lowerband[i]})
         return True
@@ -63,12 +62,11 @@ class Coinpair:
     def add_candle(self, candle):
         self.candles.append(candle)
         if not self.update_overhead():
-            utilities.throw_error('Failed to Update Coinpair Overhead', True)
+            utilities.throw_error('Failed to Update Coinpair Overhead for \'' + self.coinpair + '\'', True)
 
     # Determines how many decimal places are used in a float value
     # This is only used to help validate trading precision
     # I.E. 0.0001 returns 4
-    # number - The float value
     def num_decimals(self, number):
         count = 0
         while number < 1.0:
@@ -76,11 +74,6 @@ class Coinpair:
             count += 1
         return count
 
-    # Determine the correct quantity and price we can buy/sell
-    # Returns -1, -1, and -1 if unable to meet trading requirements
-    # type - Whether it's a buy or sell order
-    # balance - How much of the asset being used to buy/sell we have available
-    # price - The price we want to buy/sell the asset at
     def validate_order(self, type, balance, price):
 
         # Convert the price we want to order at to the correct format for this coinpair.
@@ -114,5 +107,5 @@ class Coinpair:
 
         # Return the desired trade quantity and price if all is valid.
         # Also return the formatted amount of the balance being used.
-        if valid: return quantity, formatPrice, available
-        else: return -1, -1, -1
+        if valid: return quantity, formatPrice
+        else: return -1, -1
