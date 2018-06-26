@@ -33,11 +33,10 @@ class Coinpair:
                 utilities.throw_error('Failed to Import Coinpair Historical Data and Info for \'' + coinpair + '\'', True)
 
         for index, candle in data.iterrows():
-            self.candles.append(
-                Candle(candle['Open Time'], candle['Open'], candle['High'], candle['Low'], candle['Close'], candle['Close Time'], candle['Number Trades'], candle['Volume']))
+            self.candles.append(Candle(candle['Open Time'], candle['Open'], candle['High'], candle['Low'], candle['Close'], candle['Close Time'], candle['Number Trades'], candle['Volume']))
 
         if not self.update_overhead():
-            utilities.throw_error('Failed to Update Coinpair Overhead for \'' coinpair + '\'', True)
+            utilities.throw_error('Failed to Update Coinpair Overhead for \'' + coinpair + '\'', True)
 
     def update_overhead(self):
         closeData = pandas.Series([candle.close for candle in self.candles])
