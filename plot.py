@@ -66,8 +66,12 @@ if __name__ == '__main__':
         marker=dict(size=9, color=['orange' for index, row in data.iterrows() if row['used'] == 0]),
         text=[utilities.to_datetime(row['end']) for index, row in data.iterrows() if row['used'] == 0])
 
-    # TODO: Trace the total ROI value over time.
-    #trace_total = go.Scatter(name='Total Value', x=[utilities.to_datetime(row['startTime']) for index, row in data.iterrows()], y=[1.0 for index, row in data.iterrows()], color='black')
+    results = []
+    for index, row in data.iterrows():
+        if row['used'] == 0: continue
+        if len(results) == 0: results.append(row['current'] / row['price'])
+        else: results.append(results[-1] * row['current'] / row['price'])
+    trace_total = go.Scatter(name='Total Value', x=[utilities.to_datetime(row['end']) for index, row in data.iterrows()], y=[val for val in results])
 
     updatemenus = list([
         dict(
@@ -92,7 +96,7 @@ if __name__ == '__main__':
         )
     ])
 
-    fig = tools.make_subplots(rows=1, cols=1, specs=[[{}]], shared_xaxes=True, shared_yaxes=True, vertical_spacing=0.001)
+    fig = tools.make_subplots(rows=2, cols=1, specs=[[{}], [{}]], shared_xaxes=True, shared_yaxes=True, vertical_spacing=0.001)
 
     fig.append_trace(trace_candlestick, 1, 1)
     fig.append_trace(trace_results_buy, 1, 1)
@@ -100,8 +104,7 @@ if __name__ == '__main__':
     fig.append_trace(trace_results_buy_other, 1, 1)
     fig.append_trace(trace_results_sell_other, 1, 1)
 
-    # TODO: Trace the total ROI value over time.
-    #fig.append_trace(trace_total, 2, 1)
+    fig.append_trace(trace_total, 2, 1)
 
     fig['layout'].update(title='Backtesting Results for Coinpair \'' + args.coinpair[0] + '\'', updatemenus=updatemenus, showlegend=False, xaxis=dict(title='Date', rangeslider=dict(visible=False)))
     py.plot(fig, filename='data/plots/' + args.coinpair[0] + '.html')
