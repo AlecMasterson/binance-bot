@@ -31,5 +31,5 @@ class Position:
             self.price) + ',' + str(self.current) + ',' + str(self.fee) + ',' + str(self.result) + ',' + str(self.peak) + ',' + str(self.stopLoss)
 
     def toString(self):
-        return 'Coinpair: ' + coinpair + '\tOpen: ' + str(self.open) + '\tStart - End: ' + str(utilities.to_datetime(self.time)) + ' - ' + str(
+        return 'Coinpair: ' + self.coinpair + '\tOpen: ' + str(self.open) + '\tStart - End: ' + str(utilities.to_datetime(self.time)) + ' - ' + str(
             utilities.to_datetime(self.time + self.age)) + '\tResult: ' + str(self.result)
