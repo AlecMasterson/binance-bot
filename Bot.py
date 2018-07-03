@@ -1,21 +1,13 @@
-import csv
-import sys
-import time
-import argparse
-import pandas
-import datetime
-import os
-
 from binance.client import Client
 
-import strategy
-import utilities
 from components.Balance import Balance
 from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
-import traceback
+
+import csv, sys, time, argparse, pandas, datetime, os, traceback
+import utilities, strategy
 
 
 def combined_total(data, balances):
@@ -46,7 +38,7 @@ class Bot:
         self.data = {}
         try:
             for coinpair in utilities.COINPAIRS:
-                utilities.throw_info('Importing Historical Data and Info for ' + coinpair + '...')
+                utilities.throw_info('Importing Historical Data and Info for \'' + coinpair + '\'...')
                 self.data[coinpair] = Coinpair(self.client, coinpair)
         except:
             utilities.throw_error('Failed to Import Historical Data and Info', True)
@@ -58,11 +50,11 @@ class Bot:
             except:
                 self.sockets.close_socket_manager()
                 utilities.throw_error('Failed to Start Socket Manager', True)
-            utilities.throw_info('Successfully Finished Starting the Socket Manager')
+            utilities.throw_info('Successfully Started Socket Manager')
 
             self.positions = []
             try:
-                with open('data/positions.csv', newline='\n') as file:
+                with open('data/online/positions.csv', newline='\n') as file:
                     reader = csv.reader(file, delimiter=',')
                     for row in reader:
                         position = Position(row[1], int(row[3]), row[5], float(row[6]), float(row[7]))
@@ -76,7 +68,7 @@ class Bot:
                         position.stopLoss = True if row[12] == 'True' else False
                         self.positions.append(position)
             except FileNotFoundError:
-                utilities.throw_info('positions.csv FileNotFound... not importing Positions')
+                utilities.throw_info('data/online/positions.csv FileNotFound')
             except:
                 self.sockets.close_socket_manager()
                 utilities.throw_error('Failed to Import Positions', True)
@@ -101,10 +93,10 @@ class Bot:
             self.balances['BTC'] = Balance(self.client, 'BTC', None if self.online else 1.0)
 
         self.recent = {}
+        self.perm = {}
         for coinpair in utilities.COINPAIRS:
             self.recent[coinpair] = []
-
-        self.perm = {'aboveZero': False, 'belowZero': False, 'slopes': [], 'top_slopes': []}
+            self.perm[coinpair] = {'aboveZero': False, 'belowZero': False, 'goingUp': 0, 'goingDown': 0}
 
     # ONLINE ONLY
     def update_balances(self):
@@ -229,35 +221,29 @@ class Bot:
             curIndex += 1
         return False
 
-    def prev_position(self, positions, index, coinpair):
-        curIndex = index - 1
-        while curIndex >= 0:
-            if positions[curIndex].coinpair == coinpair: return curIndex
-            curIndex -= 1
-        return None
-
     def run_backtest(self):
         trade_points = {}
         combinedPositions = []
 
         for coinpair in utilities.COINPAIRS:
-            trade_points[coinpair] = {'buy': [], 'positions': [], 'sell': []}
-            utilities.throw_info('Simulating Coinpair ' + coinpair + '...')
+            trade_points[coinpair] = {'positions': [], 'buy': [], 'sell': []}
+            if not self.optimize: utilities.throw_info('Simulating Coinpair \'' + coinpair + '\'...')
 
             for index, candle in enumerate(self.data[coinpair].candles):
-                if index == 0: continue
+                if index == 0 or candle.openTime < utilities.BACKTEST_START_DATE: continue
 
-                price = strategy.check_buy(self.perm, self.data[coinpair], index)
+                price = strategy.check_buy(self.perm[coinpair], self.data[coinpair], index)
                 if price != None and self.check_time_limit(self.data[coinpair], price, index):
                     trade_points[coinpair]['buy'].append({'index': index - 1, 'time': self.data[coinpair].candles[index - 1].closeTime})
-                    trade_points[coinpair]['positions'].append(Position(None, self.data[coinpair].candles[index - 1].closeTime, coinpair, None, price))
+                    trade_points[coinpair]['positions'].append(Position(None, self.data[coinpair].candles[index - 1].closeTime, coinpair, 0.0, price))
 
+                sell = strategy.check_sell(self.perm[coinpair], self.data[coinpair], index)
                 for position in trade_points[coinpair]['positions']:
                     if not position.open: continue
 
                     position.update(self.data[coinpair].candles[index - 1].closeTime, self.data[coinpair].candles[index - 1].close)
 
-                    if strategy.check_sell(position, self.perm, self.data[coinpair], index) and self.check_time_limit(self.data[coinpair], position.current, index):
+                    if sell and self.check_time_limit(self.data[coinpair], position.current, index):
                         trade_points[coinpair]['sell'].append({'index': index - 1, 'time': self.data[coinpair].candles[index - 1].closeTime})
                         position.open = False
 
@@ -340,7 +326,7 @@ if __name__ == '__main__':
 
         utilities.throw_info('Starting Backtesting...')
         result = bot.run_backtest()
-        utilities.throw_info('Successfully Completed Backtesting with Result: ' + str(result))
+        utilities.throw_info('Successfully Completed Backtesting with Resulting ' + str(result) + ' % ROI')
 
         if args.plotting != None:
             utilities.throw_info('Plotting Coinpairs ' + str(args.plotting[0]) + '...')
