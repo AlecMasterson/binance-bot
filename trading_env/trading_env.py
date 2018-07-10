@@ -1,6 +1,8 @@
 import logging
 import os
 import sys
+from collections import deque
+from itertools import chain
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -43,11 +45,16 @@ class TradingEnv():
         self.episode_length = episode_length
         self.action_space = 2
         self.history_length = history_length
+        self.temporal_window_size = 3
+        self.temporal_window = deque(maxlen=self.temporal_window_size)
+
 
         self.time_fee = time_fee
         self.buy_sell_scalar = buy_sell_scalar
         self.hold_scalar = hold_scalar
         self.timeout_scalar = timeout_scalar
+        self.over_trade_threshold = 100
+        self.over_hold_threshold = 5000
         self.observation_shape = self.reset().shape
 
     def reset(self):
@@ -88,6 +95,7 @@ class TradingEnv():
         self.reward_history = []
         self.total_reward_history = []
         self.total_value_history = []
+        [self.temporal_window.append([0] * 19) for _ in range(self.temporal_window.maxlen + 1)]
 
         for _ in range(self.history_length):
             self.ingest_data()
@@ -97,7 +105,6 @@ class TradingEnv():
 
     def ingest_data(self):
         self.row = self.data_generator.next()
-        # print(self.row)
         self.open_history.append(float(self.row['Open']))
         self.close_history.append(float(self.row['Close']))
         self.high_history.append(float(self.row['High']))
@@ -123,55 +130,36 @@ class TradingEnv():
 
     def get_observation(self):
 
-        # def pad_to_hist(a):
-        #     return np.pad(a, (0, self.history_length - len(a)), 'constant')
-
-        # hist_temp = normalize(
-        #     np.stack([
-        #         [price for price in self.open_history[-self.history_length:]],
-        # # [price for price in self.high_history[-self.history_length:]],[price for price in self.low_history[-self.history_length:]],
-        #         # [price for price in self.volume_history[-self.history_length:]],
-        # #   [price for price in self.QAV_history[-self.history_length:]], [price for price in self.TBAV_history[-self.history_length:]],
-        # #   [price for price in self.TQAV_history[-self.history_length:]], [price for price in self.NT_history[-self.history_length:]],
-        #         pad_to_hist(np.array([price for price in self.total_value_history[-self.history_length:]])),
-        #         pad_to_hist(np.array([price for price in self.macd_history[-self.history_length:]])),
-        #         pad_to_hist(np.array([price for price in self.upperband_history[-self.history_length:]])),
-        #         pad_to_hist(np.array([price for price in self.lowerband_history[-self.history_length:]]))
-        #     ]).T)
-
-        # obs = np.array([
-        # # hist_temp,
-        # # np.array([
-        #     int(self.w_c1 > self.w_c2),
-        #     int(self.total_value > self.last_buysell_value),
-        #     int(self.open_history[-1] > self.buy_price),
-        #     int(self.open_history[-1] < self.sell_price),
-        #     int(1 if np.poly1d(self.open_history[-5:])[0] >= 0 else -1),
-        #     int(1 if np.poly1d(self.open_history[-25:])[0] >= 0 else -1),
-        #     int(1 if np.poly1d(self.open_history[-100:])[0] >= 0 else -1),
-        #     self.action,
-        #     self.reward
-        # # ])
-        # ])
         obs = np.array([])
 
-        # obs = np.append(obs, minmax_scale(X=np.array([price for price in self.open_history[-self.history_length:]]), feature_range=(-1, 1)))
-
-        obs = np.append(obs, minmax_scale(X=np.array([price for price in self.open_history[-10:]]), feature_range=(-1, 1)))
-        obs = np.append(obs, [np.tanh(np.poly1d(self.open_history[-3:])[0] / 10)])
-        obs = np.append(obs, [np.tanh(np.poly1d(self.open_history[-5:])[0] / 10)])
-        obs = np.append(obs, [np.tanh(np.poly1d(self.open_history[-10:])[0] / 10)])
-        obs = np.append(obs, [np.tanh(np.poly1d(self.open_history[-25:])[0] / 10)])
         obs = np.append(obs, [self.action])
         obs = np.append(obs, [self.swap])
-        obs = np.append(obs, [self.buy_price])
-        obs = np.append(obs, [self.sell_price])
-        obs = np.append(obs, [self.open_history[-1] / self.open_history[-2]-1])
-        obs = np.append(obs, [self.open_history[-1] / self.open_history[-3]-1])
-        obs = np.append(obs, [self.open_history[-1] / self.open_history[-4]-1])
-        obs = np.append(obs, [self.open_history[-1] / self.open_history[-5]-1])
-        # print('obs', obs, type(obs), obs.shape)
-        return obs
+        try:
+            obs = np.append(obs, self.action_history[-self.over_trade_threshold::-1].index(0) / self.over_trade_threshold)
+        except:
+            obs = np.append(obs, [1])
+        try:
+            obs = np.append(obs, self.action_history[-self.over_hold_threshold::-1].index(1) / self.over_hold_threshold)
+        except:
+            obs = np.append(obs, [1])
+        obs = np.append(obs, [self.action_history[-self.over_trade_threshold:].count(0) / self.over_trade_threshold])
+        obs = np.append(obs, [self.action_history[-self.over_hold_threshold:].count(1) / self.over_hold_threshold])
+        obs = np.append(obs, [self.buy_price / self.open_history[-1]])
+        obs = np.append(obs, [self.sell_price / self.open_history[-1]])
+
+        for l in [
+                self.open_history, self.high_history, self.low_history, self.volume_history, self.QAV_history, self.TBAV_history, self.TQAV_history, self.NT_history, self.macd_history,
+                self.upperband_history, self.lowerband_history
+        ]:
+            # obs = np.append(obs, minmax_scale(X=np.array([price for price in l[-self.history_length:]]), feature_range=(-1, 1)))
+            obs = np.append(obs, [price for price in l[-self.history_length:]])
+            # obs = np.append(obs, [np.tanh(np.poly1d(l[-3:])[0] / 10)])
+            # obs = np.append(obs, [np.tanh(np.poly1d(l[-5:])[0] / 10)])
+            # obs = np.append(obs, [np.tanh(np.poly1d(l[-10:])[0] / 10)])
+            # obs = np.append(obs, [np.tanh(np.poly1d(l[-25:])[0] / 10)])
+
+        self.temporal_window.append(obs)
+        return np.array(list(chain.from_iterable(self.temporal_window)))
 
     def step(self, action):
 
@@ -182,27 +170,29 @@ class TradingEnv():
             # cv = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
             if not self.swap:
                 self.buy_price = self.open_history[-1]
-                reward = np.where(self.buy_price < self.sell_price * 1.01, 1, -0.5) * self.buy_sell_scalar
+                reward = np.where(self.buy_price < self.sell_price * 1.01, 1, -3) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
                 self.swap = 1
             else:
                 self.sell_price = self.open_history[-1]
-                reward = np.where(self.sell_price > self.buy_price * 1.01, 1, -0.5) * self.buy_sell_scalar
+                reward = np.where(self.sell_price > self.buy_price * 1.01, 1, -3) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
                 self.swap = 0
         elif action == 'hold' or action == 1:
             try:
-                # overhold = max(self.action_history[-1000:].count('hold'), self.action_history[-1000:].count(1), 1) / 100000000
-                # val_diff = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) - self.last_buysell_value
-                # reward = np.where(val_diff > 0, val_diff, val_diff * 0.01) * self.hold_scalar
                 reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.last_buysell_value - 1) * self.hold_scalar
-
             except BaseException:
                 reward = 0
         else:
             reward = -10000
+
+        #over act
+        if self.action_history[-self.over_hold_threshold:].count(1) >= self.over_hold_threshold:
+            reward = -100
+        if self.action_history[-self.over_trade_threshold:].count(0) >= self.over_trade_threshold:
+            reward = -100
 
         # Game over logic
         self.total_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
@@ -212,25 +202,28 @@ class TradingEnv():
             self.ingest_data()
         except StopIteration:
             done = True
-            # reward = 0
-            # reward += self.total_value - self.s_c1
-            # reward += -10 if self.action_history[:].count(0) == 0 else 0.1
-            # reward += -10 if self.action_history[:].count(1) == 0 else 0.1
-            # reward = np.where(reward > 0, reward, reward * 0.01) * self.timeout_scalar
-            # print('\n Out of data', reward)
+            reward = 1
+            reward += self.total_value - self.s_c1
+            reward += -10000 if self.action_history[:].count(0) == 0 else 0.1
+            reward += -10000 if self.action_history[:].count(1) == 0 else 0.1
+            reward *= self.timeout_scalar
+            reward = np.where(reward > 0, reward, reward * 0.01)
+            print('\n Out of data', reward)
         if self.iteration >= self.episode_length:
             done = True
-            # reward = 0
-            # reward += self.total_value - self.s_c1
-            # reward += -10 if self.action_history[:].count(0) == 0 else 0.1
-            # reward += -10 if self.action_history[:].count(1) == 0 else 0.1
-            # reward = np.where(reward > 0, reward, reward * 0.01) * self.timeout_scalar
-            # print('\n Time out', reward)
+            reward = 1
+            reward += self.total_value - self.s_c1
+            reward += -10000 if self.action_history[:].count(0) == 0 else 0.1
+            reward += -10000 if self.action_history[:].count(1) == 0 else 0.1
+            reward *= self.timeout_scalar
+            reward = np.where(reward > 0, reward, reward * 0.01)
+            print('\n Time out', reward)
         if self.total_value <= (self.s_c1 * 0.01):
             done = True
-            # reward = -1
-            # reward += np.tanh(self.iteration / self.data_generator.file_length) * self.timeout_scalar
-            # print('\n Total Value too low', reward)
+            reward = -1
+            reward += np.tanh(self.iteration / self.data_generator.file_length)
+            reward *= self.timeout_scalar
+            print('\n Total Value too low', reward)
 
         # print(action, reward)
         self.done = done
@@ -254,39 +247,6 @@ class TradingEnv():
         observation = self.get_observation()
         return observation, reward, done, info
 
-    def final_render(self, savefig=False, filename='myfig', plot_reward=False, plot_total_reward=False, plot_total_value=False, extras={}):
-
-        f, ax = plt.subplots()
-        ax.plot([x['iteration'] for x in self.step_history], [x['price'] for x in self.step_history], color='black', label='Price')
-
-        ymin, ymax = ax.get_ylim()
-        yrange = ymax - ymin
-        for i in self.step_history:
-            itera, act, p = i['iteration'], i['action'], i['price']
-            # if (act == 'sell' or act == 1):
-            #     ax.scatter(itera + 0.5, p + 0.03 * yrange, color='red', marker='v')
-            if (act == 'trade' or act == 0):
-                ax.scatter(itera + 0.5, p - 0.03 * yrange, color='blue', marker='^')
-
-        if plot_reward:
-            extras['reward'] = self.reward_history
-
-        if plot_total_reward:
-            extras['total_reward'] = self.total_reward_history
-
-        if plot_total_value:
-            extras['total_value'] = self.total_value_history
-
-        for name, l in extras.items():
-            nax = ax.twinx()
-            nax.plot([x['iteration'] for x in self.step_history], np.pad(l, (self.history_length - 1, 0), 'constant', constant_values=(0)), label=name, c=np.random.rand(3,))
-        nax.legend()
-
-        f.tight_layout()
-
-        if savefig:
-            print('Saving', os.path.dirname(os.path.dirname(__file__)) + 'agents/training_images/' + filename)
-            plt.savefig(os.path.dirname(os.path.dirname(__file__)) + '/agents/training_images/' + filename, dpi=320)
-
-        # f.tight_layout()
-        # plt.show(block=False)
+    def close(self):
+        #TODO something
+        return -1
