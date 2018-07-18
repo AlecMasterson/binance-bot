@@ -53,7 +53,7 @@ class TradingEnv():
         self.hold_scalar = hold_scalar
         self.timeout_scalar = timeout_scalar
         self.over_trade_threshold = 100
-        self.over_hold_threshold = 3000
+        self.over_hold_threshold = 10000
         self.observation_shape = self.reset().shape
 
     def reset(self):
@@ -155,7 +155,8 @@ class TradingEnv():
             obs = np.append(obs, [price for price in l[-self.history_length:]])
 
         self.temporal_window.append(obs)
-        return np.array(list(chain.from_iterable(self.temporal_window)))
+        obs = np.array(list(chain.from_iterable(self.temporal_window)))
+        return np.reshape(obs, [1, obs.shape[0]])
 
     def step(self, action):
 
@@ -167,13 +168,13 @@ class TradingEnv():
             cv = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
             if not self.swap:
                 self.buy_price = self.open_history[-1]
-                reward = np.where(self.buy_price < self.sell_price * 1.05, 5.0, -1.0) * self.buy_sell_scalar
+                reward = np.where(self.buy_price < self.sell_price * 1.01, 5.0, -10.0) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
                 self.swap = 1
             else:
                 self.sell_price = self.open_history[-1]
-                reward = np.where(self.sell_price > self.buy_price * 1.05, 5.0, -1.0) * self.buy_sell_scalar
+                reward = np.where(self.sell_price > self.buy_price * 1.01, 5.0, -10.0) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
                 self.swap = 0
@@ -183,8 +184,11 @@ class TradingEnv():
         elif action == 1:
             try:
                 reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.last_buysell_value) - 1.0) * 0.1 * self.hold_scalar
-                reward -= ((self.action_history[-self.over_hold_threshold:][::-1].index(1) / self.over_hold_threshold) - 1) * 10 * self.hold_scalar
-                # reward = np.where(reward > 0, reward, 0)
+                reward -= ((self.action_history[-self.over_hold_threshold:][::-1].index(1) / self.over_hold_threshold)**4) * 10 * self.hold_scalar
+                reward = np.where(reward > 0, 1.0, 0.0)
+                # print('HOLDING REWARD', reward)
+                # if reward < 0:
+                #     done = True
 
             except Exception as e:
                 # print(e)
@@ -194,10 +198,10 @@ class TradingEnv():
 
         #over act
         if self.action_history[-self.over_hold_threshold:].count(1) >= self.over_hold_threshold:
-            reward = -100000.0
+            reward = -10000.0
             done = True
         if self.action_history[-self.over_trade_threshold:].count(0) >= self.over_trade_threshold:
-            reward = -100000.0
+            reward = -10000.0
             done = True
 
         # Game over logic
@@ -227,8 +231,8 @@ class TradingEnv():
             print('\n Total Value too low', reward)
 
         if done:
-            reward += -10000.0 if self.action_history[:].count(0) == 0 else 0.1
-            reward += -10000.0 if self.action_history[:].count(1) == 0 else 0.1
+            reward += -1000000.0 if self.action_history[:].count(0) == 0 else 0.1
+            reward += -1000000.0 if self.action_history[:].count(1) == 0 else 0.1
 
         # print(action, reward)
         self.done = done
@@ -243,11 +247,14 @@ class TradingEnv():
         self.step_history.append({'action': action, 'price': self.open_history[-1], 'iteration': self.iteration, 'reward': reward, 'total_reward': self.total_reward})
         self.action_history.append(action)
 
+        info['action'] = action
         info['w_c1'] = self.w_c1
         info['w_c2'] = self.w_c2
         info['total_value'] = self.total_value
         info['reward'] = self.reward
         info['total_reward'] = self.total_reward
+        info['done'] = done
+        info['iteration'] = self.iteration
 
         observation = self.get_observation()
         return observation, reward, done, info
