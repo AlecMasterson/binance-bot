@@ -1,9 +1,11 @@
 import numpy as np
 import pandas, math
+import numba
 
 
 # Round down x to the nearest 0.001 (Binance Trade Minimum)
 # x - The number to round down
+@numba.jit
 def round_down(x):
     return float(math.floor(x * 1000) / 1000)
 
@@ -123,6 +125,7 @@ def combined_total(data, trading, coinPairs):
 # alt - Current ALT wallet value
 # price - Price at which to trade
 # fee - Percent fee for transaction
+@numba.jit
 def buy_env(btc, alt, price, fee):
     return [btc - round_down(btc), alt + round_down(btc) / price * (1.0 - fee)]
 
@@ -132,6 +135,7 @@ def buy_env(btc, alt, price, fee):
 # alt - Current ALT wallet value
 # price - Price at which to trade
 # fee - Percent fee for transaction
+@numba.jit
 def sell_env(btc, alt, price, fee):
     return [btc + round_down(alt) * price * (1.0 - fee), alt - round_down(alt)]
 
@@ -140,5 +144,6 @@ def sell_env(btc, alt, price, fee):
 # btc - Current BTC wallet value
 # alt - Current ALT wallet value
 # price - Current price of the exchange
+@numba.jit
 def combined_total_env(btc, alt, price):
     return btc + alt * price
