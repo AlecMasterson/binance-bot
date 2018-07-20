@@ -27,7 +27,7 @@ from trading_env.trading_env import TradingEnv
 # environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 EPISODES = 100000
-batch_size = 2**12
+batch_size = 4096
 data_csvs = ['data/history/ADABTC.csv', 'data/history/BNBBTC.csv', 'data/history/EOSBTC.csv', 'data/history/ICXBTC.csv', 'data/history/LTCBTC.csv', 'data/history/XLMBTC.csv']
 # data_csvs = ['data/history/ADABTC.csv', 'data/history/BNBBTC.csv', 'data/history/EOSBTC.csv']
 # data_csvs = ['data/history/ADABTC.csv']
@@ -39,11 +39,11 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=1000000)
-        self.gamma = 0.7        # discount rate
+        self.gamma = 0.99        # discount rate
         self.epsilon = 1.2        # exploration rate
         self.epsilon_min = 0.00001
-        self.noise_level = 5.0
-        self.epsilon_decay = 0.9
+        self.noise_level = 0.02
+        self.epsilon_decay = 0.7
         self.learning_rate = 0.0001
         self.model = self._build_model()
         self.random_holds = 0
@@ -56,11 +56,15 @@ class DQNAgent:
         simple_input = Input(shape=(1, self.state_size))
         simple_output = Dense(max(int(self.state_size * 0.7), 10), activation='tanh')(simple_input)
         simple_output = Dense(max(int(self.state_size * 0.5), 10), activation='tanh')(simple_output)
-        simple_output = Dropout(0.01)(simple_output)
+        simple_output = Dropout(0.001)(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
+        simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
+        simple_output = Dropout(0.001)(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
-        simple_output = Dropout(0.01)(simple_output)
+        simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
+        simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
+        simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.03), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.003), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.001), 10), activation='tanh')(simple_output)
@@ -100,7 +104,7 @@ class DQNAgent:
     def replay(self, batch_size):
         x = []
         y = []
-        minibatch = random.sample(self.memory, int(len(self.memory)/50)) # + [self.memory[i] for i in range(-self.n_steps+3, 0, 1)]
+        minibatch = random.sample(self.memory, int(len(self.memory)/10)) # + [self.memory[i] for i in range(-self.n_steps+3, 0, 1)]
         for state, action, reward, next_state, done in tqdm(minibatch, desc='Building training set'):
             target = reward
             if not done:
@@ -109,7 +113,7 @@ class DQNAgent:
             target_f[0][action] = target
             x += [state]
             y += [target_f]
-        self.model.fit(np.array(x), np.array(y), epochs=100, verbose=0, callbacks=[TQDMCallback(), EarlyStopping(monitor='loss', min_delta=0, patience=0, verbose=0)])
+        self.model.fit(np.array(x), np.array(y), epochs=10, batch_size=batch_size, verbose=0, callbacks=[TQDMCallback(), EarlyStopping(monitor='loss', min_delta=0, patience=0, verbose=0)])
         self.resetENV()
 
     def update_epsilon(self, denom):
@@ -128,7 +132,7 @@ if __name__ == "__main__":
     bss = 1
     hs = 1
     ts = 10000
-    tws = 60
+    tws = 30
 
     generator = CSVStreamer(data_csvs[int(np.random.randint(len(data_csvs), size=1))])
     env = TradingEnv(
@@ -151,7 +155,7 @@ if __name__ == "__main__":
 
     try:
         agent.load('./agents/save/dqn.h5')
-        # agent.epsilon = 5.0
+        agent.epsilon = 0.2
         print('SUCCESSFULLY LOADED')
     except:
         print('FAILED TO LOAD')
@@ -171,13 +175,13 @@ if __name__ == "__main__":
             pbar.update(1)
         pbar.close()
 
-        color = "\033[0;32m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value > 1) else "\033[0;0m"
-        color = "\033[0;31m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value <= 1) else "\033[0;0m"
+        color = "\033[0;32m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value >= 1.0) else "\033[0;0m"
+        color = "\033[0;31m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value <= 1.0) else color
         total_steps += env.iteration
-        print("{}noise: t({:.2})/h({:.2})|steps: {:5}|memory: {:9,}|total reward: {:6,}|total value: {:5.3}|trade: {:2}|hold: {:5}|random: t({})/h({}) \033[0;0m".format(
+        print("{}noise: t({:.2})/h({:.2})|steps: {:5}|memory: {:9,}|total reward: {:10.8}|total value: {:5.3}|trade: {:2}|hold: {:5}|random: t({})/h({}) \033[0;0m".format(
             color,
             agent.model.get_layer('fuzzyout').get_weights()[1][0][0],
-            agent.model.get_layer('fuzzyout').get_weights()[1][1][0], env.iteration, len(agent.memory), round(env.total_reward, 4), env.total_value, env.action_history[:].count(0),
+            agent.model.get_layer('fuzzyout').get_weights()[1][1][0], env.iteration, len(agent.memory), float(env.total_reward), float(env.total_value), env.action_history[:].count(0),
             env.action_history[:].count(1), agent.random_trades, agent.random_holds))
 
         if len(agent.memory) > batch_size:

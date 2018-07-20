@@ -183,7 +183,7 @@ class TradingEnv():
                 self.swap = 1
             else:
                 self.sell_price = self.open_history[-1]
-                reward = (self.sell_price - (self.buy_price*1.01)) * self.buy_sell_scalar
+                reward = ((self.sell_price - (self.buy_price*1.01)) ** 2) * self.buy_sell_scalar
                 # reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) - self.last_buy_value) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
                 self.swap = 0
