@@ -91,11 +91,12 @@ class TradingEnv():
         self.lowerband_history = []
 
         self.action_history = []
+        self.swap_history = []
         self.step_history = []
         self.reward_history = []
         self.total_reward_history = []
         self.total_value_history = []
-        [self.temporal_window.append([0] * 20) for _ in range(self.temporal_window.maxlen + 1)]
+        [self.temporal_window.append([0] * 21) for _ in range(self.temporal_window.maxlen + 1)]
 
         for _ in range(self.history_length):
             self.ingest_data()
@@ -151,7 +152,7 @@ class TradingEnv():
         except:
             obs = np.append(obs, [1])
         # obs = np.append(obs, [self.action_history[-self.over_trade_threshold:].count(0) / self.over_trade_threshold])
-        # obs = np.append(obs, [self.action_history[-self.over_hold_threshold:].count(1) / self.over_hold_threshold])
+        obs = np.append(obs, [self.action_history[-self.over_hold_threshold:].count(1) / self.over_hold_threshold])
         obs = np.append(obs, [self.buy_price / self.open_history[-1]])
         obs = np.append(obs, [self.sell_price / self.open_history[-1]])
         obs = np.append(obs, [helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])])
@@ -183,30 +184,27 @@ class TradingEnv():
                 self.swap = 1
             else:
                 self.sell_price = self.open_history[-1]
-                reward = ((self.sell_price - (self.buy_price*1.01)) ** 2) * self.buy_sell_scalar
+                reward = np.arctanh((self.sell_price - (self.buy_price*1.01))) * self.buy_sell_scalar
                 # reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) - self.last_buy_value) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
                 self.swap = 0
+            # print(action, reward)
+        elif action == 1:
+            try:
+                # reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.last_buysell_value) - 1.0) * 0.1 * self.hold_scalar
+                reward -= np.arctanh((self.action_history[-self.over_hold_threshold:][::-1].index(0) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
+                # reward = np.where(reward > 0, 1.0, 0.0)
 
-        # elif action == 1:
-        #     try:
-        #         reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.last_buysell_value) - 1.0) * 0.1 * self.hold_scalar
-        #         reward -= ((self.action_history[-self.over_hold_threshold:][::-1].index(1) / self.over_hold_threshold)**4) * 10 * self.hold_scalar
-        #         reward = np.where(reward > 0, 1.0, 0.0)
-
-        #     except Exception as e:
-        #         # print(e)
-        #         reward = 0.0
-        # else:
-        #     reward = -10000
-
+            except Exception as e:
+                # print(e)
+                reward -= np.arctanh((self.action_history[-self.over_hold_threshold:].count(1) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
         #over act
-        # if self.action_history[-self.over_hold_threshold:].count(1) >= self.over_hold_threshold:
-        #     reward = -10000.0
-        #     done = True
-        # if self.action_history[-self.over_trade_threshold:].count(0) >= self.over_trade_threshold:
-        #     reward = -10000.0
-        #     done = True
+        if self.action_history[-self.over_hold_threshold:].count(1) >= self.over_hold_threshold:
+            reward = -100.0
+            done = True
+        if self.action_history[-self.over_trade_threshold:].count(0) >= self.over_trade_threshold:
+            reward = -100.0
+            done = True
 
         # Game over logic
         self.total_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
@@ -250,6 +248,7 @@ class TradingEnv():
 
         self.step_history.append({'action': action, 'price': self.open_history[-1], 'iteration': self.iteration, 'reward': reward, 'total_reward': self.total_reward})
         self.action_history.append(action)
+        self.swap_history.append(self.swap)
 
         info['action'] = action
         info['w_c1'] = self.w_c1
