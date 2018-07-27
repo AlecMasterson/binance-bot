@@ -15,7 +15,7 @@ def connect_binance():
 
 def to_csv(file, structure, data):
     try:
-        if data == None: data = pandas.DataFrame(columns=structure)
+        if data is None: data = pandas.DataFrame(columns=structure)
         data.to_csv(file)
         return data
     except:
