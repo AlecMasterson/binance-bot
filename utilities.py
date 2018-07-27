@@ -25,6 +25,10 @@ DIRS_INTERVALS = [{
 COINPAIRS = ['BNBBTC', 'ADABTC', 'ETHBTC', 'ICXBTC', 'EOSBTC', 'TRXBTC']
 #COINPAIRS = ['BNBBTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
+BALANCES_STRUCTURE = ['asset', 'free']
+ORDERS_STRUCTURE = ['order_id', 'symbol', 'side', 'status', 'time', 'executedQty']
+ORDERS_TEMP_STRUCTURE = ['order_id', 'symbol']
+POSITIONS_STRUCTURE = ['open', 'time', 'age', 'symbol', 'amount', 'price', 'current', 'fee', 'result', 'peak', 'stopLoss', 'order_id']
 
 PUBLIC_KEY = ''
 SECRET_KEY = ''
