@@ -1,4 +1,6 @@
-import utilities, argparse, pandas
+import argparse, pandas, sys, os
+sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + './..'))
+import utilities
 from binance.client import Client
 
 if __name__ == '__main__':
