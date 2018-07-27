@@ -13,7 +13,7 @@ if __name__ == '__main__':
         positions = pandas.read_csv('data/online/positions.csv')
         orders = pandas.read_csv('data/online/orders.csv')
     except FileNotFoundError:
-        positions = pandas.DataFrame(columns=['order_id', 'symbol'])
+        positions = pandas.DataFrame(columns=['open', 'time', 'age', 'symbol', 'amount', 'price', 'current', 'fee', 'result', 'peak', 'stopLoss', 'order_id'])
         orders = pandas.DataFrame(columns=['order_id', 'symbol', 'side', 'status', 'time', 'executedQty'])
         try:
             positions.to_csv('data/online/positions.csv', index=False)

@@ -23,7 +23,7 @@ if __name__ == '__main__':
     errors = 0
     for index, balance in balances.iterrows():
         try:
-            balances['free'] = client.get_asset_balance(asset=balance['symbol'])['free']
+            balances['free'] = client.get_asset_balance(asset=balance['asset'])['free']
         except:
             errors += 1
             utilities.throw_error('Failed to Retrieve Balance from Binance API', False)
