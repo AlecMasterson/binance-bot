@@ -26,6 +26,13 @@ if __name__ == '__main__':
         utilities.throw_error('Failed to Load Data Files', True)
 
     # TODO: Actually update the positions.
+    '''
+    self.age = time - self.time
+    self.current = price
+    self.result = self.current / self.price
+    if self.result > self.peak: self.peak = self.result
+    if self.peak > utilities.STOP_LOSS_ARM and self.peak - self.result > utilities.STOP_LOSS: self.stopLoss = True
+    '''
 
     try:
         positions.to_csv('data/online/positions.csv', index=False)
