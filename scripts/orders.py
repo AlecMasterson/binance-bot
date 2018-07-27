@@ -16,8 +16,8 @@ if __name__ == '__main__':
 
     client = helpers.connect_binance()
 
-    orders = helpers.read_csv('data/online/orders.csv', True)
-    orders_temp = helpers.read_csv('data/online/orders_temp.csv', True)
+    orders = helpers.read_csv('data/online/orders.csv', utilities.ORDERS_STRUCTURE)
+    orders_temp = helpers.read_csv('data/online/orders_temp.csv', utilities.ORDERS_TEMP_STRUCTURE)
 
     for index, order_temp in orders_temp.iterrows():
         if not (orders['order_id'] == order_temp['order_id']).any():
@@ -32,7 +32,7 @@ if __name__ == '__main__':
                     'executedQty': new_order['executedQty']
                 },
                 ignore_index=True)
-            helpers.to_csv('data/online/orders.csv', orders)
+            helpers.to_csv('data/online/orders.csv', utilities.ORDERS_STRUCTURE, orders)
 
     for index, order in orders.iterrows():
         order_updated = get_order(client, order['order_id'], order['symbol'])
@@ -40,4 +40,4 @@ if __name__ == '__main__':
         order['time'] = order_updated['time']
         order['executedQty'] = order_updated['executedQty']
 
-    helpers.to_csv('data/online/orders.csv', orders)
+    helpers.to_csv('data/online/orders.csv', utilities.ORDERS_STRUCTURE, orders)
