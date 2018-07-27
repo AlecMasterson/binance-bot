@@ -31,7 +31,8 @@ sns.set_style(
         'xtick.direction': u'out',
         'ytick.color': '.15',
         'ytick.direction': u'out'
-    })
+    }
+)
 
 
 class TradingEnv():
@@ -158,8 +159,8 @@ class TradingEnv():
         obs = np.append(obs, [helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])])
 
         for l in [
-                self.open_history, self.high_history, self.low_history, self.volume_history, self.QAV_history, self.TBAV_history, self.TQAV_history, self.NT_history, self.macd_history,
-                self.upperband_history, self.lowerband_history
+            self.open_history, self.high_history, self.low_history, self.volume_history, self.QAV_history, self.TBAV_history, self.TQAV_history, self.NT_history, self.macd_history,
+            self.upperband_history, self.lowerband_history
         ]:
             obs = np.append(obs, [sig(price) for price in l[-self.history_length:]])
 
@@ -175,36 +176,39 @@ class TradingEnv():
         reward = 0
 
         if action == 0:
-            # cv = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
             if not self.swap:
                 self.buy_price = self.open_history[-1]
-                # reward = np.where(self.buy_price < self.sell_price * 1.01, 5.0, -10.0) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
-                self.last_buy_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
+                reward = self.last_buysell_value
+                self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
+                reward = self.last_buysell_value - reward
                 self.swap = 1
             else:
                 self.sell_price = self.open_history[-1]
-                reward = np.arctanh((self.sell_price - (self.buy_price*1.01))) * self.buy_sell_scalar
-                # reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) - self.last_buy_value) * self.buy_sell_scalar
+                # reward = np.arctanh((self.sell_price - (self.buy_price * 1.01))) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
+                reward = self.last_buysell_value
+                self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
+                reward = self.last_buysell_value - reward
                 self.swap = 0
+            reward = np.where(reward > 0, reward, 0)
             # print(action, reward)
-        elif action == 1:
-            try:
-                # reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.last_buysell_value) - 1.0) * 0.1 * self.hold_scalar
-                reward -= np.arctanh((self.action_history[-self.over_hold_threshold:][::-1].index(0) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
-                # reward = np.where(reward > 0, 1.0, 0.0)
+        # elif action == 1:
+        #     try:
+        #         # reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.last_buysell_value) - 1.0) * 0.1 * self.hold_scalar
+        #         reward -= np.arctanh((self.action_history[-self.over_hold_threshold:][::-1].index(0) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
+        #         # reward = np.where(reward > 0, 1.0, 0.0)
 
-            except Exception as e:
-                # print(e)
-                reward -= np.arctanh((self.action_history[-self.over_hold_threshold:].count(1) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
+        #     except Exception as e:
+        #         # print(e)
+        #         reward -= np.arctanh((self.action_history[-self.over_hold_threshold:].count(1) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
         #over act
-        if self.action_history[-self.over_hold_threshold:].count(1) >= self.over_hold_threshold:
-            reward = -100.0
-            done = True
-        if self.action_history[-self.over_trade_threshold:].count(0) >= self.over_trade_threshold:
-            reward = -100.0
-            done = True
+        # if self.action_history[-self.over_hold_threshold:].count(1) >= self.over_hold_threshold:
+        #     reward = -100.0
+        #     done = True
+        # if self.action_history[-self.over_trade_threshold:].count(0) >= self.over_trade_threshold:
+        #     reward = -100.0
+        #     done = True
 
         # Game over logic
         self.total_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
@@ -225,7 +229,7 @@ class TradingEnv():
             # reward *= self.timeout_scalar
             # reward = np.where(reward > 0, reward, reward * 0.01)
             # print('STOPPED: time out')
-        if self.total_value <= (self.s_c1 * 0.01):
+        if self.total_value <= (self.s_c1 * 0.001):
             done = True
             # reward = -1.0
             # reward += np.tanh(self.iteration / self.data_generator.file_length)

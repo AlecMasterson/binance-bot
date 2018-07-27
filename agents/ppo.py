@@ -1,5 +1,3 @@
-# Initial framework taken from https://github.com/jaara/AI-blog/blob/master/CartPole-A3C.py
-
 import numpy as np
 
 import gym

@@ -11,6 +11,7 @@ from time import time
 from datetime import datetime
 from tqdm import tqdm
 from keras_tqdm import TQDMCallback
+import termplot
 
 import numpy as np
 from keras.models import Sequential, Model
@@ -28,57 +29,54 @@ from trading_env.trading_env import TradingEnv
 
 # environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-EPISODES = 100000
-batch_size = 16
+EPISODES = 1000000
+batch_size = 2**14
 el = 10e6
 hl = 1
 bss = 1
 hs = 1
-ts = 10000
-tws = 30
-# data_csvs = ['data/history/ADABTC.csv', 'data/history/BNBBTC.csv', 'data/history/EOSBTC.csv', 'data/history/ICXBTC.csv', 'data/history/LTCBTC.csv', 'data/history/XLMBTC.csv']
-# data_csvs = ['data/history/ADABTC.csv', 'data/history/BNBBTC.csv', 'data/history/EOSBTC.csv']
-data_csvs = ['data/history/ADABTC.csv']
+ts = 1
+tws = 60
+data_csvs = ['data/history/ADABTC.csv', 'data/history/BNBBTC.csv', 'data/history/EOSBTC.csv', 'data/history/ICXBTC.csv', 'data/history/LTCBTC.csv', 'data/history/XLMBTC.csv']
+
+# data_csvs = ['data/history/ADABTC.csv']
 
 
 class DQNAgent:
 
-    def __init__(self, state_size, action_size, noise_level = 0.000):
+    def __init__(self, state_size, action_size, noise_level=0.000):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=1000000)
-        self.gamma = 0.99        # discount rate
-        self.epsilon = 1.2        # exploration rate
-        self.epsilon_min = 0.00001
+        self.gamma = 0.75        # discount rate
+        self.epsilon = 3.0        # exploration rate
+        self.epsilon_min = 0.000001
         self.noise_level = noise_level
-        self.epsilon_decay = 0.7
-        self.learning_rate = 0.0001
+        self.epsilon_decay = 0.9
+        self.learning_rate = 0.001
         self.model = self._build_model()
         self.random_holds = 0
         self.random_trades = 0
         self.n_steps = 0
-        self.ti = [1252, 1511, 1839, 1933, 3910, 4227, 8834, 10209, 16195, 17072, 22000, 23271, 24000, 24727, 27130, 28130, 36760, 37730]
 
     def _build_model(self):
 
         simple_input = Input(shape=(1, self.state_size))
         simple_output = Dense(max(int(self.state_size * 0.7), 10), activation='tanh')(simple_input)
         simple_output = Dense(max(int(self.state_size * 0.5), 10), activation='tanh')(simple_output)
-        # simple_output = Dropout(0.001)(simple_output)
+        simple_output = Dense(max(int(self.state_size * 0.5), 10), activation='tanh')(simple_output)
+        simple_output = Dense(max(int(self.state_size * 0.5), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
-        # simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
-        # simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
-        # simple_output = Dropout(0.001)(simple_output)
-        # simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
-        # simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
-        # simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.1), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.03), 10), activation='tanh')(simple_output)
-        # simple_output = Dense(max(int(self.state_size * 0.003), 10), activation='tanh')(simple_output)
-        # simple_output = Dense(max(int(self.state_size * 0.001), 10), activation='tanh')(simple_output)
-        simple_output = simple_output = NoisyDense(self.action_size, activation='linear', sigma_init=self.noise_level, name='fuzzyout')(simple_output)
+        simple_output = Dense(self.action_size, activation='linear')(simple_output)
+        # simple_output = simple_output = NoisyDense(
+        #     self.action_size,
+        #     activation='linear',
+        #     sigma_init=self.noise_level,
+        #     name='fuzzyout')(simple_output)
         brain = Model(inputs=simple_input, outputs=simple_output)
-        brain.compile(optimizer=Adam(lr=self.learning_rate, epsilon=0.00001), loss='mse')
+        brain.compile(optimizer=Adam(lr=self.learning_rate, epsilon=0.00001), loss='mae', metrics=['mse'])
         print(brain.summary())
 
         return brain
@@ -93,10 +91,7 @@ class DQNAgent:
     def act(self, state):
         self.n_steps += 1
         if np.random.rand() <= self.epsilon:
-            # if self.n_steps in self.ti:
-            #     self.random_trades += 1
-            #     return 0
-            if np.random.choice(2, 1, p=[0.0005, 0.9995])[0] == 0:
+            if np.random.choice(2, 1, p=[0.001, 0.999])[0] == 0 or self.epsilon < 0.01:
                 self.random_trades += 1
                 return 0
             self.random_holds += 1
@@ -109,10 +104,24 @@ class DQNAgent:
         self.random_holds = 0
         self.n_steps = 0
 
-    def replay(self, batch_size):
+    def replay_short(self, batch_size):
         x = []
         y = []
-        minibatch = random.sample(self.memory, int(len(self.memory) / 100)) + [self.memory[i] for i in range(-int(len(self.memory) / 10), 0, 1) if self.memory[i][1] == 0]
+        minibatch = [self.memory[i] for i in range(-4, 0, 1)]
+        for state, action, reward, next_state, done in minibatch:
+            target = reward
+            if not done:
+                target = (reward + self.gamma * np.amax(self.predict(next_state)))
+            target_f = self.predict(state)
+            target_f[0][action] = target
+            x += [state]
+            y += [target_f]
+        self.model.fit(np.array(x), np.array(y), epochs=5, batch_size=batch_size, verbose=0, callbacks=[EarlyStopping(monitor='loss', min_delta=0, patience=1, verbose=0)])
+
+    def replay_all(self, batch_size):
+        x = []
+        y = []
+        minibatch = random.sample(self.memory, int(len(self.memory) / 500))        #+ [self.memory[i] for i in range(-int(len(self.memory) / 10), 0, 1) if self.memory[i][1] == 0]
         for state, action, reward, next_state, done in tqdm(minibatch, desc='Building training set'):
             target = reward
             if not done:
@@ -121,11 +130,18 @@ class DQNAgent:
             target_f[0][action] = target
             x += [state]
             y += [target_f]
-        self.model.fit(np.array(x), np.array(y), epochs=100, batch_size=batch_size, verbose=0, callbacks=[TQDMCallback(), EarlyStopping(monitor='loss', min_delta=0, patience=5, verbose=0)])
+        self.model.fit(
+            np.array(x),
+            np.array(y),
+            epochs=100,
+            batch_size=batch_size,
+            verbose=0,
+            callbacks=[TQDMCallback(metric_format="{name}: {value:e}"), EarlyStopping(monitor='loss', min_delta=0, patience=10, verbose=0)]
+        )
         self.resetENV()
 
     def update_epsilon(self, denom):
-        self.epsilon = self.epsilon * self.epsilon_decay if self.epsilon > self.epsilon_min else self.epsilon * 5000
+        self.epsilon = self.epsilon * self.epsilon_decay if self.epsilon > self.epsilon_min else self.epsilon * 10000
 
     def load(self, name):
         self.model.load_weights(name)
@@ -148,7 +164,8 @@ def train():
         buy_sell_scalar=bss,
         hold_scalar=hs,
         timeout_scalar=ts,
-        temporal_window_size=tws)
+        temporal_window_size=tws
+    )
     state_size = env.observation_shape[1]
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size, noise_level=0.05)
@@ -180,17 +197,35 @@ def train():
         color = "\033[0;32m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value >= 1.0) else "\033[0;0m"
         color = "\033[0;31m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value <= 1.0) else color
         total_steps += env.iteration
-        print("{}noise: t({:.2})/h({:.2})|steps: {:5}|memory: {:9,}|total reward: {:10.8}|total value: {:5.3}|trade: {:2}|hold: {:5}|random: t({})/h({}) \033[0;0m".format(
-            color,
-            agent.model.get_layer('fuzzyout').get_weights()[1][0][0],
-            agent.model.get_layer('fuzzyout').get_weights()[1][1][0], env.iteration, len(agent.memory), float(env.total_reward), float(env.total_value), env.action_history[:].count(0),
-            env.action_history[:].count(1), agent.random_trades, agent.random_holds))
+        # noise: t({:.2})/h({:.2})|
+        print(
+            "{}steps: {:5}|memory: {:9,}|total reward: {:10.8}|total value: {:5.3}|trade: {:2}|hold: {:5}|random: t({})/h({}) \033[0;0m".format(
+                color,
+        #    agent.model.get_layer('fuzzyout').get_weights()[1][0][0],
+        #    agent.model.get_layer('fuzzyout').get_weights()[1][1][0],
+                env.iteration,
+                len(agent.memory),
+                float(env.total_reward),
+                float(env.total_value),
+                env.action_history[:].count(0),
+                env.action_history[:].count(1),
+                agent.random_trades,
+                agent.random_holds
+            )
+        )
+        # Plot the relative trade locations
+        try:
+            # termplot.plot(list(np.histogram([e for e, x in enumerate(env.action_history) if x == 0], bins=100)[0]), plot_height=10, plot_char='*')
+            termplot.plot([np.tanh(x) for x in list(np.histogram(env.reward_history, bins=100)[0])], plot_height=10, plot_char='*')
+        except:
+            print('DAILURE')
+            pass
 
         if len(agent.memory) > batch_size:
-            agent.replay(batch_size)
+            agent.replay_all(batch_size)
 
         done = False
-        if e % 3 == 0:
+        if e % 5 == 0:
             print('\nSAVING')
             print('LAST PREDICTION', agent.predict(state))
             agent.update_epsilon(total_steps)
@@ -212,7 +247,8 @@ def test():
         buy_sell_scalar=bss,
         hold_scalar=hs,
         timeout_scalar=ts,
-        temporal_window_size=tws)
+        temporal_window_size=tws
+    )
     state_size = env.observation_shape[1]
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size, noise_level=0.0)
@@ -220,7 +256,7 @@ def test():
     total_steps = 0
 
     agent.load('./agents/save/dqn.h5')
-    agent.epsilon = 0.0000
+    agent.epsilon = 0.000
     print('SUCCESSFULLY LOADED')
 
     state = env.reset()
@@ -237,20 +273,47 @@ def test():
     color = "\033[0;32m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value >= 1.0) else "\033[0;0m"
     color = "\033[0;31m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value <= 1.0) else color
     total_steps += env.iteration
-    print("{}noise: t({:.2})/h({:.2})|steps: {:5}|memory: {:9,}|total reward: {:10.8}|total value: {:5.3}|trade: {:2}|hold: {:5}|random: t({})/h({}) \033[0;0m".format(
-        color,
-        agent.model.get_layer('fuzzyout').get_weights()[1][0][0],
-        agent.model.get_layer('fuzzyout').get_weights()[1][1][0], env.iteration, len(agent.memory), float(env.total_reward), float(env.total_value), env.action_history[:].count(0),
-        env.action_history[:].count(1), agent.random_trades, agent.random_holds))
+    # noise: t({:.2})/h({:.2})|
+    print(
+        "{}steps: {:5}|memory: {:9,}|total reward: {:10.8}|total value: {:5.3}|trade: {:2}|hold: {:5}|random: t({})/h({}) \033[0;0m".format(
+            color,
+        #    agent.model.get_layer('fuzzyout').get_weights()[1][0][0],
+        #    agent.model.get_layer('fuzzyout').get_weights()[1][1][0],
+            env.iteration,
+            len(agent.memory),
+            float(env.total_reward),
+            float(env.total_value),
+            env.action_history[:].count(0),
+            env.action_history[:].count(1),
+            agent.random_trades,
+            agent.random_holds
+        )
+    )
 
-    pd.DataFrame.from_dict(data={
-        'action': env.action_history,
-        'swap': env.swap_history,
-        'reward': env.reward_history,
-        'total_reward': env.total_reward_history,
-        'total_value': env.total_value_history,
-        'open': env.open_history
-    }).to_csv('./agents/save/dqn_run.csv')
+    print(len(env.action_history), len(env.swap_history), len(env.reward_history), len(env.total_reward_history), len(env.total_value_history), len(env.open_history))
+    try:
+        pd.DataFrame.from_dict(
+            data={
+                'action': env.action_history,
+                'swap': env.swap_history,
+                'reward': env.reward_history,
+                'total_reward': env.total_reward_history,
+                'total_value': env.total_value_history,
+                'open': env.open_history
+            }
+        ).to_csv('./agents/save/dqn_run.csv')
+    except:
+        print("Didn't finish")
+        pd.DataFrame.from_dict(
+            data={
+                'action': env.action_history,
+                'swap': env.swap_history,
+                'reward': env.reward_history,
+                'total_reward': env.total_reward_history,
+                'total_value': env.total_value_history,
+                'open': env.open_history[:-1]
+            }
+        ).to_csv('./agents/save/dqn_run.csv')
 
 
 if __name__ == "__main__":
