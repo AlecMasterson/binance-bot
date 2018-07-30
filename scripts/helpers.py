@@ -1,16 +1,27 @@
-import pandas, sys, os
+import psycopg2, pandas, sys, os
 from binance.client import Client
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + './..'))
 import utilities
 
 
-def connect_binance():
+def binance_connect():
     try:
+        print('INFO: Connecting to the Binance API...')
         return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
     except:
-        print('Failed to Connect to the Binance API')
-        return None
+        print('ERROR: Failed to Connect to the Binance API')
+        sys.exit(1)
+
+
+def db_connect():
+    try:
+        print('INFO: Connecting to the DB...')
+        return psycopg2.connect(database=utilities.DB_NAME, user=utilities.DB_USER, password=utilities.DB_PASS, host=utilities.DB_HOST, port=utilities.DB_PORT)
+    except:
+        print('ERROR: Failed to Connect to the DB')
+        sys.exit(1)
+        sys.exit(1)
 
 
 def to_csv(file, structure, data):

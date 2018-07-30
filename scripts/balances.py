@@ -1,4 +1,4 @@
-import helpers, argparse
+import helpers, argparse, sys, os
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + './..'))
 import utilities
@@ -8,11 +8,25 @@ if __name__ == '__main__':
 
     client = helpers.binance_connect()
 
+    db = helpers.db_connect()
+    db_cursor = db.cursor()
+
     balances = {}
     for coinpair in utilities.COINPAIRS:
         try:
-            balances[coinpair] = client.get_asset_balance(asset=balance['asset'])['free']
+            balances[coinpair[:-3]] = client.get_asset_balance(asset=coinpair[:-3])['free']
         except:
             print('ERROR: Failed to Retrieve \'' + coinpair[:-3] + '\' Balance from the Binance API')
 
-    # TODO: Update the DB with the new balances.
+    for coinpair in utilities.COINPAIRS:
+        try:
+            db_cursor.execute("INSERT INTO BALANCES VALUES ('" + coinpair[:-3] + "', " + str(balances[coinpair[:-3]]) + ") ON CONFLICT (ASSET) DO UPDATE SET FREE = Excluded.FREE;")
+            db.commit()
+        except:
+            print('ERROR: Failed to Update \'' + coinpair[:-3] + '\' Balance into the DB')
+
+    try:
+        db.close()
+    except:
+        print('ERROR: Failed to Close the DB Connection')
+        sys.exit(1)

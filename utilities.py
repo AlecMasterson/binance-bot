@@ -33,6 +33,12 @@ POSITIONS_STRUCTURE = ['open', 'time', 'age', 'symbol', 'amount', 'price', 'curr
 PUBLIC_KEY = ''
 SECRET_KEY = ''
 
+DB_NAME = 'test1'
+DB_HOST = 'binance-bot-dev.cfypif4yfq4f.us-east-1.rds.amazonaws.com'
+DB_PORT = '5434'
+DB_USER = 'epsenex'
+DB_PASS = ''
+
 # January 21, 2018 = 1516514400000
 # June 1, 2018 = 1527829200000
 START_DATE = 1527829200000        # The starting date, in milliseconds, that we begin backtesting from.
