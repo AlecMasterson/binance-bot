@@ -173,35 +173,29 @@ class TradingEnv():
         self.action = action
         self.iteration += 1
         done = False
-        reward = 0
 
         if action == 0:
             if not self.swap:
                 self.buy_price = self.open_history[-1]
                 self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
-                reward = self.last_buysell_value
+                reward = -self.trading_fee
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
-                reward = self.last_buysell_value - reward
+                # reward = self.last_buysell_value - reward
                 self.swap = 1
             else:
                 self.sell_price = self.open_history[-1]
-                # reward = np.arctanh((self.sell_price - (self.buy_price * 1.01))) * self.buy_sell_scalar
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
-                reward = self.last_buysell_value
+                reward = -self.trading_fee
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
-                reward = self.last_buysell_value - reward
+                # reward = self.last_buysell_value - reward
                 self.swap = 0
-            reward = np.where(reward > 0, reward, 0)
-            # print(action, reward)
-        # elif action == 1:
-        #     try:
-        #         # reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.last_buysell_value) - 1.0) * 0.1 * self.hold_scalar
-        #         reward -= np.arctanh((self.action_history[-self.over_hold_threshold:][::-1].index(0) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
-        #         # reward = np.where(reward > 0, 1.0, 0.0)
-
-        #     except Exception as e:
-        #         # print(e)
-        #         reward -= np.arctanh((self.action_history[-self.over_hold_threshold:].count(1) / self.over_hold_threshold)) * 0.000001 * self.hold_scalar
+        elif action == 1:
+            try:
+                reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2])) - 1
+            except Exception as e:
+                # print(e)
+                reward = 0
+        # reward = np.where(reward > 0, reward, 0)
         #over act
         # if self.action_history[-self.over_hold_threshold:].count(1) >= self.over_hold_threshold:
         #     reward = -100.0
