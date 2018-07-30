@@ -1,6 +1,6 @@
 from binance.client import Client
 from components.Candle import Candle
-import pandas, ta, math
+import pandas, ta, math, json
 import utilities
 
 
@@ -19,14 +19,16 @@ class Coinpair:
         self.upperband = []
         self.lowerband = []
 
-        # Query the API for the latest 500 entry points.
+        # Query the API for the latest 500 entry points and the coinpair's specific info.
         if online:
             tempData = pandas.DataFrame(self.client.get_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE), columns=utilities.COLUMN_STRUCTURE)
+            self.info = self.client.get_symbol_info(self.coinpair)
         else:
             try:
                 tempData = pandas.read_csv('data/history/' + coinpair + '.csv')
                 saveToFile = False
             except FileNotFoundError:
+                if client == None: raise Exception('No Client')
                 utilities.throw_info('data/history/' + coinpair + '.csv FileNotFound... using API...')
                 tempData = pandas.DataFrame(
                     self.client.get_historical_klines(symbol=self.coinpair, interval=Client.KLINE_INTERVAL_5MINUTE, start_str='1516428000000'), columns=utilities.COLUMN_STRUCTURE)
@@ -39,15 +41,32 @@ class Coinpair:
             except:
                 utilities.throw_error('Failed to Save Historical Data', False)
 
+            # Add the specific information associated with this Coinpair.
+            # This is used below to verify trading precision.
+            try:
+                with open('data/coinpair/' + coinpair + '.json') as json_file:
+                    self.info = json.load(json_file)
+                saveToFile = False
+            except FileNotFoundError:
+                if client == None: raise Exception('No Client')
+                utilities.throw_info('data/coinpair/' + coinpair + '.json FileNotFound... using API...')
+                self.info = self.client.get_symbol_info(self.coinpair)
+                saveToFile = True
+            except:
+                utilities.throw_error('Failed to Coinpair Info', True)
+
+            try:
+                if saveToFile:
+                    with open('data/coinpair/' + coinpair + '.json', 'w') as json_file:
+                        json.dump(self.info, json_file)
+            except:
+                utilities.throw_error('Failed to Save Coinpair Info', False)
+
         # Create a Candle and add it to self.candles for each entry returned by the API.
         # Remove the last one as that's the current (incomplete) Candle.
         for index, candle in tempData.iterrows():
             self.candles.append(Candle(int(candle['Open Time']), float(candle['Open']), float(candle['High']), float(candle['Low']), float(candle['Close']), int(candle['Close Time'])))
         self.candles = self.candles[:-1]
-
-        # Add the specific information associated with this Coinpair.
-        # This is used below to verify trading precision.
-        self.info = self.client.get_symbol_info(self.coinpair)
 
         # Update the overhead information for this Coinpair.
         # Overhead information includes the MACD, Bollinger Bands, etc.

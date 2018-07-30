@@ -1,16 +1,20 @@
+import csv
+import sys
+import time
+
+import pandas
+import plotly.graph_objs as go
+import plotly.offline as py
+import plotly.tools as pytools
 from binance.client import Client
+
+import strategy
+import utilities
 from components.Balance import Balance
 from components.Coinpair import Coinpair
 from components.Order import Order
 from components.Position import Position
 from components.Sockets import Sockets
-
-import strategy
-import sys, utilities, csv, pandas, time
-
-import plotly.offline as py
-import plotly.graph_objs as go
-import plotly.tools as pytools
 
 
 def to_datetime(time):
@@ -26,19 +30,21 @@ def combined_total(data, balances):
 
 class Bot:
 
-    def __init__(self, online, optimize, args):
+    def __init__(self, online=False, optimize=False):
         self.online = online
         self.optimize = optimize
 
-        if self.optimize:
-            for key in args.keys():
-                utilities.key = args[key]
+        if self.online and self.optimize:
+            utilities.throw_error('Cannot Be Online AND Optimizing...', True)
 
-        try:
-            self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
-        except:
-            utilities.throw_error('Failed to Connect to Binance API', True)
-        utilities.throw_info('Successfully Finished Connecting to Binance Client')
+        if not self.optimize:
+            try:
+                self.client = Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
+            except:
+                utilities.throw_error('Failed to Connect to Binance API', True)
+            utilities.throw_info('Successfully Finished Connecting to Binance Client')
+        else:
+            self.client = None
 
         self.data = {}
         try:
@@ -104,6 +110,10 @@ class Bot:
         for coinpair in utilities.COINPAIRS:
             self.recent[coinpair] = []
 
+        self.buy_triggers = [0.0] * utilities.NUM_TRIGGERS
+        self.sell_triggers = [0.0] * utilities.NUM_TRIGGERS
+        self.plot_triggers = []
+
     def reset(self):
         if not self.online:
             self.positions = []
@@ -164,7 +174,7 @@ class Bot:
                             position.update(order.transactTime, order.price)
                             position.open = False
                             self.orders.remove(order)
-                            if not self.optimize: utilities.throw_info('Position Closed for Coinpair ' + order.symbol + ' with Result: ' + str(position.result))
+                            if self.online: utilities.throw_info('Position Closed for Coinpair ' + order.symbol + ' with Result: ' + str(position.result))
                 elif order.status == 'CANCELED':
                     self.orders.remove(order)
                     for position in self.positions:
@@ -288,7 +298,9 @@ class Bot:
                 y=[position.price * position.result for position in self.positions],
                 mode='markers',
                 marker=dict(size=12, color='blue'),
-                text=[position.price + position.age for position in self.positions])
+                text=[position.price for position in self.positions]),
+            go.Scatter(
+                name='Triggers', x=[to_datetime(point['time']) for point in self.plot_triggers], y=[point['price'] for point in self.plot_triggers], mode='markers', marker=dict(size=9, color='red'))
         ]
         layout = go.Layout(showlegend=False, xaxis=dict(rangeslider=dict(visible=False)))
         py.plot(go.Figure(data=plotData, layout=layout), filename='plot.html')
@@ -315,24 +327,24 @@ class Bot:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline'):
-        utilities.throw_error('Command Usage Options:\n\t\'python Bot.py --online\'\n\t\'python Bot.py --offline\'', True)
+    if len(sys.argv) > 3 or (sys.argv[1] != '--online' and sys.argv[1] != '--offline') or (len(sys.argv) == 3 and sys.argv[2] != '--plot'):
+        utilities.throw_error('Command Usage Options:\n\t\'python Bot.py --online\'\n\t\'python Bot.py --offline\'\n\t\'python Bot.py --offline --plot\'', True)
 
     if sys.argv[1] == '--offline':
         # TODO: Support backtesting across multiple coinpairs
         coinpair = utilities.COINPAIRS[0]
-        bot = Bot(False, False, {})
+        bot = Bot()
 
         total = bot.run_backtest(coinpair)
 
         utilities.throw_info('Open Orders: ' + str(len(bot.orders)))
         utilities.throw_info('Total Balance: ' + str(total))
 
-        #bot.plot(coinpair)
+        if len(sys.argv) == 3: bot.plot(coinpair)
 
     # TODO: Complete and test...
     elif sys.argv[1] == '--online':
-        bot = Bot(True, False, {})
+        bot = Bot(True)
 
         while True:
             bot.update()

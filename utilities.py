@@ -1,5 +1,7 @@
+import logging
+import sys
+
 from binance.client import Client
-import sys, logging
 
 DIRS = ['data_15_min/', 'data_30_min/', 'data_1_hour/', 'data_2_hour/']
 INTERVALS = [Client.KLINE_INTERVAL_15MINUTE, Client.KLINE_INTERVAL_30MINUTE, Client.KLINE_INTERVAL_1HOUR, Client.KLINE_INTERVAL_2HOUR]
@@ -20,25 +22,41 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['BNBBTC']
+COINPAIRS = ['BNBBTC', 'ADABTC', 'LTCBTC', 'ICXBTC', 'EOSBTC', 'XLMBTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 
 PUBLIC_KEY = ''
 SECRET_KEY = ''
 
-ORDER_TIME_LIMIT = 3        # [1, 12] Integers
-STOP_LOSS_ARM = 1.0100        # [1.0030, 1.0500] 4 Decimal places
-STOP_LOSS = 0.003        # [0.000, 0.050] 3 Decimal places
-DROP = 0.9975        # [0.9500, 0.9999] # 4 Decimal places
+ORDER_TIME_LIMIT = 1        # [1, 12] Integers
+STOP_LOSS_ARM = 1.087        # [1.0030, 1.0500] 4 Decimal Places
+STOP_LOSS = 0.04        # [0.000, 0.050] 3 Decimal Places
+DROP = 0.7976        # [0.9500, 0.9999] 4 Decimal Places
+
+NUM_TRIGGERS = 3
+TRIGGER_DECAY = 0.085        # [0.001, 1.000] 3 Decimal Places
+TRIGGER_THRESHOLD = 0.8        # [0.000, 0.999] 3 Decimal Places
 
 
-def set_optimized(otl, sla, sl):
+def set_optimized(otl, sla, sl, dp, td, tt, t1, t2, t3):
     global ORDER_TIME_LIMIT
     ORDER_TIME_LIMIT = otl
     global STOP_LOSS_ARM
     STOP_LOSS_ARM = sla
     global STOP_LOSS
     STOP_LOSS = sl
+    global DROP
+    DROP = dp
+    global TRIGGER_DECAY
+    TRIGGER_DECAY = td
+    global TRIGGER_THRESHOLD
+    TRIGGER_THRESHOLD = tt
+    global TRIGGER_1
+    TRIGGER_1 = t1
+    global TRIGGER_2
+    TRIGGER_2 = t2
+    global TRIGGER_3
+    TRIGGER_3 = t3
 
 
 # Setup the logging interface with the correct formatting and log file

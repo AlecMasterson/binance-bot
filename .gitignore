@@ -3,3 +3,9 @@
 *.csv
 *.log
 *.html
+*.json
+
+TBlogs/
+.sync
+.ipynb_checkpoints
+__pycache__
