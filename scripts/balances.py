@@ -18,9 +18,9 @@ if __name__ == '__main__':
         except:
             print('ERROR: Failed to Retrieve \'' + coinpair[:-3] + '\' Balance from the Binance API')
 
-    for coinpair in utilities.COINPAIRS:
+    for asset in balances:
         try:
-            db_cursor.execute("INSERT INTO BALANCES VALUES ('" + coinpair[:-3] + "', " + str(balances[coinpair[:-3]]) + ") ON CONFLICT (ASSET) DO UPDATE SET FREE = Excluded.FREE;")
+            db_cursor.execute("INSERT INTO BALANCES VALUES ('" + asset + "', " + str(balances[asset]) + ") ON CONFLICT (ASSET) DO UPDATE SET FREE = Excluded.FREE;")
             db.commit()
         except:
             print('ERROR: Failed to Update \'' + coinpair[:-3] + '\' Balance into the DB')
