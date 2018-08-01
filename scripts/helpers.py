@@ -17,10 +17,21 @@ def binance_connect():
 def db_connect():
     try:
         print('INFO: Connecting to the DB...')
-        return psycopg2.connect(database=utilities.DB_NAME, user=utilities.DB_USER, password=utilities.DB_PASS, host=utilities.DB_HOST, port=utilities.DB_PORT)
-    except:
+        db = psycopg2.connect(database=utilities.DB_NAME, user=utilities.DB_USER, password=utilities.DB_PASS, host=utilities.DB_HOST, port=utilities.DB_PORT)
+        return db, db.cursor()
+    except Exception as e:
+        print(e)
         print('ERROR: Failed to Connect to the DB')
         sys.exit(1)
+
+
+def db_disconnect(db):
+    try:
+        db.close()
+    except:
+        print('ERROR: Failed to Close Connection to the DB')
+        sys.exit(1)
+
         sys.exit(1)
 
 
