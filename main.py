@@ -1,11 +1,17 @@
-import utilities, argparse, os
+import utilities, argparse
+from scripts import helpers
+
+logger = helpers.create_logger('main')
 
 if __name__ == '__main__':
     argparse.ArgumentParser(description='Main Script Used for the Binance Bot').parse_args()
+    error = False
 
-    # TODO: Keep a counter of failed script attempts.
-    # TODO: Setup email notifications if counter is > N.
-    while True:
-        result = os.system('python scripts/orders.py')
-        result = os.system('python scripts/positions.py')
-        result = os.system('python scripts/balances.py')
+    # Connect to the Binance Client for all API calls.
+    client = helpers.binance_connect(logger)
+
+    logger.info('Starting Infinite Loop... Hold On Tight!')
+
+    print('INFO: Too Many Errors! Stopping Script...')
+
+    if error: sys.exit(1)
