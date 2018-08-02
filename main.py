@@ -12,6 +12,4 @@ if __name__ == '__main__':
 
     logger.info('Starting Infinite Loop... Hold On Tight!')
 
-    print('INFO: Too Many Errors! Stopping Script...')
-
     if error: sys.exit(1)
