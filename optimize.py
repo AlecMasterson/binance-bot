@@ -15,7 +15,6 @@ import utilities
 from Bot import Bot
 
 # from deap import algorithms, base, creator, tools
-
 bot = Bot(online=False, optimize=True)
 
 
@@ -126,6 +125,8 @@ def ga_optimize(seed=False, population_size=100, generations=100):
 
     print('Best', best, best_bot_performance)
     print('Num unique genes', len(MEMOIZED_EVALS))
+
+    return best, MEMOIZED_EVALS
     # gen, avg, min_, max_ = logbook.select("gen", "avg", "min", "max")
     # plt.plot(gen, avg, label="average")
     # plt.plot(gen, min_, label="minimum")
@@ -139,7 +140,7 @@ def ga_optimize(seed=False, population_size=100, generations=100):
 ### BOUND
 # {'genes': [2, 1.0341, 0.05, 0.9543], 'fitness': 1.3293399265950028}
 ### UNBOUND
-# {'genes': [1, 1.087, 0.04, 0.7976], 'fitness': 1.586393404252001}
+# {'genes': [10, 0.8247, 0.094, 0.9698, 0.687, 0.365, 0.362, 0.361, 0.356], 'fitness': 1.9519551477388317}[('BNBBTC', 1.9519551477388317)]
 ### MORE COINS
 # {'genes': [1, 1.2723, 0.03, 0.7178], 'fitness': 1.058437639641258} [('BNBBTC', 1.5033769119700002), ('ADABTC', 0.6343256048600001), ('LTCBTC', 1.0173513836522903), ('ETHBTC', 0.9831574233939997), ('IOTAETH', 1.1539768743300003)]
 if __name__ == "__main__":
@@ -155,4 +156,4 @@ if __name__ == "__main__":
             json.dump(info, json_file)
     '''
 
-    ga_optimize(seed=[5, 150, 180, 0.67, 0.9], population_size=50, generations=1000)
+    ga_optimize(seed=[10, 0.8247, 0.097, 0.9696, 0.687, 0.365, 0.357, 0.361, 0.356], population_size=50, generations=1000)

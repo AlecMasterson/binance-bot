@@ -22,8 +22,7 @@ DIRS_INTERVALS = [{
     'api': Client.KLINE_INTERVAL_2HOUR
 }]
 
-COINPAIRS = ['BNBBTC', 'ADABTC', 'ETHBTC', 'ICXBTC', 'EOSBTC', 'TRXBTC']
-#COINPAIRS = ['BNBBTC']
+COINPAIRS = ['BNBBTC', 'ADABTC', 'LTCBTC', 'ICXBTC', 'EOSBTC', 'XLMBTC']
 COLUMN_STRUCTURE = ['Open Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close Time', 'Quote Asset Volume', 'Number Trades', 'Taker Base Asset Volume', 'Take Quote Asset Volume', 'Ignore']
 BALANCES_STRUCTURE = ['asset', 'free']
 ORDERS_STRUCTURE = ['order_id', 'symbol', 'side', 'status', 'time', 'executedQty']
