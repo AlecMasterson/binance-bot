@@ -1,8 +1,11 @@
 import argparse, pandas, math, sys, os
+
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/..'))
 import helpers
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/../..'))
 import utilities
+
+logger = helpers.create_logger('add_coinpair')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Adding a Coinpair into the DB')
@@ -10,17 +13,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
     error = False
 
-    client = helpers.binance_connect()
-    db, db_cursor = helpers.db_connect()
+    client = helpers.binance_connect(logger)
+    db, db_cursor = helpers.db_connect(logger)
 
     try:
         step = 0
 
-        print('INFO: Getting \'' + args.coinpair + '\' Historical Data from the Binance API...')
+        logger.info('Getting \'' + args.coinpair + '\' Historical Data from the Binance API...')
         data = pandas.DataFrame(client.get_historical_klines(symbol=args.coinpair, interval=utilities.TIME_INTERVAL, start_str=utilities.START_DATE), columns=utilities.HISTORY_STRUCTURE)
         step += 1
 
-        print('INFO: Creating Table \'' + args.coinpair + '\' in the DB...')
+        logger.info('Creating Table \'' + args.coinpair + '\' in the DB...')
         db_cursor.execute("DROP TABLE IF EXISTS " + args.coinpair + ";")
         db_cursor.execute(
             "CREATE TABLE " + args.coinpair +
@@ -29,7 +32,7 @@ if __name__ == '__main__':
         db.commit()
         step += 1
 
-        print('INFO: Inserting \'' + args.coinpair + '\' into the DB...')
+        logger.info('Inserting \'' + args.coinpair + '\' into the DB...')
         for index, row in data.iterrows():
             db_cursor.execute("INSERT INTO " + args.coinpair + " VALUES (" + str(row['OPEN_TIME']) + ", " + str(row['OPEN']) + ", " + str(row['HIGH']) + ", " + str(row['LOW']) + ", " +
                               str(row['CLOSE']) + ", " + str(row['VOLUME']) + ", " + str(row['CLOSE_TIME']) + ", " + str(row['QUOTE_ASSET_VOLUME']) + ", " + str(row['NUMBER_TRADES']) + ", " +
@@ -39,10 +42,10 @@ if __name__ == '__main__':
             sys.stdout.write('\tProgress... %d%%' % (math.ceil(index / (len(data.index) - 1) * 100)))
             sys.stdout.flush()
     except:
-        if step == 0: print('ERROR: Failed to Get \'' + args.coinpair + '\' Historical Data from the Binance API')
-        if step == 1: print('ERROR: Failed to Create Table \'' + args.coinpair + '\' in the DB...')
-        if step == 2: print('ERROR: Failed to Insert \'' + args.coinpair + '\' into the DB')
+        if step == 0: logger.error('Failed to Get \'' + args.coinpair + '\' Historical Data from the Binance API')
+        if step == 1: logger.error('Failed to Create Table \'' + args.coinpair + '\' in the DB...')
+        if step == 2: logger.error('Failed to Insert \'' + args.coinpair + '\' into the DB')
         error = True
 
-    helpers.db_disconnect(db)
+    helpers.db_disconnect(db, logger)
     if error: sys.exit(1)
