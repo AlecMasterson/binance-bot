@@ -1,56 +1,45 @@
-import psycopg2, pandas, sys, os
+import logging, psycopg2, sys, os
 from binance.client import Client
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + './..'))
 import utilities
 
 
-def binance_connect():
+def create_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    fh = logging.FileHandler('logs/' + name + '.log')
+    fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    return logger
+
+
+def binance_connect(logger):
     try:
-        print('INFO: Connecting to the Binance API...')
+        logger.info('Connecting to the Binance API...')
         return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
     except:
-        print('ERROR: Failed to Connect to the Binance API')
+        logger.error('Failed to Connect to the Binance API')
         sys.exit(1)
 
 
-def db_connect():
+def db_connect(logger):
     try:
-        print('INFO: Connecting to the DB...')
+        logger.info('Connecting to the DB...')
         db = psycopg2.connect(database=utilities.DB_NAME, user=utilities.DB_USER, password=utilities.DB_PASS, host=utilities.DB_HOST, port=utilities.DB_PORT)
         return db, db.cursor()
-    except Exception as e:
-        print(e)
-        print('ERROR: Failed to Connect to the DB')
+    except:
+        logger.error('Failed to Connect to the DB')
         sys.exit(1)
 
 
-def db_disconnect(db):
+def db_disconnect(db, logger):
     try:
+        logger.info('Closing Connection to the DB...')
         db.close()
     except:
-        print('ERROR: Failed to Close Connection to the DB')
+        logger.error('Failed to Close Connection to the DB')
         sys.exit(1)
-
-        sys.exit(1)
-
-
-def to_csv(file, structure, data):
-    try:
-        if data is None: data = pandas.DataFrame(columns=structure)
-        data.to_csv(file)
-        return data
-    except:
-        print('Failed to Write to File \'' + file + '\'')
-        return None
-
-
-def read_csv(file, structure):
-    try:
-        return pandas.read_csv(file)
-    except FileNotFoundError:
-        print('Failed to Find File \'' + file + '\'')
-        return to_csv(file, structure, None)
-    except:
-        print('Failed to Read File \'' + file + '\'')
-        return None
