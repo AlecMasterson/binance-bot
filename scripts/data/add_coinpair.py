@@ -20,8 +20,9 @@ if __name__ == '__main__':
     try:
         step = 0
 
-        logger.info('Getting \'' + args.coinpair + '\' Historical Data from the Binance API...')
+        logger.info('Getting \'' + args.coinpair + '\' Historical Data and Policies from the Binance API...')
         data = pandas.DataFrame(client.get_historical_klines(symbol=args.coinpair, interval=utilities.TIME_INTERVAL, start_str=utilities.START_DATE), columns=utilities.HISTORY_STRUCTURE)
+        policies = client.get_symbol_info(args.coinpair)
         step += 1
 
         if args.reset:
@@ -40,6 +41,14 @@ if __name__ == '__main__':
             data_old = pandas.DataFrame(db_cursor.fetchall(), columns=utilities.HISTORY_STRUCTURE)
         step += 1
 
+        logger.info('Inserting \'' + args.coinpair + '\' Policies into the DB...')
+        db_cursor.execute("INSERT INTO POLICIES VALUES (\'" + args.coinpair + "\', \'" + str(','.join(policies['orderTypes'])) + "\', " + str(policies['baseAssetPrecision']) + ", " +
+                          str(policies['filters'][0]['minPrice']) + ", " + str(policies['filters'][0]['maxPrice']) + ", " + str(policies['filters'][0]['tickSize']) + ", " +
+                          str(policies['filters'][1]['minQty']) + ", " + str(policies['filters'][1]['maxQty']) + ", " + str(policies['filters'][1]['stepSize']) + ", " +
+                          str(policies['filters'][2]['minNotional']) + ") ON CONFLICT DO NOTHING;")
+        db.commit()
+        step += 1
+
         logger.info('Inserting \'' + args.coinpair + '\' into the DB...')
         for index, row in data.iterrows():
             sys.stdout.write('\r')
@@ -54,10 +63,11 @@ if __name__ == '__main__':
             db.commit()
         sys.stdout.write('\n')
     except:
-        if step == 0: logger.error('Failed to Get \'' + args.coinpair + '\' Historical Data from the Binance API')
+        if step == 0: logger.error('Failed to Get \'' + args.coinpair + '\' Historical Data and Policies from the Binance API')
         if step == 1: logger.error('Failed to Create Table \'' + args.coinpair + '\' in the DB...')
         if step == 2: logger.error('Failed to Download \'' + args.coinpair + '\' Historical Data from the DB')
-        if step == 3: logger.error('Failed to Insert \'' + args.coinpair + '\' into the DB')
+        if step == 3: logger.error('Failed to Insert \'' + args.coinpair + '\' Policies into the DB')
+        if step == 4: logger.error('Failed to Insert \'' + args.coinpair + '\' into the DB')
         error = True
 
     helpers.db_disconnect(db, logger)
