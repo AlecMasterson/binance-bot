@@ -2,6 +2,7 @@ Required Libraries:
 
 pandas
 plotly
+psycopg2
 python-binance
 ta
 
