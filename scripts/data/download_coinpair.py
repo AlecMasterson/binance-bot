@@ -18,12 +18,12 @@ if __name__ == '__main__':
     try:
         step = 0
 
-        logger.info('Downloading \'' + args.coinpair + '\' Historical Data from the DB')
+        logger.info('Downloading \'' + args.coinpair + '\' Historical Data from the DB...')
         db_cursor.execute("SELECT * FROM " + args.coinpair)
         history = db_cursor.fetchall()
         step += 1
 
-        logger.info('Writing \'' + args.coinpair + '\' Historical Data to File')
+        logger.info('Writing \'' + args.coinpair + '\' Historical Data to File...')
         data = pandas.DataFrame(history, columns=utilities.HISTORY_STRUCTURE)
         data.to_csv('data/history/' + args.coinpair + '.csv', index=False)
     except:
