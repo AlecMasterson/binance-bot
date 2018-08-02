@@ -70,4 +70,4 @@ if __name__ == '__main__':
         error = True
 
     helpers.db_disconnect(db, logger)
-    if error: sys.exit(1)
+    if error or errors != 0: sys.exit(1)
