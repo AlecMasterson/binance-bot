@@ -36,23 +36,11 @@ if __name__ == '__main__':
         logger.info('Writing \'' + args.coinpair + '\' Policies to File...')
         policies = pandas.DataFrame(policies, columns=utilities.POLICY_STRUCTURE)
         policies.to_csv('data/policies.csv', index=False)
-        step += 1
-
-        logger.info('Downloading \'' + args.coinpair + '\' Overhead from the DB...')
-        db_cursor.execute("SELECT * FROM " + args.coinpair + "_OVERHEAD")
-        overhead = db_cursor.fetchall()
-        step += 1
-
-        logger.info('Writing \'' + args.coinpair + '\' Overhead to File...')
-        overhead = pandas.DataFrame(overhead, columns=utilities.OVERHEAD_STRUCTURE)
-        policies.to_csv('data/overhead/' + args.coinpair + '.csv', index=False)
     except:
         if step == 0: logger.error('Failed to Download \'' + args.coinpair + '\' Historical Data from the DB')
         if step == 1: logger.error('Failed to Write \'' + args.coinpair + '\' Historical Data to File')
         if step == 2: logger.error('Failed to Download \'' + args.coinpair + '\' Policies from the DB')
         if step == 3: logger.error('Failed to Write \'' + args.coinpair + '\' Policies to File')
-        if step == 4: logger.error('Failed to Download \'' + args.coinpair + '\' Overhead from the DB')
-        if step == 5: logger.error('Failed to Write \'' + args.coinpair + '\' Overhead to File')
         error = True
 
     helpers.db_disconnect(db, logger)
