@@ -178,20 +178,21 @@ class TradingEnv():
             if not self.swap:
                 self.buy_price = self.open_history[-1]
                 self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
-                reward = -self.trading_fee
+                reward = -1
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
                 # reward = self.last_buysell_value - reward
                 self.swap = 1
             else:
                 self.sell_price = self.open_history[-1]
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
-                reward = -self.trading_fee
+                reward = -1
                 self.last_buysell_value = helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
                 # reward = self.last_buysell_value - reward
                 self.swap = 0
         elif action == 1:
             try:
                 reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2])) - 1
+                reward = np.where(reward > 0, 1.0, -1.0)
             except Exception as e:
                 # print(e)
                 reward = 0

@@ -30,13 +30,13 @@ from trading_env.trading_env import TradingEnv
 environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 EPISODES = 1000000
-batch_size = 2**10
+batch_size = 2**12
 el = 10e6
 hl = 1
 bss = 1
 hs = 1
 ts = 1
-tws = 15
+tws = 3
 data_csvs = ['data/history/ADABTC.csv', 'data/history/BNBBTC.csv', 'data/history/EOSBTC.csv', 'data/history/ICXBTC.csv', 'data/history/LTCBTC.csv', 'data/history/XLMBTC.csv']
 
 # data_csvs = ['data/history/ADABTC.csv']
@@ -47,13 +47,13 @@ class DQNAgent:
     def __init__(self, state_size, action_size, noise_level=0.000):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=10000000)
-        self.gamma = 0.9999        # discount rate
+        self.memory = deque(maxlen=1_000_000)
+        self.gamma = 0.95        # discount rate
         self.epsilon = 2.0        # exploration rate
         self.epsilon_min = 0.0000001
         self.noise_level = noise_level
         self.epsilon_decay = 0.95
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.001
         self.model = self._build_model()
         self.random_holds = 0
         self.random_trades = 0
@@ -65,10 +65,10 @@ class DQNAgent:
         simple_output = Dense(max(int(self.state_size * 0.7), 10), activation='tanh')(simple_input)
         simple_output = GRU(max(int(self.state_size * 0.5), 10), activation='tanh', return_sequences=True)(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
-        simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
-        simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
-        simple_output = GRU(max(int(self.state_size * 0.1), 10), activation='tanh', return_sequences=True)(simple_output)
-        simple_output = Dense(max(int(self.state_size * 0.01), 10), activation='tanh')(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
+        # simple_output = GRU(max(int(self.state_size * 0.1), 10), activation='tanh', return_sequences=True)(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 0.01), 10), activation='tanh')(simple_output)
         simple_output = Dense(self.action_size, activation='linear')(simple_output)
         brain = Model(inputs=simple_input, outputs=simple_output)
         brain.compile(optimizer=Adam(lr=self.learning_rate, epsilon=0.00001), loss='mae', metrics=['mse'])
@@ -158,7 +158,7 @@ def train():
 
     # try:
     #     agent.load('./agents/save/dqn.h5')
-    #     agent.epsilon = 1.1
+    #     agent.epsilon = 0.6
     #     print('SUCCESSFULLY LOADED')
     # except:
     #     print('FAILED TO LOAD')
@@ -199,12 +199,12 @@ def train():
         )
         # Plot the relative trade locations
         try:
-            # termplot.plot(list(np.histogram([e for e, x in enumerate(env.action_history) if x == 0], bins=100)[0]), plot_height=10, plot_char='*')
-            termplot.plot([np.log10(x) if x != 0 else 0 for x in list(np.histogram(env.reward_history, bins=200)[0])], plot_height=10, plot_char='*')
+            termplot.plot(list(np.histogram([e for e, x in enumerate(env.action_history) if x == 0], bins=200)[0]), plot_height=10, plot_char='*')
+            # termplot.plot([np.log10(x) if x != 0 else 0 for x in list(np.histogram(env.reward_history, bins=200)[0])], plot_height=10, plot_char='*')
         except:
             pass
 
-        if len(agent.memory) >= 1000000:
+        if len(agent.memory) >= 500_000:
             agent.replay_all(batch_size)
 
         done = False
@@ -249,8 +249,8 @@ def test():
         action = agent.act(state)
         next_state, reward, done, _ = env.step(action)
         # agent.remember(state, action, reward, next_state, done)
-        if action == 0:
-            print(env.iteration, reward, done)
+        # if action == 0:
+        #     print(env.iteration, reward, done)
         state = next_state
         pbar.update(1)
     pbar.close()
@@ -274,7 +274,7 @@ def test():
             agent.random_holds
         )
     )
-
+    print([e for e, x in enumerate(env.action_history) if x == 0])
     # Plot the relative trade locations
     try:
         termplot.plot(list(np.histogram([e for e, x in enumerate(env.action_history) if x == 0], bins=200)[0]), plot_height=10, plot_char='*')
