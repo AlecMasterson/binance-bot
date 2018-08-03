@@ -75,17 +75,18 @@ if __name__ == '__main__':
         step += 1
 
         logger.info('Inserting \'' + args.coinpair + '\' into the DB...')
-        for index, row in data.iterrows():
+        for index in data.index:
             sys.stdout.write('\r')
             sys.stdout.write('\tProgress... %d%%' % (math.ceil(index / (len(data.index) - 1) * 100)))
             sys.stdout.flush()
 
-            if data_old != None and len(data_old[data_old['OPEN_TIME'] == row['OPEN_TIME']]) != 0: continue
+            if data_old is not None and len(data_old[data_old['OPEN_TIME'] == data.at[index, 'OPEN_TIME']]) != 0: continue
 
-            db_cursor.execute("INSERT INTO " + args.coinpair + " VALUES (" + str(row['OPEN_TIME']) + ", " + str(row['OPEN']) + ", " + str(row['HIGH']) + ", " + str(row['LOW']) + ", " +
-                              str(row['CLOSE']) + ", " + str(row['VOLUME']) + ", " + str(row['CLOSE_TIME']) + ", " + str(row['QUOTE_ASSET_VOLUME']) + ", " + str(row['NUMBER_TRADES']) + ", " +
-                              str(row['TAKER_BASE_ASSET_VOLUME']) + ", " + str(row['TAKER_QUOTE_ASSET_VOLUME']) + ", " + str(row['IGNORE']) + ", " + str(row['MACD']) + ", " + str(row['MACD_SIGNAL']) +
-                              ", " + str(row['MACD_DIFF']) + ", " + str(row['UPPERBAND']) + ", " + str(row['LOWERBAND']) + ") ON CONFLICT DO NOTHING;")
+            db_cursor.execute("INSERT INTO " + args.coinpair + " VALUES (" + str(data.at[index, 'OPEN_TIME']) + ", " + str(data.at[index, 'OPEN']) + ", " + str(data.at[index, 'HIGH']) + ", " +
+                              str(data.at[index, 'LOW']) + ", " + str(data.at[index, 'CLOSE']) + ", " + str(data.at[index, 'VOLUME']) + ", " + str(data.at[index, 'CLOSE_TIME']) + ", " +
+                              str(data.at[index, 'QUOTE_ASSET_VOLUME']) + ", " + str(data.at[index, 'NUMBER_TRADES']) + ", " + str(data.at[index, 'TAKER_BASE_ASSET_VOLUME']) + ", " +
+                              str(data.at[index, 'TAKER_QUOTE_ASSET_VOLUME']) + ", " + str(data.at[index, 'IGNORE']) + ", " + str(data.at[index, 'MACD']) + ", " + str(data.at[index, 'MACD_SIGNAL']) +
+                              ", " + str(data.at[index, 'MACD_DIFF']) + ", " + str(data.at[index, 'UPPERBAND']) + ", " + str(data.at[index, 'LOWERBAND']) + ") ON CONFLICT DO NOTHING;")
             db.commit()
         sys.stdout.write('\n')
     except:
