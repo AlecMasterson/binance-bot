@@ -27,12 +27,12 @@ if __name__ == '__main__':
 
         for asset in balances:
             try:
-                logger.info('Updating \'' + coinpair[:-3] + '\' Balance into the DB...')
+                logger.info('Updating \'' + asset + '\' Balance into the DB...')
                 db_cursor.execute("INSERT INTO BALANCES VALUES ('" + asset + "', " + str(balances[asset]) + ") ON CONFLICT (ASSET) DO UPDATE SET FREE = Excluded.FREE;")
                 db.commit()
             except:
                 errors += 1
-                logger.error('Failed to Update \'' + coinpair[:-3] + '\' Balance into the DB')
+                logger.error('Failed to Update \'' + asset + '\' Balance into the DB')
 
         time.sleep(15)
 
