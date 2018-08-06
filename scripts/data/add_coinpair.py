@@ -51,6 +51,7 @@ if __name__ == '__main__':
         if args.reset:
             logger.info('Creating Table \'' + args.coinpair + '\' in the DB...')
             db_cursor.execute("DROP TABLE IF EXISTS " + args.coinpair + ";")
+            db_cursor.execute("DELETE FROM POLICIES WHERE COINPAIR = \'" + args.coinpair + "\';")
             db_cursor.execute(
                 "CREATE TABLE " + args.coinpair +
                 " (OPEN_TIME BIGINT PRIMARY KEY NOT NULL, OPEN REAL NOT NULL, HIGH REAL NOT NULL, LOW REAL NOT NULL, CLOSE REAL NOT NULL, VOLUME REAL NOT NULL, CLOSE_TIME BIGINT NOT NULL, QUOTE_ASSET_VOLUME REAL NOT NULL, NUMBER_TRADES REAL NOT NULL, TAKER_BASE_ASSET_VOLUME REAL NOT NULL, TAKER_QUOTE_ASSET_VOLUME REAL NOT NULL, IGNORE REAL NOT NULL, MACD REAL NOT NULL, MACD_SIGNAL REAL NOT NULL, MACD_DIFF REAL NOT NULL, UPPERBAND REAL NOT NULL, LOWERBAND REAL NOT NULL);"
