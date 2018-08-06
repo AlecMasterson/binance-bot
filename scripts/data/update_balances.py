@@ -9,7 +9,7 @@ logger = helpers.create_logger('update_balances')
 
 if __name__ == '__main__':
     argparse.ArgumentParser(description='Used for Updating the DB with Current Balances').parse_args()
-    error = True
+    error = False
 
     client = helpers.binance_connect(logger)
     db, db_cursor = helpers.db_connect(logger)
