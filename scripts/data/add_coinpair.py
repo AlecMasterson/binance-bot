@@ -29,13 +29,13 @@ if __name__ == '__main__':
         step += 1
 
         logger.info('Calculating Overhead Information...')
-        closeData = pandas.Series([row['CLOSE'] for index, row in data.iterrows()])
+        close_data = pandas.Series([row['CLOSE'] for index, row in data.iterrows()])
 
-        macd = ta.trend.macd(closeData, n_fast=12, n_slow=26, fillna=True)
-        macd_signal = ta.trend.macd_signal(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-        macd_diff = ta.trend.macd_diff(closeData, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-        upperband = ta.volatility.bollinger_hband(closeData, n=14, ndev=2, fillna=True)
-        lowerband = ta.volatility.bollinger_lband(closeData, n=14, ndev=2, fillna=True)
+        macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
+        macd_signal = ta.trend.macd_signal(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+        macd_diff = ta.trend.macd_diff(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+        upperband = ta.volatility.bollinger_hband(close_data, n=14, ndev=2, fillna=True)
+        lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
 
         length = len(data.index)
         if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(upperband) or length != len(lowerband): raise Exception
