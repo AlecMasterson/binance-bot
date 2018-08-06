@@ -48,7 +48,9 @@ class TradingEnv():
         self.done = False
 
         self.buy_price = 0
+        self.buy_index = 1
         self.sell_price = 1
+        self.sell_index = 1
         self.swap = 0
 
         self.coin_min_trade = 0.001
@@ -120,11 +122,11 @@ class TradingEnv():
         obs = np.append(obs, [self.swap == 0])
         obs = np.append(obs, [self.swap == 1])
         try:
-            obs = np.append(obs, [(helpers.combined_total_env(self.w_c1, self.w_c2, self.buy_price) / self.total_value_history[-1]) - 1])
+            obs = np.append(obs, [(self.total_value_history[-self.buy_index] / self.total_value_history[-1]) - 1])
         except:
             obs = np.append(obs, [0])
         try:
-            obs = np.append(obs, [(helpers.combined_total_env(self.w_c1, self.w_c2, self.sell_price) / self.total_value_history[-1]) - 1])
+            obs = np.append(obs, [(self.total_value_history[-self.sell_index] / self.total_value_history[-1]) - 1])
         except:
             obs = np.append(obs, [0])
         try:
@@ -135,7 +137,7 @@ class TradingEnv():
             self.open_history, self.high_history, self.low_history, self.volume_history, self.QAV_history, self.TBAV_history, self.TQAV_history, self.NT_history, self.macd_history,
             self.upperband_history, self.lowerband_history
         ]:
-            obs = np.append(obs, [sig(price) for price in l[-self.history_length:]])
+            obs = np.append(obs, [price for price in l[-self.history_length:]])
 
         self.temporal_window.append(obs)
         obs = np.array(list(chain.from_iterable(self.temporal_window)))
@@ -147,22 +149,24 @@ class TradingEnv():
             if not self.swap:
                 self.buy_price = self.open_history[-1]
                 self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
-                reward = -1.0
+                reward = -self.trading_fee
                 self.swap = 1
+                self.buy_index = self.iteration
             else:
                 self.sell_price = self.open_history[-1]
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
-                reward = -1.0
+                reward = -self.trading_fee
                 self.swap = 0
+                self.sell_index = self.iteration
         elif action == 1:
             try:
                 reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2])) - 1
-                if reward > 0.01:
-                    reward = 1.0
-                elif reward < -0.01:
-                    reward = -1.0
-                else:
-                    reward = 0.0
+                # if reward > 0.01:
+                #     reward = 1.0
+                # elif reward < -0.01:
+                #     reward = -1.0
+                # else:
+                #     reward = 0.0
             except:
                 reward = 0
 

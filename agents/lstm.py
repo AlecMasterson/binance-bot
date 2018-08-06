@@ -29,7 +29,7 @@ from trading_env.trading_env import TradingEnv
 # environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 EPISODES = 1000000
-batch_size = 2**12
+batch_size = 2**6
 el = 10e6
 hl = 1
 bss = 1
@@ -50,7 +50,7 @@ class DQNAgent:
         self.epsilon = 10.0        # exploration rate
         self.epsilon_min = 0.0000001
         self.epsilon_decay = 0.5
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.00001
         self.model = self._build_model()
         self.random_holds = 0
         self.random_trades = 0
@@ -61,9 +61,9 @@ class DQNAgent:
         simple_input = Input(shape=(1, self.state_size))
         simple_output = Dense(max(int(self.state_size * 1.5), 10), activation='tanh')(simple_input)
         simple_output = GRU(max(int(self.state_size * 5), 10), activation='tanh', return_sequences=True, dropout=0.01, recurrent_dropout=0.001)(simple_output)
+        simple_output = Dense(max(int(self.state_size * 3), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 1), 10), activation='tanh')(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.5), 10), activation='tanh')(simple_output)
-        simple_output = Dense(max(int(self.state_size * 0.3), 10), activation='tanh')(simple_output)
         simple_output = GRU(max(int(self.state_size * 0.1), 10), activation='tanh', return_sequences=True)(simple_output)
         simple_output = Dense(max(int(self.state_size * 0.01), 10), activation='tanh')(simple_output)
         simple_output = Dense(self.action_size, activation='linear')(simple_output)
@@ -99,7 +99,7 @@ class DQNAgent:
     def replay_all(self, batch_size):
         x = []
         y = []
-        for _ in tqdm(range(10), desc='Looping'):
+        for _ in tqdm(range(100), desc='Looping'):
             rint = np.random.randint(0, len(self.memory) - batch_size)
             minibatch = [self.memory[i] for i in range(rint, rint + batch_size)]
             for state, action, reward, next_state, done in tqdm(minibatch, desc='Building training set'):
@@ -118,8 +118,8 @@ class DQNAgent:
                 shuffle=False,
                 verbose=0,
                 callbacks=[TQDMCallback(metric_format="{name}: {value:e}"),
-                           EarlyStopping(monitor='loss', min_delta=0, patience=10, verbose=0),
-                           ReduceLROnPlateau(monitor='loss', patience=3, verbose=0)]
+                           EarlyStopping(monitor='loss', min_delta=0, patience=5, verbose=0),
+                           ReduceLROnPlateau(monitor='loss', patience=2, verbose=0)]
             )
         self.resetENV()
 
@@ -155,13 +155,13 @@ def train():
     done = False
     total_steps = 0
 
-    # try:
-    #     agent.load('./agents/save/dqn.h5')
-    #     agent.epsilon = 0.6
-    #     print('SUCCESSFULLY LOADED')
-    # except:
-    #     print('FAILED TO LOAD')
-    #     pass
+    try:
+        agent.load('./agents/save/dqn.h5')
+        agent.epsilon = 0.6
+        print('SUCCESSFULLY LOADED')
+    except:
+        print('FAILED TO LOAD')
+        pass
 
     for e in range(EPISODES):
         generator = CSVStreamer(data_csvs[int(np.random.randint(len(data_csvs), size=1))])
