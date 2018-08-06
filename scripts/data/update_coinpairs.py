@@ -57,35 +57,32 @@ if __name__ == '__main__':
     db, db_cursor = helpers.db_connect(logger)
 
     try:
+        step = 0
+
         data = {}
         for coinpair in utilities.COINPAIRS:
             db_cursor.execute("SELECT * FROM " + coinpair + " ORDER BY OPEN_TIME DESC LIMIT 50;")
             data[coinpair] = pandas.DataFrame(db_cursor.fetchall()[::-1], columns=utilities.HISTORY_STRUCTURE)
-    except:
-        logger.error('Failed to Download All Historical Data from the DB')
-        error = True
+        step += 1
 
-    try:
         logger.info('Starting Binance API Sockets...')
         manager = BinanceSocketManager(client)
         for coinpair in utilities.COINPAIRS:
             manager.start_kline_socket(coinpair, callback, interval=utilities.TIME_INTERVAL)
         manager.start()
-    except:
-        logger.error('Failed to Start Binance API Sockets')
-        error = True
+        step += 1
 
-    if not error:
         logger.info('Starting Infinite Loop... Hold On Tight!')
         while not error:
             continue
 
-    try:
         logger.info('Closing Binance API Sockets...')
         manager.close()
         reactor.stop()
     except:
-        logger.error('Failed to Close Binance API Sockets')
+        if step == 0: logger.error('Failed to Download All Historical Data from the DB')
+        if step == 1: logger.error('Failed to Start Binance API Sockets')
+        if step == 2: logger.error('Failed to Close Binance API Sockets')
         error = True
 
     helpers.db_disconnect(db, logger)
