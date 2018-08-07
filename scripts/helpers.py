@@ -43,3 +43,11 @@ def db_disconnect(db, logger):
     except:
         logger.error('Failed to Close Connection to the DB')
         sys.exit(1)
+
+
+def buy(client, coinpair, price, logger):
+    logger.info('BUYING ' + coinpair + ' at Price ' + str(price))
+
+
+def sell(client, coinpair, price, logger):
+    logger.info('SELLING ' + coinpair + ' at Price ' + str(price))
