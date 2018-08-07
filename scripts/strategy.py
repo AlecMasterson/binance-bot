@@ -22,14 +22,6 @@ def action_alec(data):
     maximum = max(data[utilities.WINDOW:]['MACD_DIFF'])
     valid_sell = False
 
-    if perm['belowZero'] and coinpair.at[index - 1, 'MACD_DIFF'] > (maximum * utilities.TOP_PERCENT) and coinpair.at[index - 2, 'MACD_DIFF'] > coinpair.at[index - 3, 'MACD_DIFF']:
-        if coinpair.at[index - 1, 'MACD'] > coinpair.at[index - 1, 'MACD_SIGNAL']:
-            if coinpair.at[index - 1, 'MACD_DIFF'] < coinpair.at[index - 2, 'MACD_DIFF']: valid = True
-            else: perm['goingUp'] += 1
-            if coinpair.at[index - 2, 'MACD_DIFF'] - coinpair.at[index - 3, 'MACD_DIFF'] > coinpair.at[index - 1, 'MACD_DIFF'] - coinpair.at[index - 2, 'MACD_DIFF']: slowing = True
-
-        if perm['goingUp'] > 2 and slowing: valid = True
-
     # Only SELL if the MACD_DIFF is a certain percentage from the local maximum of the MACD_DIFF.
     if data.at[len(data) - 1, 'MACD_DIFF'] > (maximum * utilities.TOP_PERCENT):
 
