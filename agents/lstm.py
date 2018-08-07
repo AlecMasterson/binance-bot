@@ -14,6 +14,7 @@ from keras_tqdm import TQDMCallback
 import termplot
 
 import numpy as np
+from sklearn.preprocessing import minmax_scale
 from keras.models import Sequential, Model
 from keras.layers import Flatten, Dense, Conv1D, Input, Reshape, Dropout, LeakyReLU, GRU
 from keras.optimizers import Adam, RMSprop, Nadam
@@ -29,7 +30,7 @@ from trading_env.trading_env import TradingEnv
 # environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 EPISODES = 1000000
-batch_size = 2**9
+batch_size = 2**12
 el = 10e6
 hl = 1
 bss = 1
@@ -46,13 +47,13 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=1_000_000)
-        self.input_memory_size = 5
+        self.input_memory_size = 3
         self.input_memory = deque(maxlen=self.input_memory_size)
-        self.gamma = 0.95        # discount rate
-        self.epsilon = 1.2        # exploration rate
+        self.gamma = 0.0        # discount rate
+        self.epsilon = 1.1        # exploration rate
         self.epsilon_min = 0.0000001
-        self.epsilon_decay = 0.99
-        self.learning_rate = 0.001
+        self.epsilon_decay = 0.7
+        self.learning_rate = 0.1
         self.model = self._build_model()
         self.random_holds = 0
         self.random_trades = 0
@@ -61,18 +62,19 @@ class DQNAgent:
     def _build_model(self):
 
         simple_input = Input(shape=(self.input_memory_size, self.state_size))
-        # simple_output = Dense(max(int(self.state_size * 1.5), 10), activation='tanh')(simple_input)
-        simple_output = GRU(max(int(self.state_size * 5), 10), activation='tanh', return_sequences=False, dropout=0.0, recurrent_dropout=0.00)(simple_input)
-        simple_output = Dense(max(int(self.state_size * 3), 10), activation='tanh')(simple_output)
-        simple_output = Dense(max(int(self.state_size * 1), 10), activation='tanh')(simple_output)
-        simple_output = Dense(max(int(self.state_size * 0.5), 10), activation='tanh')(simple_output)
-        # simple_output = GRU(max(int(self.state_size * 0.1), 10), activation='tanh', return_sequences=True)(simple_output)
-        simple_output = Dense(max(int(self.state_size * 0.01), 10), activation='tanh')(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 1.5), 10), activation='relu')(simple_input)
+        simple_output = GRU(max(int(self.state_size * 5), 10), activation='relu', return_sequences=True, dropout=0.0, recurrent_dropout=0.00)(simple_input)
+        simple_output = GRU(max(int(self.state_size * 5), 10), activation='relu', return_sequences=True, dropout=0.0, recurrent_dropout=0.00)(simple_output)
+        simple_output = GRU(max(int(self.state_size * 5), 10), activation='relu', return_sequences=False, dropout=0.0, recurrent_dropout=0.00)(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 1), 10), activation='relu')(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 1), 10), activation='relu')(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 1), 10), activation='relu')(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 0.5), 10), activation='relu')(simple_output)
+        # simple_output = Dense(max(int(self.state_size * 0.01), 10), activation='relu')(simple_output)
         simple_output = Dense(self.action_size, activation='linear')(simple_output)
         brain = Model(inputs=simple_input, outputs=simple_output)
-        brain.compile(optimizer=Adam(lr=self.learning_rate), loss='mse', metrics=['mae'])
+        brain.compile(optimizer=Adam(lr=self.learning_rate), loss='mae', metrics=['mse'])
         print(brain.summary())
-
         return brain
 
     def fine_dining_and_breathing(self, obs):
@@ -80,7 +82,7 @@ class DQNAgent:
 
     def consider(self, single_obs):
         self.input_memory.append(single_obs)
-        return np.array(self.input_memory).reshape(1, self.input_memory_size, self.state_size)
+        return minmax_scale(np.array(self.input_memory).reshape(self.input_memory_size, self.state_size)).reshape(1, self.input_memory_size, self.state_size)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -91,13 +93,13 @@ class DQNAgent:
     def act(self, state):
         self.n_steps += 1
         if np.random.rand() <= self.epsilon:
-            if np.random.choice(2, 1, p=[0.001, 0.999])[0] == 0 or self.epsilon < 0.01:
+            if np.random.choice(2, 1, p=[0.01, 0.99])[0] == 0 or self.epsilon < 0.01:
                 self.random_trades += 1
                 return 0
             self.random_holds += 1
             return 1
-        act_values = self.predict(self.input_memory)
-        return int(np.argmax(act_values[0]))
+        act_values = self.predict(state)
+        return int(np.argmax(act_values))
 
     def resetENV(self):
         self.random_trades = 0
@@ -107,7 +109,8 @@ class DQNAgent:
     def replay_all(self, batch_size):
         x = []
         y = []
-        minibatch = random.sample(self.memory, batch_size)
+        minibatch = [x for x in self.memory if x[1] == 0] + random.sample(self.memory, batch_size)
+        minibatch = random.sample(minibatch, batch_size)
         for state, action, reward, next_state, done in tqdm(minibatch, desc='Building training set'):
             target = reward
             if not done:
@@ -121,13 +124,11 @@ class DQNAgent:
             np.array(y).reshape(batch_size, self.action_size),
             epochs=1000,
             batch_size=batch_size,
-            shuffle=False,
+            shuffle=True,
             verbose=0,
-            callbacks=[
-                TQDMCallback(metric_format="{name}: {value:e}"),
-                EarlyStopping(monitor='loss', min_delta=0, patience=20, verbose=0),
-                ReduceLROnPlateau(monitor='loss', patience=8, verbose=0)
-            ]
+            callbacks=[TQDMCallback(metric_format="{name}: {value:e}"),
+                       EarlyStopping(monitor='loss', min_delta=0, patience=50, verbose=0),
+                       ReduceLROnPlateau(monitor='loss', patience=20, verbose=0)]
         )
 
     def update_epsilon(self, denom):
@@ -142,18 +143,7 @@ class DQNAgent:
 
 def train():
     generator = CSVStreamer(data_csvs[int(np.random.randint(len(data_csvs), size=1))])
-    env = TradingEnv(
-        data_generator=generator,
-        episode_length=el,
-        trading_fee=0.01,
-        time_fee=0.001,
-        history_length=hl,
-        s_c1=1,
-        s_c2=0,
-        buy_sell_scalar=bss,
-        hold_scalar=hs,
-        timeout_scalar=ts
-    )
+    env = TradingEnv(data_generator=generator, episode_length=el, trading_fee=0.01, time_fee=0.001, history_length=hl, s_c1=1, s_c2=0, buy_sell_scalar=bss, hold_scalar=hs, timeout_scalar=ts)
     state_size = env.observation_shape[1]
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size)
@@ -182,10 +172,11 @@ def train():
         print("\n\nepisode: {:6}/{:6}|e: {:3.2}|source: {}".format(e, EPISODES, agent.epsilon, generator.filename))
         pbar = tqdm(total=generator.file_length, desc='Running episode')
         while not done:
-            if env.iteration <= trade_indexes[-1-level]:
+            if env.iteration <= trade_indexes[-1 - level]:
                 action = 0 if (env.iteration in trade_indexes) else 1
             else:
                 action = agent.act(state)
+            # action = agent.act(state)
             new_obs, reward, done, _ = env.step(action)
             next_state = agent.consider(new_obs)
             agent.remember(state, action, reward, next_state, done)
@@ -208,7 +199,7 @@ def train():
         except:
             pass
 
-        if len(agent.memory) >= 500_000:
+        if len(agent.memory) >= 100_000:
             agent.replay_all(batch_size)
         agent.resetENV()
 
@@ -229,35 +220,37 @@ def train():
 def test():
 
     generator = CSVStreamer(data_csvs[int(np.random.randint(len(data_csvs), size=1))])
-    env = TradingEnv(
-        data_generator=generator,
-        episode_length=el,
-        trading_fee=0.01,
-        time_fee=0.001,
-        history_length=hl,
-        s_c1=1,
-        s_c2=0,
-        buy_sell_scalar=bss,
-        hold_scalar=hs,
-        timeout_scalar=ts
-    )
+    env = TradingEnv(data_generator=generator, episode_length=el, trading_fee=0.01, time_fee=0.001, history_length=hl, s_c1=1, s_c2=0, buy_sell_scalar=bss, hold_scalar=hs, timeout_scalar=ts)
     state_size = env.observation_shape[1]
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size)
     done = False
     total_steps = 0
+    trade_act_values = []
+    hold_act_values = []
 
     agent.load('./agents/save/dqn.h5')
-    agent.epsilon = 0.000
+    agent.epsilon = 0.8
 
-    state = env.reset()
+    obs = env.reset()
+    #overwrite memory
+    agent.fine_dining_and_breathing(obs)
+    state = agent.consider(obs)
     print("source: {}".format(generator.filename))
     pbar = tqdm(total=generator.file_length, desc='Running episode')
     while not done:
-        action = agent.act(state)
-        next_state, reward, done, _ = env.step(action)
+        # action = agent.act(state)
+        act_values = agent.model.predict([state])[0]
+        trade_act_values.append(act_values[0])
+        hold_act_values.append(act_values[1])
+        action = int(np.argmax(act_values))
+        new_obs, reward, done, _ = env.step(action)
+        next_state = agent.consider(new_obs)
+        # agent.remember(state, action, reward, next_state, done)
         state = next_state
         pbar.update(1)
+        if env.iteration >= 1000:
+            done = True
     pbar.close()
 
     color = "\033[0;32m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value >= 1.0) else "\033[0;0m"
@@ -270,12 +263,6 @@ def test():
         )
     )
 
-    # Plot the relative trade locations
-    try:
-        termplot.plot(list(np.histogram([e for e, x in enumerate(env.action_history) if x == 0], bins=[0, len(env.action_history)])[0]), plot_height=10, plot_char='*')
-    except:
-        pass
-
     try:
         pd.DataFrame.from_dict(
             data={
@@ -284,7 +271,9 @@ def test():
                 'reward': env.reward_history,
                 'total_reward': env.total_reward_history,
                 'total_value': env.total_value_history,
-                'open': env.open_history
+                'open': env.open_history,
+                'trade_act_values': trade_act_values,
+                'hold_act_values': hold_act_values
             }
         ).to_csv('./agents/save/dqn_run.csv')
     except:
@@ -296,7 +285,9 @@ def test():
                 'reward': env.reward_history,
                 'total_reward': env.total_reward_history,
                 'total_value': env.total_value_history,
-                'open': env.open_history[:-1]
+                'open': env.open_history[:-1],
+                'trade_act_values': trade_act_values,
+                'hold_act_values': hold_act_values
             }
         ).to_csv('./agents/save/dqn_run.csv')
 
