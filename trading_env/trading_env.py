@@ -16,7 +16,7 @@ import helpers
 
 class TradingEnv():
 
-    def __init__(self, data_generator, episode_length, trading_fee, time_fee, history_length, s_c1, s_c2, buy_sell_scalar, hold_scalar, timeout_scalar, temporal_window_size):
+    def __init__(self, data_generator, episode_length, trading_fee, time_fee, history_length, s_c1, s_c2, buy_sell_scalar, hold_scalar, timeout_scalar):
 
         self.s_c1 = s_c1
         self.s_c2 = s_c2
@@ -26,8 +26,6 @@ class TradingEnv():
         self.episode_length = episode_length
         self.action_space = 2
         self.history_length = history_length
-        self.temporal_window_size = temporal_window_size
-        self.temporal_window = deque(maxlen=self.temporal_window_size)
 
         self.time_fee = time_fee
         self.buy_sell_scalar = buy_sell_scalar
@@ -74,8 +72,6 @@ class TradingEnv():
         self.reward_history = []
         self.total_reward_history = []
         self.total_value_history = []
-
-        [self.temporal_window.append([0] * 18) for _ in range(self.temporal_window.maxlen + 1)]
 
         for _ in range(self.history_length):
             self.ingest_data()
@@ -139,8 +135,6 @@ class TradingEnv():
         ]:
             obs = np.append(obs, [price for price in l[-self.history_length:]])
 
-        self.temporal_window.append(obs)
-        obs = np.array(list(chain.from_iterable(self.temporal_window)))
         return np.reshape(obs, [1, obs.shape[0]])
 
     def step(self, action):
@@ -158,15 +152,11 @@ class TradingEnv():
                 reward = -self.trading_fee
                 self.swap = 0
                 self.sell_index = self.iteration
+            reward *= self.buy_sell_scalar
         elif action == 1:
             try:
                 reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2])) - 1
-                # if reward > 0.01:
-                #     reward = 1.0
-                # elif reward < -0.01:
-                #     reward = -1.0
-                # else:
-                #     reward = 0.0
+                reward *= self.hold_scalar
             except:
                 reward = 0
 
