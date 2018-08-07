@@ -1,6 +1,5 @@
-import utilities, argparse, pandas, ta
-from scripts import helpers
-import strategy
+import utilities, argparse, pandas, ta, sys
+from scripts import helpers, strategy
 
 logger = helpers.create_logger('backtest')
 
@@ -16,50 +15,39 @@ def check_time_limit(coinpair, price, index):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Backtesting Script for the Binance Bot')
+    parser.add_argument('-c', '--coinpair', help='the Coinpair to download', type=str, dest='coinpair', required=True)
     parser.add_argument('-o', '--optimize', help='True if optimizing the Bot', action='store_true', required=False)
     args = parser.parse_args()
-    error = False
 
-    data = {}
-    for coinpair in utilities.COINPAIRS:
-        data[coinpair] = pandas.read_csv('data/history/' + coinpair + '.csv')
+    try:
+        step = 0
 
-    perm = {}
-    trade_points = {}
-    combinedPositions = []
+        if not args.optimize: logger.info('Reading \'' + args.coinpair + '\' Historical Data from File...')
+        data = pandas.read_csv('data/history/' + args.coinpair + '.csv')
+        step += 1
 
-    for coinpair in utilities.COINPAIRS:
-        perm[coinpair] = {'aboveZero': False, 'belowZero': False, 'goingUp': 0, 'goingDown': 0}
-        trade_points[coinpair] = {'buy': [], 'sell': []}
-        if not args.optimize: logger.info('Simulating Coinpair \'' + coinpair + '\'...')
-
+        trade_points = {'buy': [], 'sell': []}
         result = 1.0
         selling = False
-        for index, row in data[coinpair].iterrows():
-            if index == 0 or data[coinpair].at[index, 'OPEN_TIME'] < utilities.BACKTEST_START_DATE: continue
 
-            price = strategy.check_buy(perm[coinpair], data[coinpair], index)
-            if not selling and price != None and check_time_limit(data[coinpair], price, index):
-                trade_points[coinpair]['buy'].append(index - 1)
+        if not args.optimize: logger.info('Simulating Coinpair \'' + args.coinpair + '\'...')
+        for index, row in data.iterrows():
+            if index < (utilities.WINDOW * 2) or data.at[index, 'OPEN_TIME'] < utilities.BACKTEST_START_DATE: continue
+
+            action = strategy.action(data[:index])
+            if not selling and action == 'BUY' and check_time_limit(data, row['OPEN'], index):
+                trade_points['buy'].append(index - 1)
                 selling = True
-            if selling and strategy.check_sell(perm[coinpair], data[coinpair], index) and check_time_limit(data[coinpair], row['OPEN'], index):
-                trade_points[coinpair]['sell'].append(index - 1)
-                result = result * data[coinpair].at[trade_points[coinpair]['sell'][-1], 'CLOSE'] / data[coinpair].at[trade_points[coinpair]['buy'][-1], 'CLOSE']
+            elif selling and action == 'SELL' and check_time_limit(data, row['OPEN'], index):
+                trade_points['sell'].append(index - 1)
+                result = result * data.at[trade_points['sell'][-1], 'CLOSE'] / data.at[trade_points['buy'][-1], 'CLOSE']
                 selling = False
+    except:
+        if not args.optimize:
+            if step == 0: logger.error('Failed to Read \'' + args.coinpair + '\' Historical Data from File')
+            if step == 1: logger.error('Failed to Simulate Coinpair \'' + args.coinpair + '\'')
+        sys.exit(1)
 
-        if not args.optimize: logger.info('Successfully Simulated Coinpair \'' + coinpair + '\' with Resulting ' + str(result * 100) + ' % ROI')
+    if not args.optimize: logger.info('Successfully Simulated Coinpair \'' + args.coinpair + '\' with Resulting ' + str(result * 100) + ' % ROI')
 
-        if args.optimize:
-            utilities.throw_info('Exporting Results from Coinpair \'' + coinpair + '\'...')
-            try:
-                with open('data/backtesting/' + coinpair + '.csv', 'w') as file:
-                    file.write('used,time,end,price,current\n')
-                    for pos in finalPositions:
-                        file.write('1,' + str(pos.time) + ',' + str(pos.time + pos.age) + ',' + str(pos.price) + ',' + str(pos.current) + '\n')
-                    for pos in otherPositions:
-                        file.write('0,' + str(pos.time) + ',' + str(pos.time + pos.age) + ',' + str(pos.price) + ',' + str(pos.current) + '\n')
-            except:
-                utilities.throw_error('Failed to Export Results from Coinpair \'' + coinpair + '\'', False)
-            utilities.throw_info('Successfully Exported Results from Coinpair \'' + coinpair + '\'...')
-
-    if error: sys.exit(1)
+    # TODO: Export backtesting results to './results/backtesting/'
