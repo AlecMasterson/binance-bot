@@ -1,6 +1,5 @@
 import utilities, argparse, pandas, time
-from scripts import helpers
-import strategy
+from scripts import helpers, strategy
 
 logger = helpers.create_logger('main')
 
@@ -8,7 +7,7 @@ logger = helpers.create_logger('main')
 def get_data(db_cursor):
     try:
         logger.info('Downloading \'BNBBTC\' Historical Data from the DB...')
-        db_cursor.execute("SELECT * FROM BNBBTC ORDER BY OPEN_TIME DESC LIMIT 50;")
+        db_cursor.execute("SELECT * FROM BNBBTC ORDER BY OPEN_TIME DESC LIMIT " + str(utilities.WINDOW * 2) + ";")
         data = pandas.DataFrame(db_cursor.fetchall()[::-1], columns=utilities.HISTORY_STRUCTURE)
         return data
     except:
