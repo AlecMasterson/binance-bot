@@ -150,7 +150,7 @@ class TradingEnv():
                 self.buy_index = self.iteration
                 try:
                     reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) -
-                          self.total_value_history[self.sell_index]) / helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
+                              self.total_value_history[self.sell_index]) / self.total_value_history[self.sell_index]
                 except:
                     reward = 0
             else:
@@ -160,15 +160,16 @@ class TradingEnv():
                 self.sell_index = self.iteration
                 try:
                     reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) -
-                          self.total_value_history[self.buy_index]) / helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1])
+                          self.total_value_history[self.buy_index]) / self.total_value_history[self.buy_index]
                 except:
                     reward = 0
             reward *= self.buy_sell_scalar
         elif action == 1:
             try:
-                # reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2])) - 1
-                # reward *= self.hold_scalar
-                reward = 0
+                reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) - helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2])) /
+                          helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2]))
+                reward *= self.hold_scalar
+                # reward = 0
             except:
                 reward = 0
 

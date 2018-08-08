@@ -47,9 +47,9 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=1_000_000)
-        self.input_memory_size = 3
+        self.input_memory_size = 10
         self.input_memory = deque(maxlen=self.input_memory_size)
-        self.gamma = 0.0        # discount rate
+        self.gamma = 1.1        # discount rate
         self.epsilon = 1.1        # exploration rate
         self.epsilon_min = 0.0000001
         self.epsilon_decay = 0.7
@@ -174,6 +174,10 @@ def train():
         while not done:
             if env.iteration <= trade_indexes[-1 - level]:
                 action = 0 if (env.iteration in trade_indexes) else 1
+                if action == 0:
+                    agent.random_trades += 1
+                if action == 1:
+                    agent.random_holds += 1
             else:
                 action = agent.act(state)
             # action = agent.act(state)
@@ -230,7 +234,7 @@ def test():
     hold_act_values = []
 
     agent.load('./agents/save/dqn.h5')
-    agent.epsilon = 0.8
+    agent.epsilon = 0.0
 
     obs = env.reset()
     #overwrite memory
@@ -249,8 +253,8 @@ def test():
         # agent.remember(state, action, reward, next_state, done)
         state = next_state
         pbar.update(1)
-        if env.iteration >= 1000:
-            done = True
+        # if env.iteration >= 1000:
+        #     done = True
     pbar.close()
 
     color = "\033[0;32m" if (env.action_history[:].count(0) > agent.random_trades) and (env.total_value >= 1.0) else "\033[0;0m"
