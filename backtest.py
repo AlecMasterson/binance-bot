@@ -13,6 +13,27 @@ def check_time_limit(coinpair, price, index):
     return False
 
 
+def backtest(data):
+
+    trade_points = {'buy': [], 'sell': []}
+    result = 1.0
+    selling = False
+
+    for index, row in data.iterrows():
+        if index < (utilities.WINDOW * 2) or data.at[index, 'OPEN_TIME'] < utilities.BACKTEST_START_DATE: continue
+
+        action = strategy.action(data[:index])
+        if not selling and action == 'BUY' and check_time_limit(data, row['OPEN'], index):
+            trade_points['buy'].append(index - 1)
+            selling = True
+        elif selling and action == 'SELL' and check_time_limit(data, row['OPEN'], index):
+            trade_points['sell'].append(index - 1)
+            result = result * data.at[trade_points['sell'][-1], 'CLOSE'] / data.at[trade_points['buy'][-1], 'CLOSE']
+            selling = False
+
+    return result
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Backtesting Script for the Binance Bot')
     parser.add_argument('-c', '--coinpair', help='the Coinpair to download', type=str, dest='coinpair', required=True)
@@ -26,22 +47,8 @@ if __name__ == '__main__':
         data = pandas.read_csv('data/history/' + args.coinpair + '.csv')
         step += 1
 
-        trade_points = {'buy': [], 'sell': []}
-        result = 1.0
-        selling = False
-
         if not args.optimize: logger.info('Simulating Coinpair \'' + args.coinpair + '\'...')
-        for index, row in data.iterrows():
-            if index < (utilities.WINDOW * 2) or data.at[index, 'OPEN_TIME'] < utilities.BACKTEST_START_DATE: continue
-
-            action = strategy.action(data[:index])
-            if not selling and action == 'BUY' and check_time_limit(data, row['OPEN'], index):
-                trade_points['buy'].append(index - 1)
-                selling = True
-            elif selling and action == 'SELL' and check_time_limit(data, row['OPEN'], index):
-                trade_points['sell'].append(index - 1)
-                result = result * data.at[trade_points['sell'][-1], 'CLOSE'] / data.at[trade_points['buy'][-1], 'CLOSE']
-                selling = False
+        result = backtest(data)
     except:
         if not args.optimize:
             if step == 0: logger.error('Failed to Read \'' + args.coinpair + '\' Historical Data from File')
