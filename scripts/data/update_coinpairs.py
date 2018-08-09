@@ -1,4 +1,4 @@
-import argparse, pandas, ta, sys, os
+import argparse, pandas, ta, sys, os, traceback
 from binance.websockets import BinanceSocketManager
 from twisted.internet import reactor
 
@@ -34,6 +34,7 @@ def db_insert(message):
         logger.info('Inserted \'' + message['s'] + '\' into the DB')
         return False
     except:
+        logger.error('\n' + traceback.print_exc())
         return True
 
 
@@ -80,6 +81,7 @@ if __name__ == '__main__':
         manager.close()
         reactor.stop()
     except:
+        logger.error('\n' + traceback.print_exc())
         if step == 0: logger.error('Failed to Download All Historical Data from the DB')
         if step == 1: logger.error('Failed to Start Binance API Sockets')
         if step == 2: logger.error('Failed to Close Binance API Sockets')

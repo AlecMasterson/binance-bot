@@ -1,4 +1,4 @@
-import argparse, time, sys, os
+import argparse, time, sys, os, traceback
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/..'))
 import helpers
@@ -23,6 +23,7 @@ if __name__ == '__main__':
                 balances[coinpair[:-3]] = client.get_asset_balance(asset=coinpair[:-3])['free']
             except:
                 error = True
+                logger.error('\n' + traceback.print_exc())
                 logger.error('Failed to Get \'' + coinpair[:-3] + '\' Balance from the Binance API')
 
         for asset in balances:
@@ -32,6 +33,7 @@ if __name__ == '__main__':
                 db.commit()
             except:
                 error = True
+                logger.error('\n' + traceback.print_exc())
                 logger.error('Failed to Update \'' + asset + '\' Balance into the DB')
 
         time.sleep(15)
