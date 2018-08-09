@@ -29,12 +29,13 @@ if __name__ == '__main__':
 
         if data is None: error = True
         else:
-            action = strategy.action(data)
+            action = 'HOLD'        #strategy.action(data)
             logger.info('Bot Chooses Action: ' + action)
 
-            price = data.at[len(data) - 1, 'CLOSE']
-            if action == 'BUY': helpers.buy(client, 'BNBBTC', price, logger)
-            if action == 'SELL': helpers.sell(client, 'BNBBTC', price, logger)
+            if action != 'HOLD':
+                price = data.at[len(data) - 1, 'CLOSE']
+                if action == 'BUY': helpers.buy(client, 'BNBBTC', price, logger)
+                if action == 'SELL': helpers.sell(client, 'BNBBTC', price, logger)
 
             time.sleep(15)
 
