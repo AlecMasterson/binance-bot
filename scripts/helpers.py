@@ -1,8 +1,4 @@
-import logging, psycopg2, sys, os
-from binance.client import Client
-
-sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + './..'))
-import utilities
+import logging, ta, pandas
 
 
 def create_logger(name):
@@ -17,37 +13,35 @@ def create_logger(name):
     return logger
 
 
-def binance_connect(logger):
+def calculate_overhead(data, coinpair, logger):
     try:
-        logger.info('Connecting to the Binance API...')
-        return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
+        logger.info('Calculating \'' + coinpair + '\' Overhead Information...')
+        close_data = pandas.Series([row['CLOSE'] for index, row in data.iterrows()])
+
+        macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
+        macd_signal = ta.trend.macd_signal(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+        macd_diff = ta.trend.macd_diff(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+        upperband = ta.volatility.bollinger_hband(close_data, n=14, ndev=2, fillna=True)
+        lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
+
+        length = len(data.index)
+        if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(upperband) or length != len(lowerband): raise Exception
+
+        for index in data.index:
+            data.at[index, 'MACD'] = macd[index]
+            data.at[index, 'MACD_SIGNAL'] = macd_signal[index]
+            data.at[index, 'MACD_DIFF'] = macd_diff[index]
+            data.at[index, 'UPPERBAND'] = upperband[index]
+            data.at[index, 'LOWERBAND'] = lowerband[index]
+        return data
     except:
-        logger.error('Failed to Connect to the Binance API')
-        sys.exit(1)
-
-
-def db_connect(logger):
-    try:
-        logger.info('Connecting to the DB...')
-        db = psycopg2.connect(database=utilities.DB_NAME, user=utilities.DB_USER, password=utilities.DB_PASS, host=utilities.DB_HOST, port=utilities.DB_PORT)
-        return db, db.cursor()
-    except:
-        logger.error('Failed to Connect to the DB')
-        sys.exit(1)
-
-
-def db_disconnect(db, logger):
-    try:
-        logger.info('Closing Connection to the DB...')
-        db.close()
-    except:
-        logger.error('Failed to Close Connection to the DB')
-        sys.exit(1)
+        logger.error('Failed to Calculate \'' + coinpair + '\' Overhead Information')
+        return None
 
 
 def buy(client, coinpair, price, logger):
-    logger.info('BUYING ' + coinpair + ' at Price ' + str(price))
+    logger.info('BUYING ' + coinpair + ' at Price ' + str(price) + '...')
 
 
 def sell(client, coinpair, price, logger):
-    logger.info('SELLING ' + coinpair + ' at Price ' + str(price))
+    logger.info('SELLING ' + coinpair + ' at Price ' + str(price) + '...')
