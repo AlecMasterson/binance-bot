@@ -1,4 +1,4 @@
-import logging, ta, pandas, traceback
+import logging, ta, pandas, os, traceback
 
 
 def create_logger(name):
@@ -7,7 +7,7 @@ def create_logger(name):
         logger.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-        fh = logging.FileHandler('logs/' + name + '.log')
+        fh = logging.FileHandler(os.path.dirname(__file__) + '/../logs/' + name + '.log')
         fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logger.addHandler(fh)
         logger.addHandler(ch)
@@ -19,7 +19,7 @@ def create_logger(name):
 def to_file(data, file, logger):
     try:
         logger.info('Writing Data to File...')
-        data.to_csv(file, index=False)
+        data.to_csv(os.path.dirname(__file__) + '/../' + file, index=False)
         return True
     except:
         logger.error('Failed to Write Data to File')
