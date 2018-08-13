@@ -10,7 +10,7 @@ def binance_connect(logger):
         logger.info('Connecting to the Binance API...')
         return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
     except:
-        logger.error('Failed to Connect to the Binance API. Ending Script...')
+        logger.error('Failed to Connect to the Binance API')
         logger.error('\n' + traceback.print_exc())
         return None
 
@@ -40,9 +40,9 @@ def binance_get_coinpair_policy(client, coinpair, logger):
 
 def binance_get_asset_balance(client, asset, logger):
     try:
-        logger.info('Downloading \'' + coinpair[:-3] + '\' Balance from the Binance API...')
-        return client.get_asset_balance(asset=coinpair[:-3])['free']
+        logger.info('Downloading \'' + asset + '\' Balance from the Binance API...')
+        return client.get_asset_balance(asset=asset)['free']
     except:
-        logger.error('Failed to Download \'' + coinpair[:-3] + '\' Balance from the Binance API')
+        logger.error('Failed to Download \'' + asset + '\' Balance from the Binance API')
         logger.error('\n' + traceback.print_exc())
         return None

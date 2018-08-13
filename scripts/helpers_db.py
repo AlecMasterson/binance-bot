@@ -10,7 +10,7 @@ def db_connect(logger):
         db = psycopg2.connect(database=utilities.DB_NAME, user=utilities.DB_USER, password=utilities.DB_PASS, host=utilities.DB_HOST, port=utilities.DB_PORT)
         return db, db.cursor()
     except:
-        logger.error('Failed to Connect to the DB. Ending Script...')
+        logger.error('Failed to Connect to the DB')
         logger.error('\n' + traceback.print_exc())
         return None, None
 
@@ -20,7 +20,7 @@ def db_disconnect(db, logger):
         logger.info('Closing Connection to the DB...')
         db.close()
     except:
-        logger.error('Failed to Close Connection to the DB. Ending Script...')
+        logger.error('Failed to Close Connection to the DB')
         logger.error('\n' + traceback.print_exc())
         return None
 
