@@ -6,6 +6,9 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + './..'))
 import utilities
 
 logger = helpers.create_logger('update_balances')
+if logger is None:
+    print('Failed to Create Logger...')
+    sys.exit(1)
 
 if __name__ == '__main__':
     argparse.ArgumentParser(description='Used for Updating the DB with Current Asset Balances').parse_args()

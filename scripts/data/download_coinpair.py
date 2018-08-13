@@ -1,11 +1,14 @@
 import argparse, pandas, sys, os
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/..'))
-import helpers
+import helpers, helpers_db
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/../..'))
 import utilities
 
 logger = helpers.create_logger('download_coinpair')
+if logger is None:
+    print('Failed to Create Logger...')
+    sys.exit(1)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Downloading a Coinpair from the DB')
@@ -13,35 +16,27 @@ if __name__ == '__main__':
     args = parser.parse_args()
     error = False
 
-    db, db_cursor = helpers.db_connect(logger)
-
+    logger.info('Downloading Coinpair \'' + args.coinpair + '\' from the DB...')
     try:
-        step = 0
+        db, db_cursor = helpers_db.db_connect(logger)
+        if db is None or db_cursor is None: raise Exception
 
-        logger.info('Downloading \'' + args.coinpair + '\' Historical Data from the DB...')
-        db_cursor.execute("SELECT * FROM " + args.coinpair)
-        history = db_cursor.fetchall()
-        step += 1
+        history = helpers_db.db_get_coinpair(db_cursor, args.coinpair, logger)
+        if history is None: raise Exception
 
-        logger.info('Writing \'' + args.coinpair + '\' Historical Data to File...')
-        data = pandas.DataFrame(history, columns=utilities.HISTORY_STRUCTURE)
-        data.to_csv('data/history/' + args.coinpair + '.csv', index=False)
-        step += 1
+        result = helpers.to_file(data, 'data/history/' + args.coinpair + '.csv', logger)
+        if result is None: raise Exception
 
-        logger.info('Downloading \'' + args.coinpair + '\' Policies from the DB...')
-        db_cursor.execute("SELECT * FROM POLICIES")
-        policies = db_cursor.fetchall()
-        step += 1
+        policies = helpers_db.db_get_policies(db_cursor, logger)
+        if policies is None: raise Exception
 
-        logger.info('Writing \'' + args.coinpair + '\' Policies to File...')
-        policies = pandas.DataFrame(policies, columns=utilities.POLICY_STRUCTURE)
-        policies.to_csv('data/policies.csv', index=False)
+        result = helpers.to_file(policies, 'data/policies.csv', logger)
+        if result is None: raise Exception
     except:
-        if step == 0: logger.error('Failed to Download \'' + args.coinpair + '\' Historical Data from the DB')
-        if step == 1: logger.error('Failed to Write \'' + args.coinpair + '\' Historical Data to File')
-        if step == 2: logger.error('Failed to Download \'' + args.coinpair + '\' Policies from the DB')
-        if step == 3: logger.error('Failed to Write \'' + args.coinpair + '\' Policies to File')
+        logger.error('Failed to Download Coinpair \'' + args.coinpair + '\' from the DB')
         error = True
 
-    helpers.db_disconnect(db, logger)
+    helpers_db.db_disconnect(db, logger)
+
     if error: sys.exit(1)
+    sys.exit(0)
