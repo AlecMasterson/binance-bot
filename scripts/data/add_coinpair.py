@@ -73,9 +73,11 @@ if __name__ == '__main__':
         sys.stdout.write('\n')
     except:
         logger.error('Failed to Add Coinpair \'' + args.coinpair + '\' into the DB')
+        logger.error('\n' + traceback.print_exc())
         error = True
 
-    helpers_db.db_disconnect(db, logger)
-
-    if error: sys.exit(1)
-    sys.exit(0)
+    if not error:
+        helpers_db.db_disconnect(db, logger)
+        sys.exit(0)
+    else:
+        sys.exit(1)
