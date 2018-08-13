@@ -2,15 +2,18 @@ import logging, ta, pandas, traceback
 
 
 def create_logger(name):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-    fh = logging.FileHandler('logs/' + name + '.log')
-    fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-    return logger
+    try:
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        fh = logging.FileHandler('logs/' + name + '.log')
+        fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logger.addHandler(fh)
+        logger.addHandler(ch)
+        return logger
+    except:
+        return None
 
 
 def to_file(data, file, logger):
@@ -47,6 +50,7 @@ def calculate_overhead(data, coinpair, logger):
         return data
     except:
         logger.error('Failed to Calculate \'' + coinpair + '\' Overhead Information')
+        logger.error('\n' + traceback.print_exc())
         return None
 
 
