@@ -27,7 +27,7 @@ if __name__ == '__main__':
             if balances[coinpair[:-3]] is None: raise Exception
 
         for asset in balances:
-            result = helpers_db.db_insert_asset_balance(db_cursor, asset, balances[asset], logger)
+            result = helpers_db.db_insert_asset_balance(db, db_cursor, asset, balances[asset], logger)
             if result is None: raise Exception
     except:
         logger.error('Failed to Update All Balances in the DB')
