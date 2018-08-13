@@ -1,4 +1,4 @@
-import logging, ta, pandas
+import logging, ta, pandas, traceback
 
 
 def create_logger(name):
@@ -11,6 +11,17 @@ def create_logger(name):
     logger.addHandler(fh)
     logger.addHandler(ch)
     return logger
+
+
+def to_file(data, file, logger):
+    try:
+        logger.info('Writing Data to File...')
+        data.to_csv(file, index=False)
+        return True
+    except:
+        logger.error('Failed to Write Data to File')
+        logger.error('\n' + traceback.print_exc())
+        return None
 
 
 def calculate_overhead(data, coinpair, logger):
