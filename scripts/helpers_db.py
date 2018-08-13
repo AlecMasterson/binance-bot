@@ -91,12 +91,12 @@ def db_insert_asset_balance(db, db_cursor, asset, free, logger):
 
 def db_delete_coinpair_table(db, db_cursor, coinpair, logger):
     try:
-        logger.info('Deleting \'' + coinpair + '\' Historical Data from the DB...')
+        logger.info('Deleting \'' + coinpair + '\' Table from the DB...')
         db_cursor.execute("DROP TABLE IF EXISTS " + coinpair + ";")
         db.commit()
         return True
     except:
-        logger.error('Failed to Delete \'' + coinpair + '\' Historical Data from the DB')
+        logger.error('Failed to Delete \'' + coinpair + '\' Table from the DB')
         logger.error('\n' + traceback.print_exc())
         return None
 

@@ -19,9 +19,9 @@ if __name__ == '__main__':
 
     logger.info('Adding Coinpair \'' + args.coinpair + '\' into the DB...')
     try:
-        client = helpers.binance_connect(logger)
+        client = helpers_binance.binance_connect(logger)
         if client is None: raise Exception
-        db, db_cursor = helpers.db_connect(logger)
+        db, db_cursor = helpers_db.db_connect(logger)
         if db is None or db_cursor is None: raise Exception
 
         data = helpers_binance.binance_get_coinpair(client, args.coinpair, logger)
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             data_old = helpers_db.db_get_coinpair(db_cursor, args.coinpair, logger)
             if data_old is None: raise Exception
 
-        result = helpers_db.db_insert_coinpair_policy(db, db_cursor, coinpair, policy, logger)
+        result = helpers_db.db_insert_coinpair_policy(db, db_cursor, args.coinpair, policy, logger)
         if result is None: raise Exception
 
         logger.info('Inserting \'' + args.coinpair + '\' into the DB...')
