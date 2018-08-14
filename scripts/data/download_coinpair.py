@@ -31,5 +31,5 @@ if __name__ == '__main__':
     result = helpers.bullet_proof(logger, 'Downloading Coinpair \'' + args.coinpair + '\' from the DB', lambda: fun(args.coinpair))
     if result is None: sys.exit(1)
     else:
-        helpers_db.db_disconnect(db, logger)
+        if helpers_db.safe_disconnect(logger, db) is None: sys.exit(1)
         sys.exit(0)
