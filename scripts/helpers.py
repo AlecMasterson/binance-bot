@@ -1,4 +1,14 @@
-import logging, ta, pandas, os, traceback
+import sys, os, logging, ta, pandas, traceback
+
+
+def bullet_proof(logger, message, f):
+    try:
+        logger.info(message)
+        return f()
+    except:
+        logger.error(message)
+        logger.error('\n' + traceback.print_exc())
+        return None
 
 
 def create_logger(name):
@@ -13,50 +23,59 @@ def create_logger(name):
         logger.addHandler(ch)
         return logger
     except:
-        return None
+        print('Failed to Create Logger')
+        sys.exit(1)
 
 
-def to_file(data, file, logger):
-    try:
-        logger.info('Writing Data to File...')
-        data.to_csv(os.path.dirname(__file__) + '/../' + file, index=False)
-        return True
-    except:
-        logger.error('Failed to Write Data to File')
-        logger.error('\n' + traceback.print_exc())
-        return None
+def to_file(file, data):
+    data.to_csv(os.path.dirname(__file__) + '/../' + file, index=False)
+    return True
 
 
-def calculate_overhead(data, coinpair, logger):
-    try:
-        logger.info('Calculating \'' + coinpair + '\' Overhead Information...')
-        close_data = pandas.Series([row['CLOSE'] for index, row in data.iterrows()])
-
-        macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
-        macd_signal = ta.trend.macd_signal(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-        macd_diff = ta.trend.macd_diff(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-        upperband = ta.volatility.bollinger_hband(close_data, n=14, ndev=2, fillna=True)
-        lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
-
-        length = len(data.index)
-        if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(upperband) or length != len(lowerband): raise Exception
-
-        for index in data.index:
-            data.at[index, 'MACD'] = macd[index]
-            data.at[index, 'MACD_SIGNAL'] = macd_signal[index]
-            data.at[index, 'MACD_DIFF'] = macd_diff[index]
-            data.at[index, 'UPPERBAND'] = upperband[index]
-            data.at[index, 'LOWERBAND'] = lowerband[index]
-        return data
-    except:
-        logger.error('Failed to Calculate \'' + coinpair + '\' Overhead Information')
-        logger.error('\n' + traceback.print_exc())
-        return None
+def safe_to_file(logger, file, data):
+    message = 'Writing Data to File'
+    return bullet_proof(logger, message, lambda: to_file(file, data))
 
 
-def buy(client, coinpair, price, logger):
-    logger.info('BUYING ' + coinpair + ' at Price ' + str(price) + '...')
+def calculate_overhead(coinpair, data):
+    close_data = pandas.Series([row['CLOSE'] for index, row in data.iterrows()])
+
+    macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
+    macd_signal = ta.trend.macd_signal(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+    macd_diff = ta.trend.macd_diff(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+    upperband = ta.volatility.bollinger_hband(close_data, n=14, ndev=2, fillna=True)
+    lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
+
+    length = len(data.index)
+    if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(upperband) or length != len(lowerband): raise Exception
+
+    for index in data.index:
+        data.at[index, 'MACD'] = macd[index]
+        data.at[index, 'MACD_SIGNAL'] = macd_signal[index]
+        data.at[index, 'MACD_DIFF'] = macd_diff[index]
+        data.at[index, 'UPPERBAND'] = upperband[index]
+        data.at[index, 'LOWERBAND'] = lowerband[index]
+    return data
 
 
-def sell(client, coinpair, price, logger):
-    logger.info('SELLING ' + coinpair + ' at Price ' + str(price) + '...')
+def safe_calculate_overhead(logger, coinpair, data):
+    message = 'Calculating \'' + coinpair + '\' Overhead Information'
+    return bullet_proof(logger, message, lambda: calculate_overhead(coinpair, data))
+
+
+def buy(client, coinpair, price):
+    return True
+
+
+def safe_buy(logger, client, coinpair, price):
+    message = 'BUYING ' + coinpair + ' at Price ' + str(price)
+    return bullet_proof(logger, message, lambda: buy(client, coinpair, price))
+
+
+def sell(client, coinpair, price):
+    return True
+
+
+def safe_sell(logger, client, coinpair, price):
+    message = 'SELLING ' + coinpair + ' at Price ' + str(price)
+    return bullet_proof(logger, message, lambda: sell(client, coinpair, price))
