@@ -1,48 +1,54 @@
-import pandas, sys, os, traceback
+import sys, os, helpers, pandas
 from binance.client import Client
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/' + './..'))
 import utilities
+''' CONNECTING TO BINANCE API '''
 
 
-def binance_connect(logger):
-    try:
-        logger.info('Connecting to the Binance API...')
-        return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
-    except:
-        logger.error('Failed to Connect to the Binance API')
-        logger.error('\n' + traceback.print_exc())
-        return None
+def binance_connect():
+    return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
 
 
-def binance_get_coinpair(client, coinpair, logger):
-    try:
-        logger.info('Downloading \'' + coinpair + '\' Historical Data from the Binance API...')
-        data = client.get_historical_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL, start_str=utilities.START_DATE)
-        for row in data:
-            row.extend(['0', '0', '0', '0', '0'])
-        return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
-    except:
-        logger.error('Failed to Download \'' + coinpair + '\' Historical Data from the Binance API')
-        logger.error('\n' + traceback.print_exc())
-        return None
+def safe_connect(logger):
+    message = 'Connecting to the Binance API'
+    return helpers.bullet_proof(logger, message, lambda: binance_connect())
 
 
-def binance_get_coinpair_policy(client, coinpair, logger):
-    try:
-        logger.info('Downloading \'' + coinpair + '\' Trading Policy from the Binance API...')
-        return client.get_symbol_info(coinpair)
-    except:
-        logger.error('Failed to Download \'' + coinpair + '\' Trading Policy from the Binance API')
-        logger.error('\n' + traceback.print_exc())
-        return None
+''' GET HISTORICAL DATA '''
 
 
-def binance_get_asset_balance(client, asset, logger):
-    try:
-        logger.info('Downloading \'' + asset + '\' Balance from the Binance API...')
-        return client.get_asset_balance(asset=asset)['free']
-    except:
-        logger.error('Failed to Download \'' + asset + '\' Balance from the Binance API')
-        logger.error('\n' + traceback.print_exc())
-        return None
+def binance_get_historical_data(client, coinpair):
+    data = client.get_historical_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL, start_str=utilities.START_DATE)
+    for row in data:
+        row.extend(['0', '0', '0', '0', '0'])
+    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
+
+
+def safe_get_historical_data(logger, client, coinpair):
+    message = 'Downloading \'' + coinpair + '\' Historical Data from the Binance API'
+    return helpers.bullet_proof(logger, message, lambda: binance_get_historical_data(client, coinpair))
+
+
+''' GET COINPAIR TRADING POLICY '''
+
+
+def binance_get_trading_policy(client, coinpair):
+    return client.get_symbol_info(coinpair)
+
+
+def safe_get_trading_policy(logger, client, coinpair):
+    message = 'Downloading \'' + coinpair + '\' Trading Policy from the Binance API'
+    return helpers.bullet_proof(logger, message, lambda: binance_get_trading_policy(client, coinpair))
+
+
+''' INSERT ASSET BALANCE '''
+
+
+def binance_get_asset_balance(client, asset):
+    return client.get_asset_balance(asset=asset)['free']
+
+
+def safe_get_asset_balance(logger, client, asset):
+    message = 'Downloading \'' + asset + '\' Balance from the Binance API'
+    return helpers.bullet_proof(logger, message, lambda: binance_get_asset_balance(client, asset))
