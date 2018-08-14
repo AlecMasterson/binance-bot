@@ -1,4 +1,4 @@
-import sys, os, argparse, traceback
+import sys, os, argparse
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/..'))
 import helpers, helpers_db
