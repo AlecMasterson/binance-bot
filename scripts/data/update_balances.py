@@ -22,7 +22,7 @@ def fun():
     for asset in balances:
         if helpers_db.safe_insert_asset_balance(logger, db_info[0], db_info[1], asset, balances[asset]) is None: raise Exception
 
-    return True
+    return helpers_db.safe_disconnect(logger, db_info[0])
 
 if __name__ == '__main__':
     argparse.ArgumentParser(description='Used for Updating the DB with Current Asset Balances').parse_args()
