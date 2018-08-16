@@ -6,8 +6,7 @@ def bullet_proof(logger, message, f):
         logger.info(message)
         return f()
     except:
-        logger.error(message)
-        logger.error('\n' + traceback.print_exc())
+        logger.error(message + str(traceback.print_exc()))
         return None
 
 

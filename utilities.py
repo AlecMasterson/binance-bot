@@ -25,7 +25,7 @@ DB_PASS = 'LaurenTuckSiss#12'
 # June 24, 2018 = 1529816400000
 TIME_INTERVAL = Client.KLINE_INTERVAL_5MINUTE        # The base interval for our data.
 START_DATE = 1516514400000        # The starting date, in milliseconds, that we import our historical data from.
-BACKTEST_START_DATE = 1516514400000        # The starting date, in milliseconds, that we begin backtesting from.
+BACKTEST_START_DATE = 1529816400000        # The starting date, in milliseconds, that we begin backtesting from.
 
 ORDER_TIME_LIMIT = 11        # [1, 12] Integers = 12
 STOP_LOSS_ARM = 1.03        # [1.010, 1.050] 3 Decimal Places = 40

@@ -67,7 +67,7 @@ def db_create_historical_data_table(db, db_cursor, coinpair):
 
 
 def safe_create_historical_data_table(logger, db, db_cursor, coinpair):
-    message = 'Creating Coinpair \'' + coinpair + '\' Historical Data Table in the DB'
+    message = 'Creating \'' + coinpair + '\' Historical Data Table in the DB'
     return helpers.bullet_proof(logger, message, lambda: db_create_historical_data_table(db, db_cursor, coinpair))
 
 
@@ -81,7 +81,7 @@ def db_drop_historical_data_table(db, db_cursor, coinpair):
 
 
 def safe_drop_historical_data_table(logger, db, db_cursor, coinpair):
-    message = 'Dropping \'' + coinpair + '\' Table from the DB'
+    message = 'Dropping \'' + coinpair + '\' Historical Data Table from the DB'
     return helpers.bullet_proof(logger, message, lambda: db_drop_historical_data_table(db, db_cursor, coinpair))
 
 
@@ -127,3 +127,13 @@ def db_insert_asset_balance(db, db_cursor, asset, free):
 def safe_insert_asset_balance(logger, db, db_cursor, asset, free):
     message = 'Inserting \'' + asset + '\' Balance into the DB'
     return helpers.bullet_proof(logger, message, lambda: db_insert_asset_balance(db, db_cursor, asset, free))
+
+
+def db_get_asset_balance(db_cursor, asset):
+    db_cursor.execute('SELECT * FROM BALANCES WHERE ASSET = \'' + asset + '\'')
+    return db_cursor.fetchall()[0][1]
+
+
+def safe_get_asset_balance(logger, db_cursor, asset):
+    message = 'Downloading \'' + asset + '\' Balance from the DB'
+    return helpers.bullet_proof(logger, message, lambda: db_get_asset_balance(db_cursor, asset))
