@@ -36,7 +36,7 @@ def safe_to_file(logger, file, data):
     return bullet_proof(logger, message, lambda: to_file(file, data))
 
 
-def calculate_overhead(coinpair, data):
+def calculate_overhead(data):
     close_data = pandas.Series([row['CLOSE'] for index, row in data.iterrows()])
 
     macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
@@ -46,7 +46,7 @@ def calculate_overhead(coinpair, data):
     lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
 
     length = len(data.index)
-    if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(upperband) or length != len(lowerband): raise Exception
+    if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(upperband) or length != len(lowerband): return None
 
     for index in data.index:
         data.at[index, 'MACD'] = macd[index]
@@ -58,8 +58,7 @@ def calculate_overhead(coinpair, data):
 
 
 def safe_calculate_overhead(logger, coinpair, data):
-    message = 'Calculating \'' + coinpair + '\' Overhead Information'
-    return bullet_proof(logger, message, lambda: calculate_overhead(coinpair, data))
+    return bullet_proof(logger, 'Calculating \'' + coinpair + '\' Overhead Information', lambda: calculate_overhead(data))
 
 
 def buy(client, coinpair, price):

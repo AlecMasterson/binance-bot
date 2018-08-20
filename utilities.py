@@ -8,16 +8,16 @@ HISTORY_STRUCTURE = [
     'MACD_DIFF', 'UPPERBAND', 'LOWERBAND'
 ]
 POLICY_STRUCTURE = ['COINPAIR', 'TYPES', 'BASE_PRECISION', 'MIN_PRICE', 'MAX_PRICE', 'PRICE_SIZE', 'MIN_QTY', 'MAX_QTY', 'QTY_SIZE', 'MIN_NOTIONAL']
-BALANCES_STRUCTURE = ['ASSET', 'FREE']
+BALANCE_STRUCTURE = ['ASSET', 'FREE']
 
 PUBLIC_KEY = 'T3b7BCBqpPwxWT7vFpQzBP6IQ5qrLkY2pOAaBG3H0sXeLmYzLfx2hLNVpELTlvoK'
 SECRET_KEY = 'ouJooSDGjuhR7M8JcfpCXog2yoZs33YYS3zngvDJDtzigfBrNBCKWUMbOP5x02Cx'
 
-DB_NAME = 'test1'
-DB_HOST = 'binance-bot-dev.cfypif4yfq4f.us-east-1.rds.amazonaws.com'
-DB_PORT = '5434'
+DB_NAME = 'test2'
+DB_HOST = 'binance-bot.cfypif4yfq4f.us-east-1.rds.amazonaws.com'
+DB_PORT = '3306'
 DB_USER = 'epsenex'
-DB_PASS = 'LaurenTuckSiss#12'
+DB_PASS = 'Minecraft#1PUBG#2'
 
 # January 21, 2018 = 1516514400000
 # June 1, 2018 = 1527829200000

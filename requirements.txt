@@ -1,10 +1,11 @@
 Required Libraries:
 
 pandas
-plotly
-psycopg2
 python-binance
 ta
+SQLAlchemy
+psycopg2
+plotly
 
 Currently Required:
 matplotlib
@@ -12,3 +13,4 @@ bayesian-optimization
 
 Dev Required:
 yapf
+Style = {based_on_style: google, indent_width: 4, spaces_before_comment: 8, COLUMN_LIMIT: 200}
