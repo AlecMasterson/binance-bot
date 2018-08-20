@@ -31,9 +31,7 @@ def fun():
             },
             ignore_index=True)
 
-    if helpers_db.safe_create_trading_policies_table(logger, db, policies) is None: return None
-
-    return True
+    return helpers_db.safe_create_trading_policies_table(logger, db, policies)
 
 
 if __name__ == '__main__':

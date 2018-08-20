@@ -18,9 +18,7 @@ def fun(coinpair):
     data = helpers.safe_calculate_overhead(logger, coinpair, data)
     if data is None: return None
 
-    if helpers_db.safe_create_historical_data_table(logger, db, coinpair, data) is None: return None
-
-    return True
+    return helpers_db.safe_create_historical_data_table(logger, db, coinpair, data)
 
 
 if __name__ == '__main__':

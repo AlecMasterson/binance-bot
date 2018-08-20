@@ -18,9 +18,7 @@ def fun():
         if balance is None: return None
         balances = balances.append({'ASSET': coinpair[:-3], 'FREE': balance}, ignore_index=True)
 
-    if helpers_db.safe_create_asset_balances_table(logger, db, balances) is None: return None
-
-    return True
+    return helpers_db.safe_create_asset_balances_table(logger, db, balances)
 
 
 if __name__ == '__main__':
