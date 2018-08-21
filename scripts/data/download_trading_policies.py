@@ -1,6 +1,6 @@
 import sys, os, argparse
-sys.path.append(os.getcwd())
-sys.path.append(os.path.join(os.getcwd(), 'scripts'))
+sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
+sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
 import helpers, helpers_db
 
 logger = helpers.create_logger('download_policies')

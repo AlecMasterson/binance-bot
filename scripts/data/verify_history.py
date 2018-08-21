@@ -1,6 +1,6 @@
 import sys, os, argparse, pandas, numpy
-sys.path.append(os.getcwd())
-sys.path.append(os.path.join(os.getcwd(), 'scripts'))
+sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
+sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
 import utilities, helpers, helpers_binance, helpers_db
 
 logger = helpers.create_logger('verify_history')
