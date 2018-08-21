@@ -31,9 +31,16 @@ def to_file(file, data):
     return True
 
 
+def read_file(file):
+    return pandas.read_csv(os.path.dirname(__file__) + '/../' + file)
+
+
 def safe_to_file(logger, file, data):
-    message = 'Writing Data to File'
-    return bullet_proof(logger, message, lambda: to_file(file, data))
+    return bullet_proof(logger, 'Writing Data to File', lambda: to_file(file, data))
+
+
+def safe_read_file(logger, file):
+    return bullet_proof(logger, 'Reading Data from File', lambda: read_file(file))
 
 
 def calculate_overhead(data):
