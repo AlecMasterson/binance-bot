@@ -13,14 +13,14 @@ def get_historical_data(client, coinpair):
     data = client.get_historical_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL, start_str=utilities.START_DATE)
     for row in data:
         row.extend(['0', '0', '0', '0', '0'])
-    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
+    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)[:-1]
 
 
 def get_recent_data(client, coinpair):
     data = client.get_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL, limit=200)
     for row in data:
         row.extend(['0', '0', '0', '0', '0'])
-    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
+    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)[:-1]
 
 
 def get_trading_policy(client, coinpair):
