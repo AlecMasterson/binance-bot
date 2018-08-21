@@ -39,24 +39,6 @@ def create_asset_balances_table(db, data):
     return True
 
 
-''' INSERT '''
-
-
-def insert_history_data(db, coinpair, data):
-    for index, row in data.iterrows():
-        sys.stdout.write('\r')
-        sys.stdout.write('\tProgress... %d%%' % (math.ceil(index / (len(data.index) - 1) * 100)))
-        sys.stdout.flush()
-
-        q = db.execute('SELECT * FROM ' + coinpair + ' WHERE OPEN_TIME = ' + str(row['OPEN_TIME'])).fetchall()
-        if len(q) == 0:
-            db.execute('INSERT INTO ' + coinpair + ' VALUES (' + str(row['OPEN_TIME']) + ',' + str(row['OPEN']) + ',' + str(row['HIGH']) + ',' + str(row['LOW']) + ',' + str(row['CLOSE']) + ',' +
-                       str(row['VOLUME']) + ',' + str(row['CLOSE_TIME']) + ',' + str(row['QUOTE_ASSET_VOLUME']) + ',' + str(row['NUMBER_TRADES']) + ',' + str(row['TAKER_BASE_ASSET_VOLUME']) + ',' +
-                       str(row['TAKER_QUOTE_ASSET_VOLUME']) + ',' + str(row['IGNORE']) + ',' + str(row['MACD']) + ',' + str(row['MACD_SIGNAL']) + ',' + str(row['MACD_DIFF']) + ',' +
-                       str(row['UPPERBAND']) + ',' + str(row['LOWERBAND']) + ')')
-    return True
-
-
 ''' SAFE '''
 
 
@@ -86,7 +68,3 @@ def safe_create_trading_policies_table(logger, db, data):
 
 def safe_create_asset_balances_table(logger, db, data):
     return helpers.bullet_proof(logger, 'Creating Asset Balances Table in the DB', lambda: create_asset_balances_table(db, data))
-
-
-def safe_insert_history_data(logger, db, coinpair, data):
-    return helpers.bullet_proof(logger, 'Inserting \'' + coinpair + '\' History Data into the DB', lambda: insert_history_data(db, coinpair, data))
