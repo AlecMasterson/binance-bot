@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 
 
 def connect():
-    return create_engine('mysql+mysqldb://' + utilities.DB_USER + ':' + utilities.DB_PASS + '@' + utilities.DB_HOST + ':' + utilities.DB_PORT + '/' + utilities.DB_NAME)
+    return create_engine('mysql://' + utilities.DB_USER + ':' + utilities.DB_PASS + '@' + utilities.DB_HOST + ':' + utilities.DB_PORT + '/' + utilities.DB_NAME)
 
 
 ''' GET '''

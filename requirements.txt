@@ -4,7 +4,6 @@ pandas
 python-binance
 ta
 SQLAlchemy
-psycopg2
 plotly
 
 Currently Required:
