@@ -34,6 +34,7 @@ def fun():
             changed_to = saved_data.values[difference_locations]
             differences = pandas.DataFrame({'FROM': changed_from, 'TO': changed_to}, index=changed.index)
             logger.error('Differences Found Here:\n' + str(differences))
+            logger.error('\n' + str(data.tail(5)) + '\n\n' + str(saved_data.tail(5)))
             return None
 
     return True
