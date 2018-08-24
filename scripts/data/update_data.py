@@ -1,4 +1,4 @@
-import sys, os, argparse, pandas
+import sys, os, argparse, time, pandas
 sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
 sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
 import utilities, helpers, helpers_binance, helpers_db
@@ -17,18 +17,63 @@ def update_assets(client, db):
         balance = helpers_binance.safe_get_asset_balance(logger, client, coinpair[:-3])
         if balance is None: return None
         balances = balances.append({'ASSET': coinpair[:-3], 'FREE': balance}, ignore_index=True)
-    helpers_db.safe_create_asset_balances_table(logger, db, balances)
+    return helpers_db.safe_create_asset_balances_table(logger, db, balances)
+
+
+def update_trading_policies(client, db):
+    policies = pandas.DataFrame(columns=utilities.POLICY_STRUCTURE)
+    for coinpair in utilities.COINPAIRS:
+        policy = helpers_binance.safe_get_trading_policy(logger, client, coinpair)
+        if policy is None: return None
+        policies = policies.append(
+            {
+                'COINPAIR': coinpair,
+                'TYPES': str(','.join(policy['orderTypes'])),
+                'BASE_PRECISION': policy['baseAssetPrecision'],
+                'MIN_PRICE': policy['filters'][0]['minPrice'],
+                'MAX_PRICE': policy['filters'][0]['maxPrice'],
+                'PRICE_SIZE': policy['filters'][0]['tickSize'],
+                'MIN_QTY': policy['filters'][1]['minQty'],
+                'MAX_QTY': policy['filters'][1]['maxQty'],
+                'QTY_SIZE': policy['filters'][1]['stepSize'],
+                'MIN_NOTIONAL': policy['filters'][2]['minNotional']
+            },
+            ignore_index=True)
+
+    return helpers_db.safe_create_trading_policies_table(logger, db, policies)
+
+
+def update_history(client, db):
+    return None
 
 
 def fun(client, db):
+    most_recent_update = {'assets': None, 'trading_policies': None, 'history': None}
 
     connection_status = True
     while connection_status:
-        update_assets(client, db)
+        current_time = int(round(time.time() * 1000))
+
+        if most_recent_update['assets'] is None or current_time - most_recent_update['assets'] > 60000:
+            result = update_assets(client, db)
+            if result: most_recent_update['assets'] = int(round(time.time() * 1000))
+            # TODO: Else handle errors...
+
+        if most_recent_update['trading_policies'] is None or current_time - most_recent_update['trading_policies'] > 60000:
+            result = update_trading_policies(client, db)
+            if result: most_recent_update['trading_policies'] = int(round(time.time() * 1000))
+            # TODO: Else handle errors...
+
+        if most_recent_update['history'] is None or current_time - most_recent_update['history'] > 60000:
+            result = update_history(client, db)
+            if result: most_recent_update['history'] = int(round(time.time() * 1000))
+            # TODO: Else handle errors...
+
+        time.sleep(10)
 
         connection_status = test_connection(client)
 
-    return helpers_db.safe_create_asset_balances_table(logger, db, balances)
+    return 1 if not connection_status else 2
 
 
 if __name__ == '__main__':
