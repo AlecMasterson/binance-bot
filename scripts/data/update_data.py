@@ -44,7 +44,28 @@ def update_trading_policies(client, db):
 
 
 def update_history(client, db):
-    return None
+    for coinpair in utilities.COINPAIRS:
+        data = helpers_binance.safe_get_recent_data(logger, client, coinpair)
+        if data is None: return None
+
+        saved_data = helpers_db.safe_get_historical_data(logger, db, coinpair)
+        if saved_data is None: return None
+
+        count = 0
+        for index, row in data.iterrows():
+            if not (saved_data['OPEN_TIME'] == row['OPEN_TIME']).any():
+                saved_data = saved_data.append(row, ignore_index=True)
+                count += 1
+        logger.info('Added ' + str(count) + ' New Rows')
+
+        if count == 0: return True
+
+        saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
+        if saved_data is None: return None
+
+        if helpers_db.safe_create_historical_data_table(logger, db, coinpair, saved_data) is None: return None
+
+    return True
 
 
 def fun(client, db):
