@@ -14,6 +14,9 @@ def fun(db):
 	df = pandas.DataFrame(columns=utilities.BALANCE_STRUCTURE)
 	if helpers_db.safe_create_asset_balances_table(db, df) is None: return 1
 
+	df = pandas.DataFrame(columns=utilities.ACTIONS_STRUCTURE)
+	if helpers_db.safe_create_bot_actions_table(db, df) is None: return 1
+
     return 0
 
 
