@@ -6,7 +6,7 @@ def bullet_proof(logger, message, f):
         logger.info(message)
         return f()
     except:
-        logger.error(message + str(traceback.print_exc()))
+        logger.error(message + '\nTraceback Output:\n' + str(traceback.print_exc()))
         return None
 
 
@@ -14,12 +14,15 @@ def create_logger(name):
     try:
         logger = logging.getLogger(name)
         logger.setLevel(logging.DEBUG)
+
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logger.addHandler(ch)
+
         fh = logging.FileHandler(os.path.dirname(__file__) + '/../logs/' + name + '.log')
         fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logger.addHandler(fh)
-        logger.addHandler(ch)
+
         return logger
     except:
         print('Failed to Create Logger')
