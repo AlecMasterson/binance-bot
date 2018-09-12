@@ -11,7 +11,7 @@ def fun(db):
     for coinpair in utilities.COINPAIRS:
         if helpers_db.safe_create_historical_data_table(logger, db, coinpair, df) is None: return 1
 
-    df = pandas.DataFrame(columns=utilities.BALANCE_STRUCTURE)
+    df = pandas.DataFrame(columns=utilities.BALANCES_STRUCTURE)
     if helpers_db.safe_create_asset_balances_table(logger, db, df) is None: return 1
 
     df = pandas.DataFrame(columns=utilities.ACTIONS_STRUCTURE)
@@ -28,5 +28,6 @@ if __name__ == '__main__':
 
     exit_status = helpers.bullet_proof(logger, 'Creating Empty Tables in the DB', lambda: fun(db))
 
-    logger.error('Closing Script with Exit Status ' + str(exit_status))
+    if exit_status != 0: logger.error('Closing Script with Exit Status ' + str(exit_status))
+    else: logger.info('Closing Script with Exit Status ' + str(exit_status))
     sys.exit(exit_status)
