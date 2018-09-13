@@ -23,6 +23,8 @@ def fun(db):
 if __name__ == '__main__':
     argparse.ArgumentParser(description='Used for Creating Empty Tables in the DB').parse_args()
 
+    if input('Are you sure you want to erase all data in the DB? (y) ') != 'y': sys.exit(1)
+
     db = helpers_db.safe_connect(logger)
     if db is None: sys.exit(1)
 
