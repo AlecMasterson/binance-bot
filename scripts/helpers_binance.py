@@ -6,6 +6,11 @@ def connect():
     return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
 
 
+def test_connection(client):
+    if client.get_system_status()['status'] == 1: return False
+    return True
+
+
 ''' GET '''
 
 
@@ -36,6 +41,10 @@ def get_asset_balance(client, asset):
 
 def safe_connect(logger):
     return helpers.bullet_proof(logger, 'Connecting to the Binance API', lambda: connect())
+
+
+def safe_test_connection(logger, client):
+    return helpers.bullet_proof(logger, 'Testing Connection to the Binance API', lambda: test_connection(client))
 
 
 def safe_get_historical_data(logger, client, coinpair):

@@ -38,8 +38,9 @@ def create_bot_actions_table(db, data):
     data.to_sql(con=db, name='ACTIONS', index=False, if_exists='replace')
     return True
 
+
 def create_logs_table(db, data):
-	data.to_sql(con=db, name='LOGS', index=False, if_exists='replace')
+    data.to_sql(con=db, name='LOGS', index=False, if_exists='replace')
     return True
 
 
@@ -72,6 +73,7 @@ def safe_create_asset_balances_table(logger, db, data):
 
 def safe_create_bot_actions_table(logger, db, data):
     return helpers.bullet_proof(logger, 'Creating Bot Actions Table in the DB', lambda: create_bot_actions_table(db, data))
+
 
 def safe_create_logs_table(logger, db, data):
     return helpers.bullet_proof(logger, 'Creating Logs Table in the DB', lambda: create_logs_table(db, data))
