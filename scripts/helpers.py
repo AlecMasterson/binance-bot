@@ -67,23 +67,42 @@ def calculate_overhead(data):
     return data
 
 
+def validate_order(policies, type, balance, price):
+
+    # Convert the price we want to order at to the correct format for this coinpair.
+    decimalsMinPrice = self.num_decimals(float(policies['filters'][0]['minPrice']))
+    formatPrice = price // float(policies['filters'][0]['minPrice']) / pow(10, decimalsMinPrice)
+
+    # Convert the balance amount provided to use to the correct format for this coinpair.
+    # NOTE: Using all available BTC for every buy.
+    available = math.floor(balance * pow(10, float(policies['baseAssetPrecision']))) / pow(10, float(policies['baseAssetPrecision']))
+
+    # The quantity value is determine by price in a buy scenario.
+    if type == 'BUY': using = available / formatPrice
+    elif type == 'SELL': using = available
+
+    # Convert the quantity of our desired asset to the correct format for this coinpair.
+    decimalsMinQty = self.num_decimals(float(policies['filters'][1]['minQty']))
+    quantity = using // float(policies['filters'][1]['minQty']) / pow(10, decimalsMinQty)
+
+    # Test the trading policy filters provided by the symbols dictionary.
+    valid = True
+
+    if formatPrice < float(policies['filters'][0]['minPrice']): valid = False
+    elif formatPrice > float(policies['filters'][0]['maxPrice']): valid = False
+    elif int((formatPrice - float(policies['filters'][0]['minPrice'])) % float(policies['filters'][0]['tickSize'])) != 0: valid = False
+
+    if quantity < float(policies['filters'][1]['minQty']): valid = False
+    elif quantity > float(policies['filters'][1]['maxQty']): valid = False
+    elif int((quantity - float(policies['filters'][1]['minQty'])) % float(policies['filters'][1]['stepSize'])) != 0: valid = False
+
+    if quantity * formatPrice < float(policies['filters'][2]['minNotional']): valid = False
+
+    # Return the desired trade quantity and price if all is valid.
+    # Also return the formatted amount of the balance being used.
+    if valid: return quantity, formatPrice
+    else: return -1, -1
+
+
 def safe_calculate_overhead(logger, coinpair, data):
     return bullet_proof(logger, 'Calculating \'' + coinpair + '\' Overhead Information', lambda: calculate_overhead(data))
-
-
-def buy(client, coinpair, price):
-    return True
-
-
-def safe_buy(logger, client, coinpair, price):
-    message = 'BUYING ' + coinpair + ' at Price ' + str(price)
-    return bullet_proof(logger, message, lambda: buy(client, coinpair, price))
-
-
-def sell(client, coinpair, price):
-    return True
-
-
-def safe_sell(logger, client, coinpair, price):
-    message = 'SELLING ' + coinpair + ' at Price ' + str(price)
-    return bullet_proof(logger, message, lambda: sell(client, coinpair, price))
