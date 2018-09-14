@@ -36,6 +36,10 @@ def get_asset_balance(client, asset):
     return client.get_asset_balance(asset=asset)['free']
 
 
+def create_order(client, coinpair, side, quantity, price):
+    return client.create_order(symbol=coinpair, side=side, type='LIMIT', timeInForce='GTC', quantity=quantity, price=price, recvWindow=utilities.ORDER_TIME_LIMIT)
+
+
 ''' SAFE '''
 
 
@@ -61,3 +65,8 @@ def safe_get_trading_policy(logger, client, coinpair):
 
 def safe_get_asset_balance(logger, client, asset):
     return helpers.bullet_proof(logger, 'Downloading \'' + asset + '\' Balance from the Binance API', lambda: get_asset_balance(client, asset))
+
+
+def safe_create_order(logger, client, coinpair, side, quantity, price):
+    return helpers.bullet_proof(logger, 'Setting ' + side + ' Order on \'' + coinpair + '\' for Price: ' + price + ' and Quantity: ' + quantity,
+                                lambda: create_order(client, coinpair, side, quantity, price))
