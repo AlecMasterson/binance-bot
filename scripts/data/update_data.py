@@ -32,22 +32,9 @@ def update_history(client, db):
 
 
 def fun(client, db):
-    most_recent_update = {'history': None}
+    if not update_history(client, db): return 1
 
-    connection_status = True
-    while connection_status:
-        current_time = int(round(time.time() * 1000))
-
-        if most_recent_update['history'] is None or current_time - most_recent_update['history'] > 60000:
-            if update_history(client, db): most_recent_update['history'] = current_time
-            else: break
-
-        logger.info('Sleeping Script for 30 Seconds...')
-        time.sleep(30)
-        connection_status = helpers_binance.safe_test_connection(logger, client)
-
-    if not connection_status: logger.error('Lost Connection to the Binance API')
-    return 2 if not connection_status else 1
+    return 0
 
 
 if __name__ == '__main__':
