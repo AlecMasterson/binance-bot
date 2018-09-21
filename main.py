@@ -23,18 +23,16 @@ def fun(client, db):
 
         if action['ACTION'] != 'HOLD':
 
-            trading_policy = helpers_binance.safe_get_trading_policy(client, coinpair)
+            asset = coinpair[-3:] if action['ACTION'] == 'BUY' else coinpair[:-3]
+
+            trading_policy = helpers_binance.safe_get_trading_policy(logger, client, coinpair)
             if trading_policy is None: continue
 
-            # TODO: Determine what asset balance it wants for 'BUY' vs 'SELL'.
-            if action['ACTION'] == 'BUY': asset = coinpair[:-3]
-            else: asset = coinpair[-3:]
-
-            balance = helpers_binance.safe_get_asset_balance(client, asset)
+            balance = helpers_binance.safe_get_asset_balance(logger, client, asset)
             if balance is None: continue
 
-            quantity, price = helpers.validate_order(trading_policy, action['ACTION'], balance, action['PRICE'])
-            if quantity != -1 and price != -1: helpers_binance.safe_create_order(client, coinpair, action['ACTION'], quantity, price)
+            quantity, price = helpers.validate_order(trading_policy, action['ACTION'], float(balance), float(action['PRICE']))
+            if quantity != -1 and price != -1: helpers_binance.safe_create_order(logger, client, coinpair, action['ACTION'], quantity, price)
             else: logger.warn('Failed to Create Valid Order with Current Balance')
 
     return 0
