@@ -67,23 +67,18 @@ def calculate_overhead(data):
     return data
 
 
+def round_down_nearest_n(x, n):
+    return round(x - (x % pow(10, -1 * n)), n)
+
+
 def validate_order(policies, type, balance, price):
 
     # Convert the price we want to order at to the correct format for this coinpair.
-    decimalsMinPrice = self.num_decimals(float(policies['filters'][0]['minPrice']))
-    formatPrice = price // float(policies['filters'][0]['minPrice']) / pow(10, decimalsMinPrice)
-
-    # Convert the balance amount provided to use to the correct format for this coinpair.
-    # NOTE: Using all available BTC for every buy.
-    available = math.floor(balance * pow(10, float(policies['baseAssetPrecision']))) / pow(10, float(policies['baseAssetPrecision']))
-
-    # The quantity value is determine by price in a buy scenario.
-    if type == 'BUY': using = available / formatPrice
-    elif type == 'SELL': using = available
+    formatPrice = round_down_nearest_n(price, len(str(float(policies['filters'][0]['minPrice'])).split('.')[1]))
 
     # Convert the quantity of our desired asset to the correct format for this coinpair.
-    decimalsMinQty = self.num_decimals(float(policies['filters'][1]['minQty']))
-    quantity = using // float(policies['filters'][1]['minQty']) / pow(10, decimalsMinQty)
+    # NOTE: Using all available BTC for BUY.
+    quantity = round_down_nearest_n(balance / formatPrice if type == 'BUY' else balance, len(str(float(policies['filters'][1]['minQty'])).split('.')[1]))
 
     # Test the trading policy filters provided by the symbols dictionary.
     valid = True
@@ -99,7 +94,6 @@ def validate_order(policies, type, balance, price):
     if quantity * formatPrice < float(policies['filters'][2]['minNotional']): valid = False
 
     # Return the desired trade quantity and price if all is valid.
-    # Also return the formatted amount of the balance being used.
     if valid: return quantity, formatPrice
     else: return -1, -1
 

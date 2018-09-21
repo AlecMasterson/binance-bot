@@ -37,7 +37,7 @@ def get_asset_balance(client, asset):
 
 
 def create_order(client, coinpair, side, quantity, price):
-    return client.create_order(symbol=coinpair, side=side, type='LIMIT', timeInForce='GTC', quantity=quantity, price=price, recvWindow=utilities.ORDER_TIME_LIMIT)
+    return client.create_order(symbol=coinpair, side=side, type='LIMIT', timeInForce='GTC', quantity=quantity, price=price)
 
 
 ''' SAFE '''
@@ -68,5 +68,5 @@ def safe_get_asset_balance(logger, client, asset):
 
 
 def safe_create_order(logger, client, coinpair, side, quantity, price):
-    return helpers.bullet_proof(logger, 'Setting ' + side + ' Order on \'' + coinpair + '\' for Price: ' + price + ' and Quantity: ' + quantity,
+    return helpers.bullet_proof(logger, 'Setting ' + side + ' Order on \'' + coinpair + '\' for Price: ' + str(price) + ' and Quantity: ' + str(quantity),
                                 lambda: create_order(client, coinpair, side, quantity, price))
