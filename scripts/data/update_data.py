@@ -44,10 +44,10 @@ def update_history(client, db):
 def update_orders(client, db):
     error = False
 
-    orders = db.safe_get_table(logger, db, 'ORDERS', utilities.ORDERS_STRUCTURE)
+    orders = helpers_db.safe_get_table(logger, db, 'ORDERS', utilities.ORDERS_STRUCTURE)
     if orders is None: return False
 
-    for order in orders:
+    for index, order in orders.iterrows():
         if not order['STATUS'] is 'FILLED' and not order['STATUS'] is 'CANCELED':
             update = helpers_binance.safe_get_order(logger, client, order['COINPAIR'], order['ID'])
             if update is None:
@@ -60,7 +60,7 @@ def update_orders(client, db):
                     error = True
                     continue
 
-            if db.safe_update_order(logger, db, coinpair, order['ID'], order['STATUS']) is None:
+            if helpers_db.safe_update_order(logger, db, coinpair, order['ID'], order['STATUS']) is None:
                 error = True
                 continue
 
