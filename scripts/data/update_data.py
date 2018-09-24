@@ -11,7 +11,7 @@ def update_history(client, db):
         data = helpers_binance.safe_get_recent_data(logger, client, coinpair)
         if data is None: return False
 
-        saved_data = helpers_db.safe_get_historical_data(logger, db, coinpair)
+        saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
         if saved_data is None: return False
 
         count = 0
@@ -26,7 +26,7 @@ def update_history(client, db):
         saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
         if saved_data is None: return False
 
-        if helpers_db.safe_create_historical_data_table(logger, db, coinpair, saved_data) is None: return False
+        if helpers_db.safe_create_table(logger, db, coinpair, saved_data) is None: return False
 
     return True
 
