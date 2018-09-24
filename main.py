@@ -7,7 +7,7 @@ logger = helpers.create_logger('main')
 
 
 def fun(client, db):
-    actions = helpers_db.safe_get_table(logger, db, 'ACTIONS')
+    actions = helpers_db.safe_get_table(logger, db, 'ACTIONS', utilities.ACTIONS_STRUCTURE)
     if actions is None: return 1
 
     for coinpair in utilities.COINPAIRS:
