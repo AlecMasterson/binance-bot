@@ -9,13 +9,16 @@ logger = helpers.create_logger('create_tables')
 def fun(db):
     df = pandas.DataFrame(columns=utilities.HISTORY_STRUCTURE)
     for coinpair in utilities.COINPAIRS:
-        if helpers_db.safe_create_historical_data_table(logger, db, coinpair, df) is None: return 1
+        if helpers_db.safe_create_table(logger, db, coinpair, df) is None: return 1
 
     df = pandas.DataFrame(columns=utilities.BALANCES_STRUCTURE)
-    if helpers_db.safe_create_asset_balances_table(logger, db, df) is None: return 1
+    if helpers_db.safe_create_table(logger, db, 'BALANCES', df) is None: return 1
 
     df = pandas.DataFrame(columns=utilities.ACTIONS_STRUCTURE)
-    if helpers_db.safe_create_bot_actions_table(logger, db, df) is None: return 1
+    if helpers_db.safe_create_table(logger, db, 'ACTIONS', df) is None: return 1
+
+    df = pandas.DataFrame(columns=utilities.ORDERS_STRUCTURE)
+    if helpers_db.safe_create_table(logger, db, 'ORDERS', df) is None: return 1
 
     return 0
 

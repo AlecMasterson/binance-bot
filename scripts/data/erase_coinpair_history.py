@@ -14,7 +14,7 @@ def fun(client, db, coinpair):
     data = helpers.safe_calculate_overhead(logger, coinpair, data)
     if data is None: return 1
 
-    result = helpers_db.safe_create_historical_data_table(logger, db, coinpair, data)
+    result = helpers_db.safe_create_table(logger, db, coinpair, data)
     if result is None: return 1
 
     return 0
