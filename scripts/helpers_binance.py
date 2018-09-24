@@ -6,11 +6,6 @@ def connect():
     return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
 
 
-def test_connection(client):
-    if client.get_system_status()['status'] == 1: return False
-    return True
-
-
 ''' GET '''
 
 
@@ -40,15 +35,19 @@ def create_order(client, coinpair, side, quantity, price):
     return client.create_order(symbol=coinpair, side=side, type='LIMIT', timeInForce='GTC', quantity=quantity, price=price)
 
 
+def get_order(client, coinpair, orderId):
+    return client.get_order(symbol=coinpair, orderId=orderId)
+
+
+def cancel_order(client, coinpair, orderId):
+    return client.cancel_order(symbol=coinpair, orderId=orderId)
+
+
 ''' SAFE '''
 
 
 def safe_connect(logger):
     return helpers.bullet_proof(logger, 'Connecting to the Binance API', lambda: connect())
-
-
-def safe_test_connection(logger, client):
-    return helpers.bullet_proof(logger, 'Testing Connection to the Binance API', lambda: test_connection(client))
 
 
 def safe_get_historical_data(logger, client, coinpair):
@@ -70,3 +69,11 @@ def safe_get_asset_balance(logger, client, asset):
 def safe_create_order(logger, client, coinpair, side, quantity, price):
     return helpers.bullet_proof(logger, 'Setting ' + side + ' Order on \'' + coinpair + '\' for Price: ' + str(price) + ' and Quantity: ' + str(quantity),
                                 lambda: create_order(client, coinpair, side, quantity, price))
+
+
+def safe_get_order(logger, client, coinpair, orderId):
+    return helpers.bullet_proof(logger, 'Downloading Order \'' + str(orderId) + '\' from the Binance API', lambda: get_order(client, coinpair, orderId))
+
+
+def safe_cancel_order(logger, client, coinpair, orderId):
+    return helpers.bullet_proof(logger, 'Cancelling Order \'' + str(orderId) + '\' from the Binance API', lambda: cancel_order(client, coinpair, orderId))

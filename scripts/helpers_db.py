@@ -15,6 +15,11 @@ def create_table(db, name, data):
     return True
 
 
+def update_order(db, coinpair, orderId, status):
+    db.execute('UPDATE ORDERS SET STATUS = \'' + status + '\' WHERE ID = \'' + orderId + '\' AND COINPAIR = \'' + coinpair + '\'')
+    return True
+
+
 ''' SAFE '''
 
 
@@ -28,3 +33,7 @@ def safe_get_table(logger, db, name, structure):
 
 def safe_create_table(logger, db, name, data):
     return helpers.bullet_proof(logger, 'Creating ' + name + ' Table in the DB', lambda: create_table(db, name, data))
+
+
+def safe_update_order(logger, db, coinpair, orderId, status):
+    return helpers.bullet_proof(logger, 'Updating Order \'' + str(orderId) + '\' Status to \'' + str(status) + '\'', lambda: update_order(db, coinpair, orderId, status))

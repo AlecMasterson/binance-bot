@@ -41,7 +41,7 @@ def fun(client, db):
                 result = helpers_binance.safe_create_order(logger, client, coinpair, action['ACTION'], quantity, price)
                 if result is None: return 1
 
-                orders.append({'ID': result['orderId'], 'TIME': result['transactTime'], 'STATUS': 'NEW'}, ignore_index=True)
+                orders.append({'ID': result['orderId'], 'COINPAIR': coinpair, 'TIME': result['transactTime'], 'STATUS': 'NEW'}, ignore_index=True)
                 if helpers_db.safe_create_table(logger, db, 'ORDERS', orders) is None: return 1
             else:
                 logger.warn('Failed to Validate Order with Current Balance')

@@ -7,12 +7,18 @@ logger = helpers.create_logger('update_data')
 
 
 def update_history(client, db):
+    error = False
+
     for coinpair in utilities.COINPAIRS:
         data = helpers_binance.safe_get_recent_data(logger, client, coinpair)
-        if data is None: return False
+        if data is None:
+            error = True
+            continue
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
-        if saved_data is None: return False
+        if saved_data is None:
+            error = True
+            continue
 
         count = 0
         for index, row in data.iterrows():
@@ -21,18 +27,49 @@ def update_history(client, db):
                 count += 1
         logger.info('Added ' + str(count) + ' New Rows')
 
-        if count == 0: return True
+        if count == 0: continue
 
         saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
-        if saved_data is None: return False
+        if saved_data is None:
+            error = True
+            continue
 
-        if helpers_db.safe_create_table(logger, db, coinpair, saved_data) is None: return False
+        if helpers_db.safe_create_table(logger, db, coinpair, saved_data) is None:
+            error = True
+            continue
 
-    return True
+    return False if error else True
+
+
+def update_orders(client, db):
+    error = False
+
+    orders = db.safe_get_table(logger, db, 'ORDERS', utilities.ORDERS_STRUCTURE)
+    if orders is None: return False
+
+    for order in orders:
+        if not order['STATUS'] is 'FILLED' and not order['STATUS'] is 'CANCELED':
+            update = helpers_binance.safe_get_order(logger, client, order['COINPAIR'], order['ID'])
+            if update is None:
+                error = True
+                continue
+            order['STATUS'] = update['status']
+
+            if not order['STATUS'] is 'FILLED' and int(round(time.time() * 1000)) - order['TIME'] > utilities.ORDER_TIME_LIMIT:
+                if helpers_binance.safe_cancel_order(logger, client, order['COINPAIR'], order['ID']) is None:
+                    error = True
+                    continue
+
+            if db.safe_update_order(logger, db, coinpair, order['ID'], order['STATUS']) is None:
+                error = True
+                continue
+
+    return False if error else True
 
 
 def fun(client, db):
     if not update_history(client, db): return 1
+    if not update_orders(client, db): return 1
 
     return 0
 
