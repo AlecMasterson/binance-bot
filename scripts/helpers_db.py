@@ -15,8 +15,8 @@ def create_table(db, name, data):
     return True
 
 
-def insert_candle(logger, db, coinpair, candle):
-    q = db.execute('SELECT * FROM ' + coinpair + ' WHERE OPEN_TIME = \'' candle['OPEN_TIME'] + '\'')
+def upsert_candle(logger, db, coinpair, candle):
+    q = db.execute('SELECT * FROM ' + coinpair + ' WHERE OPEN_TIME = \'' + candle['OPEN_TIME'] + '\'')
     results = q.fetchall()
 
     if len(results) == 0:
@@ -28,15 +28,32 @@ def insert_candle(logger, db, coinpair, candle):
     return None
 
 
-def insert_order(logger, db, order):
+def upsert_action(logger, db, action):
+    q = db.execute('SELECT * FROM ACTIONS WHERE COINPAIR = \'' + action['COINPAIR'] + '\' AND TIME = \'' + action['TIME'] + '\'')
+    results = q.fetchall()
+
+    if len(results) == 0:
+        db.execute('INSERT INTO ACTIONS ' + str(tuple(action.keys())) + ' VALUES ' + str(tuple(action.values())))
+        return True
+    elif len(results) == 1:
+        logger.warn('Action Already Exists... Updating')
+        db.execute('UPDATE ACTIONS SET USED = \'' + action['USED'] + '\' WHERE COINPAIR = \'' + action['COINPAIR'] + '\' AND TIME = \'' + action['TIME'] + '\'')
+        return True
+    else:
+        logger.error('Multiple Actions in DB with COINPAIR \'' + str(action['COINPAIR']) + '\' and TIME \'' + str(action['TIME']) + '\'')
+
+    return None
+
+
+def upsert_order(logger, db, order):
     q = db.execute('SELECT * FROM ORDERS WHERE COINPAIR = \'' + order['COINPAIR'] + '\' AND ID = \'' + order['ID'] + '\'')
     results = q.fetchall()
 
     if len(results) == 0:
-        db.execute('INSERT INTO ORDERS (COINPAIR, ID, TIME, STATUS) VALUES ' + str(tuple(order.values())))
+        db.execute('INSERT INTO ORDERS ' + str(tuple(order.keys())) + ' VALUES ' + str(tuple(order.values())))
         return True
     elif len(results) == 1:
-        logger.error('Order Already Exists... Updating')
+        logger.warn('Order Already Exists... Updating')
         db.execute('UPDATE ORDERS SET STATUS = \'' + order['STATUS'] + '\' WHERE COINPAIR = \'' + order['COINPAIR'] + '\' AND ID = \'' + order['ID'] + '\'')
         return True
     else:
@@ -60,9 +77,13 @@ def safe_create_table(logger, db, name, data):
     return helpers.bullet_proof(logger, 'Creating ' + name + ' Table in the DB', lambda: create_table(db, name, data))
 
 
-def safe_insert_candle(logger, db, coinpair, candle):
-    return helpers.bullet_proof(logger, 'Inserting Candle for \'' + coinpair + '\' at OPEN_TIME \'' + str(candle['OPEN_TIME']) + '\' into the DB', lambda: insert_candle(logger, db, coinpair, candle))
+def safe_upsert_candle(logger, db, coinpair, candle):
+    return helpers.bullet_proof(logger, 'Upserting Candle for \'' + coinpair + '\' at OPEN_TIME \'' + str(candle['OPEN_TIME']) + '\' into the DB', lambda: upsert_candle(logger, db, coinpair, candle))
 
 
-def safe_insert_order(logger, db, order):
-    return helpers.bullet_proof(logger, 'Inserting Order ' + str(order) + ' into the DB', lambda: insert_order(logger, db, order))
+def safe_upsert_action(logger, db, action):
+    return helpers.bullet_proof(logger, 'Upserting Action ' + str(action) + ' into the DB', lambda: upsert_action(logger, db, action))
+
+
+def safe_upsert_order(logger, db, order):
+    return helpers.bullet_proof(logger, 'Upserting Order ' + str(order) + ' into the DB', lambda: upsert_order(logger, db, order))
