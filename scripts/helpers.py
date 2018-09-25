@@ -1,4 +1,4 @@
-import sys, os, logging, ta, pandas, traceback
+import sys, os, logging, ta, pandas, time, traceback
 
 
 def bullet_proof(logger, message, f):
@@ -27,6 +27,10 @@ def create_logger(name):
     except:
         print('Failed to Create Logger')
         sys.exit(1)
+
+
+def current_time():
+    return int(round(time.time() * 1000))
 
 
 def to_file(file, data):
