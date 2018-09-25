@@ -7,18 +7,12 @@ logger = helpers.create_logger('update_data')
 
 
 def update_history(client, db):
-    error = False
-
     for coinpair in utilities.COINPAIRS:
         data = helpers_binance.safe_get_recent_data(logger, client, coinpair)
-        if data is None:
-            error = True
-            continue
+        if data is None: return False
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
-        if saved_data is None:
-            error = True
-            continue
+        if saved_data is None: return False
 
         count = 0
         for index, row in data.iterrows():
@@ -30,41 +24,33 @@ def update_history(client, db):
         if count == 0: continue
 
         saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
-        if saved_data is None:
-            error = True
-            continue
+        if saved_data is None: return False
 
-        if helpers_db.safe_create_table(logger, db, coinpair, saved_data) is None:
-            error = True
-            continue
+        for index, row in saved_data.tail(count).iterrows():
+            if helpers_db.safe_upsert_candle(logger, db, candle) is None: return False
 
-    return False if error else True
+    return True
 
 
 def update_orders(client, db):
-    error = False
-
     orders = helpers_db.safe_get_table(logger, db, 'ORDERS', utilities.ORDERS_STRUCTURE)
     if orders is None: return False
 
     for index, order in orders.iterrows():
         if not order['STATUS'] is 'FILLED' and not order['STATUS'] is 'CANCELED':
             update = helpers_binance.safe_get_order(logger, client, order['COINPAIR'], order['ID'])
-            if update is None:
-                error = True
-                continue
+            if update is None: return False
+
             order['STATUS'] = update['status']
 
-            if not order['STATUS'] is 'FILLED' and int(round(time.time() * 1000)) - order['TIME'] > utilities.ORDER_TIME_LIMIT:
-                if helpers_binance.safe_cancel_order(logger, client, order['COINPAIR'], order['ID']) is None:
-                    error = True
-                    continue
+            if not order['STATUS'] is 'FILLED' and (helpers.current_time() - order['TIME']) > utilities.ORDER_TIME_LIMIT:
+                print(int(round(time.time() * 1000)))
+                print(order['TIME'])
+                if helpers_binance.safe_cancel_order(logger, client, order['COINPAIR'], order['ID']) is None: return False
 
-            if helpers_db.safe_update_order(logger, db, coinpair, order['ID'], order['STATUS']) is None:
-                error = True
-                continue
+            if helpers_db.safe_upsert_order(logger, db, order) is None: return False
 
-    return False if error else True
+    return True
 
 
 def fun(client, db):
@@ -84,6 +70,6 @@ if __name__ == '__main__':
 
     exit_status = helpers.bullet_proof(logger, 'Updating Data in the DB', lambda: fun(client, db))
 
-    if exit_status != 0: logger.error('Closing Script with Exit Status ' + str(exit_status))
+    if exit_status is None or exit_status != 0: logger.error('Closing Script with Exit Status ' + str(exit_status))
     else: logger.info('Closing Script with Exit Status ' + str(exit_status))
     sys.exit(exit_status)
