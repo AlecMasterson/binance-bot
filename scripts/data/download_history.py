@@ -6,9 +6,9 @@ import helpers, helpers_db
 logger = helpers.create_logger('download_history')
 
 
-def fun(db):
+def fun(**args):
     for coinpair in utilities.COINPAIRS:
-        data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
+        data = helpers_db.safe_get_table(logger, args['db'], coinpair, utilities.HISTORY_STRUCTURE)
         if data is None: return 1
 
         if helpers.safe_to_file(logger, 'data/history/' + coinpair + '.csv', data) is None: return 1
@@ -19,11 +19,4 @@ def fun(db):
 if __name__ == '__main__':
     argparse.ArgumentParser(description='Used for Downloading All History from the DB').parser.parse_args()
 
-    db = helpers_db.safe_connect(logger)
-    if db is None: sys.exit(1)
-
-    exit_status = helpers.bullet_proof(logger, 'Downloading All History from the DB', lambda: fun(db))
-
-    if exit_status != 0: logger.error('Closing Script with Exit Status ' + str(exit_status))
-    else: logger.info('Closing Script with Exit Status ' + str(exit_status))
-    sys.exit(exit_status)
+    helpers.main_function(logger, 'Downloading All History from the DB', fun, db=True)

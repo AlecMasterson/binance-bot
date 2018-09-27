@@ -6,15 +6,15 @@ import helpers, helpers_binance, helpers_db
 logger = helpers.create_logger('erase_coinpair')
 
 
-def fun(client, db, coinpair):
+def fun(**args):
 
-    data = helpers_binance.safe_get_historical_data(logger, client, coinpair)
+    data = helpers_binance.safe_get_historical_data(logger, args['client'], args['extra']['coinpair'], args['extra']['time_interval'])
     if data is None: return 1
 
-    data = helpers.safe_calculate_overhead(logger, coinpair, data)
+    data = helpers.safe_calculate_overhead(logger, args['extra']['coinpair'], data)
     if data is None: return 1
 
-    result = helpers_db.safe_create_table(logger, db, coinpair, data)
+    result = helpers_db.safe_create_table(logger, args['db'], args['extra']['coinpair'], data)
     if result is None: return 1
 
     return 0
@@ -23,17 +23,9 @@ def fun(client, db, coinpair):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Erasing a Coinpair\'s History in the DB')
     parser.add_argument('-c', '--coinpair', help='the Coinpair to Erase', type=str, dest='coinpair', required=True)
+    parser.add_argument('-t', help='the time interval', type=str, dest='time_interval', required=True, choices=['5m', '30m', '1h', '2h', '4h'])
     args = parser.parse_args()
 
-    if input('Are you sure you want to erase all \'' + args.coinpair + '\' history in the DB? (y) ') != 'y': sys.exit(1)
+    if input('Are you sure you want to erase all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
 
-    client = helpers_binance.safe_connect(logger)
-    if client is None: sys.exit(1)
-    db = helpers_db.safe_connect(logger)
-    if db is None: sys.exit(1)
-
-    exit_status = helpers.bullet_proof(logger, 'Erasing \'' + args.coinpair + '\' History in the DB', lambda: fun(client, db, args.coinpair))
-
-    if exit_status != 0: logger.error('Closing Script with Exit Status ' + str(exit_status))
-    else: logger.info('Closing Script with Exit Status ' + str(exit_status))
-    sys.exit(exit_status)
+    helpers.main_function(logger, 'Erasing \'' + args.coinpair + '\' History from the DB', fun, client=True, db=True, extra={'coinpair': args.coinpair, 'time_interval': args.time_interval})
