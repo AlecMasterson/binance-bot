@@ -1,13 +1,32 @@
-import sys, os, logging, ta, pandas, time, traceback
+import sys, os, logging, ta, pandas, time
+import helpers_binance, helpers_db
 
 
 def bullet_proof(logger, message, f):
     try:
         logger.info(message)
         return f()
-    except:
-        logger.error(message + '\nTraceback Output:\n' + str(traceback.print_exc()))
+    except Exception as e:
+        logger.error(e)
         return None
+
+
+def main_function(logger, message, fun, client=False, db=False, extra=None):
+    if client:
+        client_object = helpers_binance.safe_connect(logger)
+        if client_object is None: sys.exit(1)
+    else: client_object = None
+    if db:
+        db_object = helpers_db.safe_connect(logger)
+        if db_object is None: sys.exit(1)
+    else: db_object = None
+
+    f = lambda: fun(client=client_object, db=db_object, extra=extra)
+    exit_status = bullet_proof(logger, message, f)
+
+    if exit_status is None or exit_status != 0: logger.error('Closing Script with Exit Status ' + str(exit_status if not exit_status is None else 1))
+    else: logger.info('Closing Script with Exit Status ' + str(exit_status))
+    sys.exit(exit_status)
 
 
 def create_logger(name):

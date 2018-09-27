@@ -9,18 +9,20 @@ def connect():
 ''' GET '''
 
 
-def get_historical_data(client, coinpair):
-    data = client.get_historical_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL, start_str=utilities.START_DATE)
+def get_historical_data(client, coinpair, time_interval):
+    data = client.get_historical_klines(symbol=coinpair, interval=time_interval, start_str=utilities.HISTORY_START_DATE)[:-1]
     for row in data:
+        row.insert(0, '0')
         row.extend(['0', '0', '0', '0', '0'])
-    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)[:-1]
+    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
 
 
-def get_recent_data(client, coinpair):
-    data = client.get_klines(symbol=coinpair, interval=utilities.TIME_INTERVAL, limit=200)
+def get_recent_data(client, coinpair, time_interval):
+    data = client.get_klines(symbol=coinpair, interval=time_interval, limit=300)[:-1]
     for row in data:
+        row.insert(0, '0')
         row.extend(['0', '0', '0', '0', '0'])
-    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)[:-1]
+    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
 
 
 def get_trading_policy(client, coinpair):
@@ -50,12 +52,12 @@ def safe_connect(logger):
     return helpers.bullet_proof(logger, 'Connecting to the Binance API', lambda: connect())
 
 
-def safe_get_historical_data(logger, client, coinpair):
-    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Historical Data from the Binance API', lambda: get_historical_data(client, coinpair))
+def safe_get_historical_data(logger, client, coinpair, time_interval):
+    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Historical Data from the Binance API', lambda: get_historical_data(client, coinpair, time_interval))
 
 
-def safe_get_recent_data(logger, client, coinpair):
-    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Recent Data from the Binance API', lambda: get_recent_data(client, coinpair))
+def safe_get_recent_data(logger, client, coinpair, time_interval):
+    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Recent Data from the Binance API', lambda: get_recent_data(client, coinpair, time_interval))
 
 
 def safe_get_trading_policy(logger, client, coinpair):
