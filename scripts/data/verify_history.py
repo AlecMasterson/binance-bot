@@ -40,12 +40,11 @@ def fun():
     return True
 
 
+def temp(**args):
+    return 1
+
+
 if __name__ == '__main__':
     argparse.ArgumentParser(description='Used for Verifying All History in the DB').parse_args()
 
-    message = 'Verifying All History in the DB'
-    result = helpers.bullet_proof(logger, message, lambda: fun())
-    if result is None: sys.exit(1)
-    else:
-        logger.info('SUCCESS - ' + message)
-        sys.exit(0)
+    helpers.main_function(logger, 'Verifying All History in the DB', temp, client=True, db=True)
