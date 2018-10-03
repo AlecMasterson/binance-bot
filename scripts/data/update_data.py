@@ -53,23 +53,16 @@ def update_orders(client, db):
     return True
 
 
-def fun(client, db):
-    if not update_history(client, db): return 1
-    if not update_orders(client, db): return 1
+def fun(**args):
+    if not update_history(args['client'], args['db'], args['extra']['time_frame']): return 1
+    #if not update_orders(args['client'], args['db']): return 1
 
     return 0
 
 
 if __name__ == '__main__':
-    argparse.ArgumentParser(description='Used for Updating Data in the DB').parse_args()
+    parser = argparse.ArgumentParser(description='Used for Updating Data in the DB')
+    parser.add_argument('-t', help='the time interval', type=str, dest='time_interval', required=True, choices=utilities.TIME_INTERVALS)
+    args = parser.parse_args()
 
-    client = helpers_binance.safe_connect(logger)
-    if client is None: sys.exit(1)
-    db = helpers_db.safe_connect(logger)
-    if db is None: sys.exit(1)
-
-    exit_status = helpers.bullet_proof(logger, 'Updating Data in the DB', lambda: fun(client, db))
-
-    if exit_status is None or exit_status != 0: logger.error('Closing Script with Exit Status ' + str(exit_status))
-    else: logger.info('Closing Script with Exit Status ' + str(exit_status))
-    sys.exit(exit_status)
+    helpers.main_function(logger, 'Updating Data in the DB', fun, client=True, db=True, extra={'time_frame': args.time_interval})
