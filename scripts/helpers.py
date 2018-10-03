@@ -75,16 +75,18 @@ def calculate_overhead(data):
     macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
     macd_signal = ta.trend.macd_signal(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
     macd_diff = ta.trend.macd_diff(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
+    rsi = ta.momentum.rsi(close_data, n=14)
     upperband = ta.volatility.bollinger_hband(close_data, n=14, ndev=2, fillna=True)
     lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
 
     length = len(data.index)
-    if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(upperband) or length != len(lowerband): return None
+    if length != len(macd) or length != len(macd_signal) or length != len(macd_diff) or length != len(rsi) or length != len(upperband) or length != len(lowerband): return None
 
     for index in data.index:
         data.at[index, 'MACD'] = macd[index]
         data.at[index, 'MACD_SIGNAL'] = macd_signal[index]
         data.at[index, 'MACD_DIFF'] = macd_diff[index]
+        data.at[index, 'RSI'] = rsi[index]
         data.at[index, 'UPPERBAND'] = upperband[index]
         data.at[index, 'LOWERBAND'] = lowerband[index]
     return data
