@@ -75,7 +75,7 @@ def calculate_overhead(data):
     macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
     macd_signal = ta.trend.macd_signal(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
     macd_diff = ta.trend.macd_diff(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-    rsi = ta.momentum.rsi(close_data, n=14)
+    rsi = ta.momentum.rsi(close_data.astype(float), n=14)
     upperband = ta.volatility.bollinger_hband(close_data, n=14, ndev=2, fillna=True)
     lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
 
