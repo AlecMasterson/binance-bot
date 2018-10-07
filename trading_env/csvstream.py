@@ -1,6 +1,4 @@
 import csv
-from random import choice
-
 
 class CSVStreamer():
     """Data generator from csv file.

@@ -5,10 +5,10 @@ from collections import deque
 from itertools import chain
 import math
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+# import matplotlib as mpl
+# import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
+# import seaborn as sns
 from sklearn.preprocessing import minmax_scale
 
 import helpers
@@ -51,7 +51,9 @@ class TradingEnv():
         self.sell_index = 0
         self.swap = 0
 
-        self.coin_min_trade = 0.001
+        self.coin_min_trade = 0.1
+        self.over_trade_threshold = 10
+        self.over_hold_threshold = 10000
 
         self.open_history = []
         self.close_history = []
@@ -67,8 +69,8 @@ class TradingEnv():
         self.upperband_history = []
         self.lowerband_history = []
 
-        self.action_history = []
-        self.swap_history = []
+        self.action_history = [self.action]
+        self.swap_history = [self.swap]
         self.reward_history = []
         self.total_reward_history = []
         self.total_value_history = []
@@ -113,63 +115,51 @@ class TradingEnv():
 
         obs = np.array([])
 
-        obs = np.append(obs, [self.action == 0])
-        obs = np.append(obs, [self.action == 1])
-        obs = np.append(obs, [self.swap == 0])
-        obs = np.append(obs, [self.swap == 1])
+        # obs = np.append(obs, [self.action == 0])
+        # obs = np.append(obs, [self.action == 1])
+        # obs = np.append(obs, [self.swap == 0])
+        # obs = np.append(obs, [self.swap == 1])
+        # obs = np.append(obs, [self.reward])
+        # rat = np.average(self.reward_history[-10:])
+        # obs = np.append(obs, [rat if not np.isnan(rat) else 0])
+        # rat = np.average(self.reward_history[-100:])
+        # obs = np.append(obs, [rat if not np.isnan(rat) else 0])
+
         try:
-            obs = np.append(obs, [(self.total_value_history[-self.buy_index] / self.total_value_history[-1]) - 1])
+            obs = np.append(obs, [((self.open_history[-1] / self.sell_price) - self.sell_price) - 1])
         except:
             obs = np.append(obs, [0])
         try:
-            obs = np.append(obs, [(self.total_value_history[-self.sell_index] / self.total_value_history[-1]) - 1])
-        except:
-            obs = np.append(obs, [0])
-        try:
-            obs = np.append(obs, [(helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) / self.total_value_history[-1]) - 1])
+            obs = np.append(obs, [((self.open_history[-1] / self.buy_price) - self.buy_price) - 1])
         except:
             obs = np.append(obs, [0])
         # for l in [
         #     self.open_history, self.high_history, self.low_history, self.volume_history, self.QAV_history, self.TBAV_history, self.TQAV_history, self.NT_history, self.macd_history,
         #     self.upperband_history, self.lowerband_history
         # ]:
-        for l in [
-                self.open_history
-        ]:
-            obs = np.append(obs, [price for price in l[-self.history_length:]])
+        for l in [self.open_history, self.action_history, self.swap_history]:
+            obs = np.append(obs, l[-self.history_length:])
 
         return np.reshape(obs, [1, obs.shape[0]])
 
     def step(self, action):
-
         if action == 0:
             if not self.swap:
                 self.buy_price = self.open_history[-1]
+                reward = -self.trading_fee + ((self.buy_price - self.sell_price) / self.sell_price) * -1
                 self.w_c1, self.w_c2 = helpers.buy_env(self.w_c1, self.w_c2, self.buy_price, self.trading_fee)
                 self.swap = 1
                 self.buy_index = self.iteration
-                try:
-                    reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) -
-                              self.total_value_history[self.sell_index]) / self.total_value_history[self.sell_index]
-                except:
-                    reward = 0
             else:
                 self.sell_price = self.open_history[-1]
+                reward = -self.trading_fee + ((self.sell_price - self.buy_price) / self.buy_price)
                 self.w_c1, self.w_c2 = helpers.sell_env(self.w_c1, self.w_c2, self.sell_price, self.trading_fee)
                 self.swap = 0
                 self.sell_index = self.iteration
-                try:
-                    reward = (helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) -
-                          self.total_value_history[self.buy_index]) / self.total_value_history[self.buy_index]
-                except:
-                    reward = 0
             reward *= self.buy_sell_scalar
-        elif action == 1:
+        else:
             try:
-                reward = ((helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-1]) - helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2])) /
-                          helpers.combined_total_env(self.w_c1, self.w_c2, self.open_history[-2]))
-                reward *= self.hold_scalar
-                # reward = 0
+                reward = ((self.open_history[-1] - self.open_history[-2]) / self.open_history[-2]) * (1 if self.swap == 1 else -1)
             except:
                 reward = 0
 
@@ -181,8 +171,23 @@ class TradingEnv():
             self.done = True
         if self.iteration >= self.episode_length:
             self.done = True
+
+        # if action == 1 and len([x for x in self.action_history[-self.over_hold_threshold:] if x == 0]) == 0:
+        #     # print('Over hold')
+        #     reward = -2 * self.timeout_scalar
+        #     # self.done = True
+        # if action == 0 and len([x for x in self.action_history[-self.over_trade_threshold:] if x == 0]) >= 1:
+        #     # print('Over trade')
+        #     reward = -2 * self.timeout_scalar
+        #     # self.done = True
         if self.total_value <= (self.s_c1 * self.coin_min_trade):
+            reward = -1 * self.timeout_scalar
             self.done = True
+
+        if self.done:
+            reward += (self.total_value - self.s_c1)*self.timeout_scalar
+        else:
+            reward += 0.00001
 
         self.reward = reward
         self.total_reward += reward
