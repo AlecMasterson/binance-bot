@@ -3,7 +3,7 @@ sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
 sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
 import utilities, helpers, helpers_binance, helpers_db
 
-logger = helpers.create_logger('erase_coinpair')
+logger = helpers.create_logger('reset_coinpair')
 
 
 def fun(**args):
@@ -26,10 +26,10 @@ def fun(**args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Used for Erasing a Coinpair\'s History in the DB')
-    parser.add_argument('-c', '--coinpair', help='the Coinpair to Erase', type=str, dest='coinpair', required=True)
+    parser = argparse.ArgumentParser(description='Used for Resetting a Coinpair\'s History in the DB')
+    parser.add_argument('-c', '--coinpair', help='the Coinpair to Reset', type=str, dest='coinpair', required=True)
     args = parser.parse_args()
 
-    if input('Are you sure you want to erase all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
+    if input('Are you sure you want to reset all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
 
     helpers.main_function(logger, 'Erasing \'' + args.coinpair + '\' History from the DB', fun, client=True, db=True, extra={'coinpair': args.coinpair})
