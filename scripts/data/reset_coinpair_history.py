@@ -32,4 +32,4 @@ if __name__ == '__main__':
 
     if input('Are you sure you want to reset all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
 
-    helpers.main_function(logger, 'Erasing \'' + args.coinpair + '\' History from the DB', fun, client=True, db=True, extra={'coinpair': args.coinpair})
+    helpers.main_function(logger, 'Resetting \'' + args.coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpair': args.coinpair})

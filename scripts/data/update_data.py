@@ -6,28 +6,29 @@ import utilities, helpers, helpers_binance, helpers_db
 logger = helpers.create_logger('update_data')
 
 
-def update_history(client, db):
+def update_history(client, db, time_interval):
     for coinpair in utilities.COINPAIRS:
-        data = helpers_binance.safe_get_recent_data(logger, client, coinpair)
-        if data is None: return False
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
-        if saved_data is None: return False
+        if saved_data is None: continue
+
+        data = helpers_binance.safe_get_recent_data(logger, client, coinpair, time_interval)
+        if data is None: continue
 
         count = 0
         for index, row in data.iterrows():
-            if not (saved_data['OPEN_TIME'] == row['OPEN_TIME']).any():
+            if not ((saved_data['INTERVAL'] == row['INTERVAL']) & (saved_data['OPEN_TIME'] == row['OPEN_TIME'])).any():
                 saved_data = saved_data.append(row, ignore_index=True)
                 count += 1
-        logger.info('Added ' + str(count) + ' New Rows')
+        logger.info('Adding ' + str(count) + ' New Rows')
 
         if count == 0: continue
 
         saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
-        if saved_data is None: return False
+        if saved_data is None: continue
 
-        for index, row in saved_data.tail(count).iterrows():
-            if helpers_db.safe_upsert_candle(logger, db, candle) is None: return False
+        for index, candle in saved_data.tail(count).iterrows():
+            helpers_db.safe_upsert_candle(logger, db, coinpair, candle)
 
     return True
 
@@ -54,7 +55,7 @@ def update_orders(client, db):
 
 
 def fun(**args):
-    if not update_history(args['client'], args['db'], args['extra']['time_frame']): return 1
+    if not update_history(args['client'], args['db'], args['extra']['time_interval']): return 1
     #if not update_orders(args['client'], args['db']): return 1
 
     return 0
@@ -65,4 +66,4 @@ if __name__ == '__main__':
     parser.add_argument('-t', help='the time interval', type=str, dest='time_interval', required=True, choices=utilities.TIME_INTERVALS)
     args = parser.parse_args()
 
-    helpers.main_function(logger, 'Updating Data in the DB', fun, client=True, db=True, extra={'time_frame': args.time_interval})
+    helpers.main_function(logger, 'Updating Data in the DB', fun, client=True, db=True, extra={'time_interval': args.time_interval})

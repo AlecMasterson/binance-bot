@@ -16,14 +16,14 @@ def create_table(db, name, data):
 
 
 def upsert_candle(logger, db, coinpair, candle):
-    q = db.execute('SELECT * FROM ' + coinpair + ' WHERE OPEN_TIME = \'' + candle['OPEN_TIME'] + '\'')
+    q = db.execute('SELECT * FROM ' + coinpair + ' WHERE \'INTERVAL\' = \'' + str(candle['INTERVAL']) + '\' AND \'OPEN_TIME\' = \'' + str(candle['OPEN_TIME']) + '\'')
     results = q.fetchall()
 
     if len(results) == 0:
-        db.execute('INSERT INTO ' + coinpair + ' ' + str(tuple(candle.keys())) + ' VALUES ' + str(tuple(candle.values())))
+        db.execute('INSERT INTO ' + coinpair + ' VALUES ' + str(tuple(candle.values.astype(dtype=str))))
         return True
     else:
-        logger.error('One or More Candles Exist in DB for \'' + coinpair + '\' at OPEN_TIME \'' + str(candle['OPEN_TIME']) + '\'')
+        logger.error('One or More Candles Exist in DB for \'' + coinpair + '\' on INTERVAL \'' + str(candle['INTERVAL']) + '\' and OPEN_TIME \'' + str(candle['OPEN_TIME']) + '\'')
 
     return None
 
@@ -78,7 +78,8 @@ def safe_create_table(logger, db, name, data):
 
 
 def safe_upsert_candle(logger, db, coinpair, candle):
-    return helpers.bullet_proof(logger, 'Upserting Candle for \'' + coinpair + '\' at OPEN_TIME \'' + str(candle['OPEN_TIME']) + '\' into the DB', lambda: upsert_candle(logger, db, coinpair, candle))
+    return helpers.bullet_proof(logger, 'Upserting Candle for \'' + coinpair + '\' on INTERVAL \'' + str(candle['INTERVAL']) + '\' and OPEN_TIME \'' + str(candle['OPEN_TIME']) + '\' into the DB',
+                                lambda: upsert_candle(logger, db, coinpair, candle))
 
 
 def safe_upsert_action(logger, db, action):

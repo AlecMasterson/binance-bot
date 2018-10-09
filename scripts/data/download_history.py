@@ -9,9 +9,9 @@ logger = helpers.create_logger('download_history')
 def fun(**args):
     for coinpair in utilities.COINPAIRS:
         data = helpers_db.safe_get_table(logger, args['db'], coinpair, utilities.HISTORY_STRUCTURE)
-        if data is None: return 1
+        if data is None: continue
 
-        if helpers.safe_to_file(logger, 'data/history/' + coinpair + '.csv', data) is None: return 1
+        helpers.safe_to_file(logger, 'data/history/' + coinpair + '.csv', data)
 
     return 0
 

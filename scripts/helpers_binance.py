@@ -14,7 +14,9 @@ def get_historical_data(client, coinpair, time_interval):
     for row in data:
         row.insert(0, time_interval)
         row.extend(['0', '0', '0', '0', '0', '0'])
-    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
+    data = pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
+    data[utilities.HISTORY_STRUCTURE] = data[utilities.HISTORY_STRUCTURE].astype(str)
+    return data
 
 
 def get_recent_data(client, coinpair, time_interval):
@@ -22,7 +24,9 @@ def get_recent_data(client, coinpair, time_interval):
     for row in data:
         row.insert(0, time_interval)
         row.extend(['0', '0', '0', '0', '0', '0'])
-    return pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
+    data = pandas.DataFrame(data, columns=utilities.HISTORY_STRUCTURE)
+    data[utilities.HISTORY_STRUCTURE] = data[utilities.HISTORY_STRUCTURE].astype(str)
+    return data
 
 
 def get_trading_policy(client, coinpair):
