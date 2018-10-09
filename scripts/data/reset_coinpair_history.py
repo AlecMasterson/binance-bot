@@ -27,9 +27,17 @@ def fun(**args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Resetting a Coinpair\'s History in the DB')
-    parser.add_argument('-c', '--coinpair', help='the Coinpair to Reset', type=str, dest='coinpair', required=True)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-c', '--coinpair', help='the Coinpair to Reset', type=str, dest='coinpair')
+    group.add_argument('-a', '--all', help='all Coinpairs to Reset', action='store_true')
     args = parser.parse_args()
 
-    if input('Are you sure you want to reset all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
+    if args.all:
+        if input('Are you sure you want to reset all history from the DB? (y) ') != 'y': sys.exit(1)
+        if input('Are you absolutely sure you want to reset ALL history from the DB? (y) ') != 'y': sys.exit(1)
 
-    helpers.main_function(logger, 'Resetting \'' + args.coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpair': args.coinpair})
+        for coinpair in utilities.COINPAIRS:
+            helpers.main_function(logger, 'Resetting \'' + coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpair': coinpair})
+    else:
+        if input('Are you sure you want to reset all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
+        helpers.main_function(logger, 'Resetting \'' + args.coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpair': args.coinpair})

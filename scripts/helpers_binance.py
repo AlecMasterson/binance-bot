@@ -57,11 +57,12 @@ def safe_connect(logger):
 
 
 def safe_get_historical_data(logger, client, coinpair, time_interval):
-    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Historical Data from the Binance API', lambda: get_historical_data(client, coinpair, time_interval))
+    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Historical Data on Interval \'' + time_interval + '\' from the Binance API',
+                                lambda: get_historical_data(client, coinpair, time_interval))
 
 
 def safe_get_recent_data(logger, client, coinpair, time_interval):
-    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Recent Data from the Binance API', lambda: get_recent_data(client, coinpair, time_interval))
+    return helpers.bullet_proof(logger, 'Downloading \'' + coinpair + '\' Recent Data \'' + time_interval + '\' from the Binance API', lambda: get_recent_data(client, coinpair, time_interval))
 
 
 def safe_get_trading_policy(logger, client, coinpair):
