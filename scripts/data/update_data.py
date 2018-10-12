@@ -10,10 +10,10 @@ def update_history(client, db, time_interval):
     for coinpair in utilities.COINPAIRS:
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
-        if saved_data is None: continue
+        if saved_data is None: return False
 
         data = helpers_binance.safe_get_recent_data(logger, client, coinpair, time_interval)
-        if data is None: continue
+        if data is None: return False
 
         count = 0
         for index, row in data.iterrows():
@@ -25,10 +25,10 @@ def update_history(client, db, time_interval):
         if count == 0: continue
 
         saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
-        if saved_data is None: continue
+        if saved_data is None: return False
 
         for index, candle in saved_data.tail(count).iterrows():
-            helpers_db.safe_upsert_candle(logger, db, coinpair, candle)
+            if helpers_db.safe_upsert_candle(logger, db, coinpair, candle) is None: return False
 
     return True
 
