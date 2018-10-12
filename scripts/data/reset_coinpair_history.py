@@ -7,20 +7,20 @@ logger = helpers.create_logger('reset_coinpair')
 
 
 def fun(**args):
+    for coinpair in args['extra']['coinpairs']:
+        intervals = []
+        for interval in utilities.TIME_INTERVALS:
+            temp = helpers_binance.safe_get_historical_data(logger, args['client'], coinpair, interval)
+            if temp is None: return 1
 
-    intervals = []
-    for interval in utilities.TIME_INTERVALS:
-        temp = helpers_binance.safe_get_historical_data(logger, args['client'], args['extra']['coinpair'], interval)
-        if temp is None: return 1
+            intervals.append(temp)
+        data = pandas.concat(intervals, ignore_index=True)
 
-        intervals.append(temp)
-    data = pandas.concat(intervals, ignore_index=True)
+        data = helpers.safe_calculate_overhead(logger, coinpair, data)
+        if data is None: return 1
 
-    data = helpers.safe_calculate_overhead(logger, args['extra']['coinpair'], data)
-    if data is None: return 1
-
-    result = helpers_db.safe_create_table(logger, args['db'], args['extra']['coinpair'], data)
-    if result is None: return 1
+        result = helpers_db.safe_create_table(logger, args['db'], coinpair, data)
+        if result is None: return 1
 
     return 0
 
@@ -36,8 +36,8 @@ if __name__ == '__main__':
         if input('Are you sure you want to reset all history from the DB? (y) ') != 'y': sys.exit(1)
         if input('Are you absolutely sure you want to reset ALL history from the DB? (y) ') != 'y': sys.exit(1)
 
-        for coinpair in utilities.COINPAIRS:
-            helpers.main_function(logger, 'Resetting \'' + coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpair': coinpair})
+        helpers.main_function(logger, 'Resetting \'' + coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpairs': utilities.COINPAIRS})
     else:
         if input('Are you sure you want to reset all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
-        helpers.main_function(logger, 'Resetting \'' + args.coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpair': args.coinpair})
+
+        helpers.main_function(logger, 'Resetting \'' + args.coinpair + '\' History in the DB', fun, client=True, db=True, extra={'coinpairs': [args.coinpair]})
