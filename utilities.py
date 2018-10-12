@@ -32,6 +32,9 @@ DB_PORT = '3306'
 DB_USER = 'epsenex'
 DB_PASS = 'Minecraft#1PUBG#2'
 
+EMAIL_USERNAME = 'alecjmasterson@gmail.com'
+EMAIL_PASS = 'tmnvzdlgdnntaavh'
+
 # 240000ms = 4min
 ACTION_RECENT = 240000
 ORDER_TIME_LIMIT = 240000
