@@ -7,6 +7,10 @@ logger = helpers.create_logger('create_tables')
 
 
 def fun(**args):
+
+    df = pandas.DataFrame(colums=utilities.COINPAIRS_STRUCTURE)
+    if helpers_db.safe_create_table(logger, args['db'], 'COINPAIRS', df) is None: return 1
+
     df = pandas.DataFrame(columns=utilities.HISTORY_STRUCTURE)
     for coinpair in utilities.COINPAIRS:
         if helpers_db.safe_create_table(logger, args['db'], coinpair, df) is None: return 1
