@@ -11,7 +11,13 @@ def update_active(db):
 
 
 def update_history(client, db, all, time_interval):
-    for coinpair in utilities.COINPAIRS:
+
+    coinpairs = helpers_db.safe_get_table(logger, db, 'COINPAIRS', utilities.COINPAIRS_STRUCTURE)
+    if coinpairs is None: return False
+
+    for index, row in coinpairs.iterrows():
+        if not all and not row['ACTIVE']: continue
+        coinpair = row['COINPAIR']
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
         if saved_data is None: return False
