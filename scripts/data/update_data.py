@@ -6,11 +6,11 @@ import utilities, helpers, helpers_binance, helpers_db
 logger = helpers.create_logger('update_data')
 
 
-def update_active(db, active, all):
+def update_active(db):
     return 0
 
 
-def update_history(client, db, active, all, time_interval):
+def update_history(client, db, all, time_interval):
     for coinpair in utilities.COINPAIRS:
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
@@ -59,8 +59,8 @@ def update_orders(client, db):
 
 
 def fun(**args):
-    if args['cmd'] == 'active': return update_active(args['db'], args['extra']['active'], args['extra']['all'])
-    if args['cmd'] == 'history': return update_history(args['client'], args['db'], args['extra']['active'], args['extra']['all'], args['extra']['time_interval'])
+    if args['cmd'] == 'active': return update_active(args['db'])
+    if args['cmd'] == 'history': return update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval'])
     if args['cmd'] == 'orders': return update_orders(args['client'], args['db'])
 
     return 0
@@ -71,14 +71,9 @@ if __name__ == '__main__':
     subparsers = parser.add_subparsers(help='The Specific Commands Allowed', dest='cmd')
 
     parser_active = subparsers.add_parser('active', help='update which coinpair\'s are active')
-    group_active = parser_active.add_mutually_exclusive_group(required=True)
-    group_active.add_argument('-a', '--active', help='update only active coinpairs', action='store_true')
-    group_active.add_argument('-A', '--all', help='update all coinpairs', action='store_true')
 
     parser_history = subparsers.add_parser('history', help='update coinpair history')
-    group_history = parser_history.add_mutually_exclusive_group(required=True)
-    group_history.add_argument('-a', '--active', help='update only active coinpairs', action='store_true')
-    group_history.add_argument('-A', '--all', help='update all coinpairs', action='store_true')
+    parser_history.add_argument('-a', '--all', help='update all coinpairs', action='store_true')
     parser_history.add_argument('-t', '--time', help='the time interval', type=str, dest='time_interval', required=True, choices=utilities.TIME_INTERVALS)
 
     parser_orders = subparsers.add_parser('orders', help='update open orders')
@@ -86,15 +81,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.cmd is None: sys.exit(1)
-
     extra = {'cmd': args.cmd}
-    if args.cmd == 'active' or args.cmd == 'history':
-        extra['active'] = args.active
-        extra['all'] = args.all
 
     if args.cmd == 'active': client = False
     else: client = True
 
-    if args.cmd == 'history': extra['time_interval'] = args.time_interval
+    if args.cmd == 'history':
+        extra['all'] = args.all
+        extra['time_interval'] = args.time_interval
 
     helpers.main_function(logger, 'Updating Data in the DB', fun, client=client, db=True, extra=extra)
