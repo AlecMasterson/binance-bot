@@ -7,11 +7,17 @@ logger = helpers.create_logger('update_data')
 
 
 def update_active(db):
+    coinpairs = helpers_db.safe_get_table(logger, db, 'COINPAIRS', utilities.COINPAIRS_STRUCTURE)
+    if coinpairs is None: return False
+
+    for index, row in coinpairs.iterrows():
+        # TODO: The below calculation.
+        logger.warn('Need to Include Active Calculation')
+
     return 0
 
 
 def update_history(client, db, all, time_interval):
-
     coinpairs = helpers_db.safe_get_table(logger, db, 'COINPAIRS', utilities.COINPAIRS_STRUCTURE)
     if coinpairs is None: return False
 
@@ -65,9 +71,9 @@ def update_orders(client, db):
 
 
 def fun(**args):
-    if args['cmd'] == 'active': return update_active(args['db'])
-    if args['cmd'] == 'history': return update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval'])
-    if args['cmd'] == 'orders': return update_orders(args['client'], args['db'])
+    if args['extra']['cmd'] == 'active': return update_active(args['db'])
+    if args['extra']['cmd'] == 'history': return update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval'])
+    if args['extra']['cmd'] == 'orders': return update_orders(args['client'], args['db'])
 
     return 0
 
