@@ -1,5 +1,3 @@
-import sys, pandas
-
 COINPAIRS = [
     'HOTBTC', 'NPXSBTC', 'BCNBTC', 'DENTBTC', 'NCASHBTC', 'KEYBTC', 'SCBTC', 'MFTBTC', 'STORMBTC', 'TNBBTC', 'POEBTC', 'IOSTBTC', 'VETBTC', 'PHXBTC', 'IOTXBTC', 'FUNBTC', 'XVGBTC', 'LENDBTC',
     'CDTBTC', 'FUELBTC', 'RPXBTC', 'DOCKBTC', 'CHATBTC', 'CNDBTC', 'SNGLSBTC', 'DNTBTC', 'TRXBTC', 'RCNBTC', 'TNTBTC', 'MTHBTC', 'WPRBTC', 'YOYOBTC', 'GOBTC', 'DATABTC', 'ZILBTC', 'QSPBTC', 'SNTBTC',
@@ -11,8 +9,7 @@ COINPAIRS = [
     'SKYBTC', 'MCOBTC', 'HSRBTC', 'EOSBTC', 'GASBTC', 'XZCBTC', 'BNBBTC', 'GVTBTC', 'ETCBTC', 'REPBTC', 'ZENBTC', 'NEOBTC', 'BTGBTC', 'DGDBTC', 'LTCBTC', 'XMRBTC', 'ZECBTC', 'DASHBTC', 'ETHBTC',
     'BCCBTC'
 ]
-
-COINPAIRS = ['BNBBTC']
+#COINPAIRS = ['BNBBTC']
 
 COINPAIRS_STRUCTURE = ['ACTIVE', 'COINPAIR']
 HISTORY_STRUCTURE = [
@@ -25,8 +22,8 @@ ORDERS_STRUCTURE = ['COINPAIR', 'ID', 'TIME', 'STATUS']
 
 TIME_INTERVALS = ['5m', '15m', '30m', '1h', '2h', '4h']
 
-PUBLIC_KEY = 'T3b7BCBqpPwxWT7vFpQzBP6IQ5qrLkY2pOAaBG3H0sXeLmYzLfx2hLNVpELTlvoK'
-SECRET_KEY = 'ouJooSDGjuhR7M8JcfpCXog2yoZs33YYS3zngvDJDtzigfBrNBCKWUMbOP5x02Cx'
+BINANCE_PUBLIC_KEY = 'T3b7BCBqpPwxWT7vFpQzBP6IQ5qrLkY2pOAaBG3H0sXeLmYzLfx2hLNVpELTlvoK'
+BINANCE_SECRET_KEY = 'ouJooSDGjuhR7M8JcfpCXog2yoZs33YYS3zngvDJDtzigfBrNBCKWUMbOP5x02Cx'
 
 DB_NAME = 'test2'
 DB_HOST = 'binance-bot.cfypif4yfq4f.us-east-1.rds.amazonaws.com'
@@ -48,34 +45,13 @@ ORDER_TIME_LIMIT = 240000
 HISTORY_START_DATE = 1516514400000        # The starting date, in milliseconds, that we import our historical data from.
 BACKTEST_START_DATE = 1529816400000        # The starting date, in milliseconds, that we begin backtesting from.
 
+MAX_POSITIONS = 3
+STARTING_BALANCE = 0.5
+
 ORDER_TIME_LIMIT = 11        # [1, 12] Integers = 12
-STOP_LOSS_ARM = 1.03        # [1.010, 1.050] 3 Decimal Places = 40
+STOP_LOSS_ARM = 1.01        # [1.010, 1.050] 3 Decimal Places = 40
 STOP_LOSS = 0.005        # [0.001, 0.010] 3 Decimal Places = 10
-DROP = 0.960        # [0.950, 0.980] 3 Decimal Places = 30
-# 12 * 40 * 10 * 30 = 144,000
-
-#[11, 8.8, 4.4]
-#[5, 7.0, 4.0]
-#[10, 7.1, 4.1]
-
-#12, 7.0, 3.9
-#11, 7.1, 2.9
-TOP_THRESHOLD = 2.7
-BOTTOM_THRESHOLD = 2.9
-# BNB [5, 139, 173, 0.67, 0.93]
-# ADA [5, 223, 203, 0.5, 0.5]
-WINDOW = 139
-TOP_WINDOW = 173
-PERCENT = 0.67
-TOP_PERCENT = 0.93
-
-NUM_TRIGGERS = 4
-TRIGGER_DECAY = 0.22
-TRIGGER_THRESHOLD = 1.5
-TRIGGER_0 = 10
-TRIGGER_1 = 4
-TRIGGER_2 = 0.32
-TRIGGER_3 = 0.16
+DROP = 0.970        # [0.950, 0.980] 3 Decimal Places = 30
 
 
 def set_optimized(otl, w, tw, p, tp):
@@ -89,7 +65,3 @@ def set_optimized(otl, w, tw, p, tp):
     PERCENT = p
     global TOP_PERCENT
     TOP_PERCENT = tp
-
-
-def to_datetime(time):
-    return pandas.to_datetime(time, unit='ms')

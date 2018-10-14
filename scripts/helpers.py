@@ -62,11 +62,11 @@ def read_file(file):
 
 
 def safe_to_file(logger, file, data):
-    return bullet_proof(logger, 'Writing Data to File', lambda: to_file(file, data))
+    return bullet_proof(logger, 'Writing Data to File \'' + str(file) + '\'', lambda: to_file(file, data))
 
 
 def safe_read_file(logger, file):
-    return bullet_proof(logger, 'Reading Data from File', lambda: read_file(file))
+    return bullet_proof(logger, 'Reading Data from File \'' + str(file) + '\'', lambda: read_file(file))
 
 
 def calculate_overhead(data):

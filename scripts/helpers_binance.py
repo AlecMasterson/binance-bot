@@ -3,7 +3,7 @@ from binance.client import Client
 
 
 def connect():
-    return Client(utilities.PUBLIC_KEY, utilities.SECRET_KEY)
+    return Client(utilities.BINANCE_PUBLIC_KEY, utilities.BINANCE_SECRET_KEY)
 
 
 ''' GET '''
