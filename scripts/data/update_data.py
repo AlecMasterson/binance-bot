@@ -14,7 +14,7 @@ def update_active(db):
         # TODO: The below calculation.
         logger.warn('Need to Include Active Calculation')
 
-    return 0
+    return True
 
 
 def update_history(client, db, all, time_interval):
@@ -71,9 +71,9 @@ def update_orders(client, db):
 
 
 def fun(**args):
-    if args['extra']['cmd'] == 'active': return update_active(args['db'])
-    if args['extra']['cmd'] == 'history': return update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval'])
-    if args['extra']['cmd'] == 'orders': return update_orders(args['client'], args['db'])
+    if args['extra']['cmd'] == 'active': if not update_active(args['db']): return 1
+    if args['extra']['cmd'] == 'history': if not update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval']): return 1
+    if args['extra']['cmd'] == 'orders': if not update_orders(args['client'], args['db']): return 1
 
     return 0
 
