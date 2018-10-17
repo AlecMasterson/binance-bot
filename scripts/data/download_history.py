@@ -30,4 +30,4 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--coinpair', help='a specific coinpair to download', type=str, dest='coinpair', required=False)
     args = parser.parse_args()
 
-    helpers.main_function(logger, 'Downloading {} History from the DB'.format('All' if args.coinpair is None else '\'' + args.coinpair + '\''), fun, db=True, extra={'coinpair': args.coinpair})
+    helpers.main_function(logger, 'Downloading {} History from the DB'.format('ALL' if args.coinpair is None else '\'' + args.coinpair + '\''), fun, db=True, extra={'coinpair': args.coinpair})
