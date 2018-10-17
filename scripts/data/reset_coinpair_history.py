@@ -35,14 +35,15 @@ def fun(**args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Used for Resetting a Coinpair\'s History in the DB')
-    parser.add_argument('-c', '--coinpair', help='the Coinpair to Reset', type=str, dest='coinpair', required=False)
+    parser = argparse.ArgumentParser(description='Used for Resetting History in the DB')
+    parser.add_argument('-c', '--coinpair', help='the coinpair to Reset', type=str, dest='coinpair', required=False)
     args = parser.parse_args()
 
-    if not args.coinpair is None:
+    if args.coinpair is None:
         if input('Are you sure you want to reset all history from the DB? (y) ') != 'y': sys.exit(1)
         if input('Are you absolutely sure you want to reset ALL history from the DB? (y) ') != 'y': sys.exit(1)
     else:
         if input('Are you sure you want to reset all \'' + args.coinpair + '\' history from the DB? (y) ') != 'y': sys.exit(1)
 
-    helpers.main_function(logger, 'Restting {} History in the DB'.format('ALL' if args.coinpair is None else '\'' + args.coinpair + '\''), fun, client=True, db=True, extra={'coinpair': args.coinpair})
+    helpers.main_function(
+        logger, 'Resetting {} History in the DB'.format('ALL' if args.coinpair is None else '\'' + args.coinpair + '\''), fun, client=True, db=True, extra={'coinpair': args.coinpair})
