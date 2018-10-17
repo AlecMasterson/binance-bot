@@ -71,9 +71,9 @@ def update_orders(client, db):
 
 
 def fun(**args):
-    if args['extra']['cmd'] == 'active': if not update_active(args['db']): return 1
-    if args['extra']['cmd'] == 'history': if not update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval']): return 1
-    if args['extra']['cmd'] == 'orders': if not update_orders(args['client'], args['db']): return 1
+    if args['extra']['cmd'] == 'active' and not update_active(args['db']): return 1
+    if args['extra']['cmd'] == 'history' and not update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval']): return 1
+    if args['extra']['cmd'] == 'orders' and not update_orders(args['client'], args['db']): return 1
 
     return 0
 
