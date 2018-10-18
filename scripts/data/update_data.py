@@ -1,4 +1,5 @@
-import sys, os, argparse, time
+import sys, os, argparse, time, math
+from threading import Thread
 sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
 sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
 import utilities, helpers, helpers_binance, helpers_db
@@ -17,19 +18,20 @@ def update_active(db):
     return True
 
 
-def update_history(client, db, all, time_interval):
-    coinpairs = helpers_db.safe_get_table(logger, db, 'COINPAIRS', utilities.COINPAIRS_STRUCTURE)
-    if coinpairs is None: return False
-
+def threading_update_history(index, results, coinpairs, client, db, all, time_interval):
     for index, row in coinpairs.iterrows():
         if not all and not row['ACTIVE']: continue
         coinpair = row['COINPAIR']
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
-        if saved_data is None: return False
+        if saved_data is None:
+            results[index] = False
+            return False
 
         data = helpers_binance.safe_get_recent_data(logger, client, coinpair, time_interval)
-        if data is None: return False
+        if data is None:
+            results[index] = False
+            return False
 
         count = 0
         for index, row in data.iterrows():
@@ -41,10 +43,34 @@ def update_history(client, db, all, time_interval):
         if count == 0: continue
 
         saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
-        if saved_data is None: return False
+        if saved_data is None:
+            results[index] = False
+            return False
 
         for index, candle in saved_data.tail(count).iterrows():
-            if helpers_db.safe_upsert_candle(logger, db, coinpair, candle) is None: return False
+            if helpers_db.safe_upsert_candle(logger, db, coinpair, candle) is None:
+                results[index] = False
+                return False
+
+def update_history(client, db, all, time_interval):
+    coinpairs = helpers_db.safe_get_table(logger, db, 'COINPAIRS', utilities.COINPAIRS_STRUCTURE)
+    if coinpairs is None: return False
+
+    threads = [None] * utilities.THREAD_MAX
+    results = [None] * utilities.THREAD_MAX
+
+    sections = []
+    section_length = math.floor(len(coinpairs) / len(threads))
+    for i in range(section_length):
+        if i < section_length - 1: sections.append(coinpairs[section_length * i : section_length * (i+1)])
+        else: sections.append(coinpairs[section_length * i :])
+
+    for i in range(len(threads)):
+        threads[i] = Thread(target=threading_update_history, args=(i, results, sections[i], client, db, all, time_interval))
+        threads[i].join()
+
+    for result in results:
+        if not result: return False
 
     return True
 
