@@ -10,7 +10,7 @@ def connect():
 
 
 def get_historical_data(client, coinpair, time_interval):
-    data = client.get_historical_klines(symbol=coinpair, interval=time_interval, start_str=utilities.HISTORY_START_DATE)[:-1]
+    data = client.get_historical_klines(symbol=coinpair, interval=time_interval, start_str=str(utilities.HISTORY_START_DATE.timestamp()))[:-1]
     for row in data:
         row.insert(0, time_interval)
         row.extend(['0', '0', '0', '0', '0', '0'])
