@@ -1,3 +1,5 @@
+from datetime import datetime
+
 COINPAIRS = [
     'HOTBTC', 'NPXSBTC', 'BCNBTC', 'DENTBTC', 'NCASHBTC', 'KEYBTC', 'SCBTC', 'MFTBTC', 'STORMBTC', 'TNBBTC', 'POEBTC', 'IOSTBTC', 'VETBTC', 'PHXBTC', 'IOTXBTC', 'FUNBTC', 'XVGBTC', 'LENDBTC',
     'CDTBTC', 'FUELBTC', 'RPXBTC', 'DOCKBTC', 'CHATBTC', 'CNDBTC', 'SNGLSBTC', 'DNTBTC', 'TRXBTC', 'RCNBTC', 'TNTBTC', 'MTHBTC', 'WPRBTC', 'YOYOBTC', 'GOBTC', 'DATABTC', 'ZILBTC', 'QSPBTC', 'SNTBTC',
@@ -9,7 +11,7 @@ COINPAIRS = [
     'SKYBTC', 'MCOBTC', 'HSRBTC', 'EOSBTC', 'GASBTC', 'XZCBTC', 'BNBBTC', 'GVTBTC', 'ETCBTC', 'REPBTC', 'ZENBTC', 'NEOBTC', 'BTGBTC', 'DGDBTC', 'LTCBTC', 'XMRBTC', 'ZECBTC', 'DASHBTC', 'ETHBTC',
     'BCCBTC'
 ]
-#COINPAIRS = ['BNBBTC']
+#COINPAIRS = ['XZCBTC', 'BNBBTC', 'ETHBTC', 'REPBTC', 'ZENBTC']
 
 COINPAIRS_STRUCTURE = ['ACTIVE', 'COINPAIR']
 HISTORY_STRUCTURE = [
@@ -20,48 +22,51 @@ BALANCES_STRUCTURE = ['ASSET', 'FREE']
 ACTIONS_STRUCTURE = ['COINPAIR', 'TIME', 'USED', 'ACTION', 'QUANTITY', 'PRICE']
 ORDERS_STRUCTURE = ['COINPAIR', 'ID', 'TIME', 'STATUS']
 
-TIME_INTERVALS = ['5m', '15m', '30m', '1h', '2h', '4h']
+#TIME_INTERVALS = ['5m', '15m', '30m', '1h', '2h', '4h']
+TIME_INTERVALS = ['30m']
 
-BINANCE_PUBLIC_KEY = 'T3b7BCBqpPwxWT7vFpQzBP6IQ5qrLkY2pOAaBG3H0sXeLmYzLfx2hLNVpELTlvoK'
-BINANCE_SECRET_KEY = 'ouJooSDGjuhR7M8JcfpCXog2yoZs33YYS3zngvDJDtzigfBrNBCKWUMbOP5x02Cx'
+# Binance Constants
+BINANCE_PUBLIC_KEY = ''
+BINANCE_SECRET_KEY = ''
 
+# Database Constants - CURRENTLY DOWN. AWS FREE TIER ENDED
 DB_NAME = 'test2'
 DB_HOST = 'binance-bot.cfypif4yfq4f.us-east-1.rds.amazonaws.com'
 DB_PORT = '3306'
 DB_USER = 'epsenex'
 DB_PASS = 'Minecraft#1PUBG#2'
 
+# SMTP Email Constants
 EMAIL_USERNAME = 'alecjmasterson@gmail.com'
 EMAIL_PASS = 'tmnvzdlgdnntaavh'
 
-# 240000ms = 4min
-ACTION_RECENT = 240000
-ORDER_TIME_LIMIT = 240000
+HISTORY_START_DATE = datetime(2018, 2, 1)        # Starting date, in milliseconds, that historical data starts from
+BACKTEST_START_DATE = datetime(2018, 9, 1)        # Starting date, in milliseconds, that backtesting runs from
+BACKTEST_END_DATE = datetime(2018, 10, 1)        # End date, in milliseconds, that backtesting stops
 
-# January 21, 2018 = 1516514400000
-# June 1, 2018 = 1527829200000
-# June 19, 2018 = 1529384400000
-# June 24, 2018 = 1529816400000
-HISTORY_START_DATE = 1516514400000        # The starting date, in milliseconds, that we import our historical data from.
-BACKTEST_START_DATE = 1529816400000        # The starting date, in milliseconds, that we begin backtesting from.
+# Backtesting Constants
+BACKTEST_CANDLE_INTERVAL = 30        # Used to increment the datetime object.
+BACKTEST_CANDLE_INTERVAL_STRING = '30m'        # Used to filter the candle data.
+STARTING_BALANCE = 0.5        # The starting BTC in wallet.
+WINDOW_SIZE = 24        # Sliding window size for coinpair candle history.
 
-MAX_POSITIONS = 3
-STARTING_BALANCE = 0.5
+# Position Arming Concept
+MAX_POSITIONS = 4        # Max number of open positions to hold.
+POSITION_ARM = 1.02        # Percent gain where Position is armed to sell.
+STOP_LOSS = 0.995        # If armed, percent drop from the max price.
+POSITION_DROP = 0.99        # Percent drop from buy price.
 
-ORDER_TIME_LIMIT = 11        # [1, 12] Integers = 12
-STOP_LOSS_ARM = 1.01        # [1.010, 1.050] 3 Decimal Places = 40
-STOP_LOSS = 0.005        # [0.001, 0.010] 3 Decimal Places = 10
-DROP = 0.970        # [0.950, 0.980] 3 Decimal Places = 30
+ORDER_TIME_LIMIT = 11        # How long a Binance order should be live before manually cancelling.
 
 
-def set_optimized(otl, w, tw, p, tp):
-    global ORDER_TIME_LIMIT
-    ORDER_TIME_LIMIT = otl
-    global WINDOW
-    WINDOW = w
-    global TOP_WINDOW
-    TOP_WINDOW = tw
-    global PERCENT
-    PERCENT = p
-    global TOP_PERCENT
-    TOP_PERCENT = tp
+def set_optimized(window_size, max_positions, position_arm, stop_loss, position_drop):
+    global WINDOW_SIZE
+    WINDOW_SIZE = window_size
+    global MAX_POSITIONS
+    MAX_POSITIONS = max_positions
+    global POSITION_ARM
+    POSITION_ARM = position_arm
+    global STOP_LOSS
+    STOP_LOSS = stop_loss
+    global POSITION_DROP
+    POSITION_DROP = position_drop
