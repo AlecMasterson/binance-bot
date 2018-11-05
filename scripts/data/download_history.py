@@ -23,7 +23,7 @@ def download(client, coinpair):
 
 
 def upload(db, coinpair, data):
-    # TODO: Upload to DB.
+    if helpers_db.safe_create_table(logger, db, coinpair, data) is None: return False
     return True
 
 
