@@ -62,11 +62,11 @@ def read_file(file):
 
 
 def safe_to_file(logger, file, data):
-    return bullet_proof(logger, 'Writing Data to File', lambda: to_file(file, data))
+    return bullet_proof(logger, 'Writing Data to File \'' + str(file) + '\'', lambda: to_file(file, data))
 
 
 def safe_read_file(logger, file):
-    return bullet_proof(logger, 'Reading Data from File', lambda: read_file(file))
+    return bullet_proof(logger, 'Reading Data from File \'' + str(file) + '\'', lambda: read_file(file))
 
 
 def calculate_overhead(data):
@@ -75,7 +75,7 @@ def calculate_overhead(data):
     macd = ta.trend.macd(close_data, n_fast=12, n_slow=26, fillna=True)
     macd_signal = ta.trend.macd_signal(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
     macd_diff = ta.trend.macd_diff(close_data, n_fast=12, n_slow=26, n_sign=9, fillna=True)
-    rsi = ta.momentum.rsi(close_data, n=14)
+    rsi = ta.momentum.rsi(close_data.astype(float), n=14)
     upperband = ta.volatility.bollinger_hband(close_data, n=14, ndev=2, fillna=True)
     lowerband = ta.volatility.bollinger_lband(close_data, n=14, ndev=2, fillna=True)
 

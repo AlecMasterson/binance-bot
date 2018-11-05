@@ -1,4 +1,5 @@
-import sys, os, argparse, time
+import sys, os, argparse, time, math
+from threading import Thread
 sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
 sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
 import utilities, helpers, helpers_binance, helpers_db
@@ -6,28 +7,70 @@ import utilities, helpers, helpers_binance, helpers_db
 logger = helpers.create_logger('update_data')
 
 
-def update_history(client, db):
-    for coinpair in utilities.COINPAIRS:
-        data = helpers_binance.safe_get_recent_data(logger, client, coinpair)
-        if data is None: return False
+def update_active(db):
+    coinpairs = helpers_db.safe_get_table(logger, db, 'COINPAIRS', utilities.COINPAIRS_STRUCTURE)
+    if coinpairs is None: return False
+
+    for index, row in coinpairs.iterrows():
+        # TODO: The below calculation.
+        logger.warn('Need to Include Active Calculation')
+
+    return True
+
+
+def threading_update_history(index, results, coinpairs, client, db, all, time_interval):
+    for index, row in coinpairs.iterrows():
+        if not all and not row['ACTIVE']: continue
+        coinpair = row['COINPAIR']
 
         saved_data = helpers_db.safe_get_table(logger, db, coinpair, utilities.HISTORY_STRUCTURE)
-        if saved_data is None: return False
+        if saved_data is None:
+            results[index] = False
+            return False
+
+        data = helpers_binance.safe_get_recent_data(logger, client, coinpair, time_interval)
+        if data is None:
+            results[index] = False
+            return False
 
         count = 0
         for index, row in data.iterrows():
-            if not (saved_data['OPEN_TIME'] == row['OPEN_TIME']).any():
+            if not ((saved_data['INTERVAL'] == row['INTERVAL']) & (saved_data['OPEN_TIME'] == row['OPEN_TIME'])).any():
                 saved_data = saved_data.append(row, ignore_index=True)
                 count += 1
-        logger.info('Added ' + str(count) + ' New Rows')
+        logger.info('Adding ' + str(count) + ' New Rows')
 
         if count == 0: continue
 
         saved_data = helpers.safe_calculate_overhead(logger, coinpair, saved_data)
-        if saved_data is None: return False
+        if saved_data is None:
+            results[index] = False
+            return False
 
-        for index, row in saved_data.tail(count).iterrows():
-            if helpers_db.safe_upsert_candle(logger, db, candle) is None: return False
+        for index, candle in saved_data.tail(count).iterrows():
+            if helpers_db.safe_upsert_candle(logger, db, coinpair, candle) is None:
+                results[index] = False
+                return False
+
+def update_history(client, db, all, time_interval):
+    coinpairs = helpers_db.safe_get_table(logger, db, 'COINPAIRS', utilities.COINPAIRS_STRUCTURE)
+    if coinpairs is None: return False
+
+    threads = [None] * utilities.THREAD_MAX
+    results = [None] * utilities.THREAD_MAX
+
+    sections = []
+    section_length = math.floor(len(coinpairs) / len(threads))
+    for i in range(section_length):
+        if i < section_length - 1: sections.append(coinpairs[section_length * i : section_length * (i+1)])
+        else: sections.append(coinpairs[section_length * i :])
+
+    for i in range(len(threads)):
+        threads[i] = Thread(target=threading_update_history, args=(i, results, sections[i], client, db, all, time_interval))
+        threads[i].join()
+
+    for result in results:
+        if not result: return False
 
     return True
 
@@ -54,15 +97,35 @@ def update_orders(client, db):
 
 
 def fun(**args):
-    if not update_history(args['client'], args['db'], args['extra']['time_frame']): return 1
-    #if not update_orders(args['client'], args['db']): return 1
+    if args['extra']['cmd'] == 'active' and not update_active(args['db']): return 1
+    if args['extra']['cmd'] == 'history' and not update_history(args['client'], args['db'], args['extra']['all'], args['extra']['time_interval']): return 1
+    if args['extra']['cmd'] == 'orders' and not update_orders(args['client'], args['db']): return 1
 
     return 0
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Updating Data in the DB')
-    parser.add_argument('-t', help='the time interval', type=str, dest='time_interval', required=True, choices=utilities.TIME_INTERVALS)
+    subparsers = parser.add_subparsers(help='The Specific Commands Allowed', dest='cmd')
+
+    parser_active = subparsers.add_parser('active', help='update which coinpair\'s are active')
+
+    parser_history = subparsers.add_parser('history', help='update coinpair history')
+    parser_history.add_argument('-a', '--all', help='update all coinpairs', action='store_true')
+    parser_history.add_argument('-t', '--time', help='the time interval', type=str, dest='time_interval', required=True, choices=utilities.TIME_INTERVALS)
+
+    parser_orders = subparsers.add_parser('orders', help='update open orders')
+
     args = parser.parse_args()
 
-    helpers.main_function(logger, 'Updating Data in the DB', fun, client=True, db=True, extra={'time_frame': args.time_interval})
+    if args.cmd is None: sys.exit(1)
+    extra = {'cmd': args.cmd}
+
+    if args.cmd == 'active': client = False
+    else: client = True
+
+    if args.cmd == 'history':
+        extra['all'] = args.all
+        extra['time_interval'] = args.time_interval
+
+    helpers.main_function(logger, 'Updating Data in the DB', fun, client=client, db=True, extra=extra)

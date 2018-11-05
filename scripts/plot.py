@@ -1,110 +1,84 @@
+import sys, os, argparse, pandas
 import plotly.graph_objs as go
 import plotly.offline as py
 from plotly import tools
+sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
+sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
+import utilities, helpers
 
-from components.Candle import Candle
-import utilities, argparse, pandas
+logger = helpers.create_logger('plot')
 
-if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Used for Plotting Backtesting Results')
-    parser.add_argument('-c', '--coinpair', help='coinpair used in backtesting', type=str, action='append', dest='coinpair', required=True)
-    args = parser.parse_args()
+def fun(**args):
+    data = helpers.safe_read_file(logger, 'data/history/' + args['extra']['coinpair'] + '.csv')
+    if data is None: return 1
 
-    try:
-        data = pandas.read_csv('data/history/' + args.coinpair[0] + '.csv')
-    except:
-        utilities.throw_error('Failed to Import Historical Data for Coinpair \'' + args.coinpair[0] + '\'', True)
-
-    candles = []
-    for index, candle in data.iterrows():
-        candles.append(Candle(candle['Open Time'], candle['Open'], candle['High'], candle['Low'], candle['Close'], candle['Close Time'], candle['Number Trades'], candle['Volume']))
-    candles = candles[:-1]
-
+    logger.info('Tracing Candlestick Data...')
     trace_candlestick = go.Candlestick(
         name='Candle Data',
-        x=[utilities.to_datetime(candle.openTime) for candle in candles if candle.openTime > utilities.BACKTEST_START_DATE],
-        open=[candle.open for candle in candles if candle.openTime > utilities.BACKTEST_START_DATE],
-        high=[candle.high for candle in candles if candle.openTime > utilities.BACKTEST_START_DATE],
-        low=[candle.low for candle in candles if candle.openTime > utilities.BACKTEST_START_DATE],
-        close=[candle.close for candle in candles if candle.openTime > utilities.BACKTEST_START_DATE])
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        open=[row['OPEN'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        high=[row['HIGH'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        low=[row['LOW'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        close=[row['CLOSE'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
 
-    try:
-        data = pandas.read_csv('data/backtesting/' + args.coinpair[0] + '.csv')
-    except:
-        utilities.throw_error('Failed to Import Backtesting Results for Coinpair \'' + args.coinpair[0] + '\'', True)
+    logger.info('Tracing Bollinger Data...')
+    trace_upperband = go.Scatter(
+        name='Bollinger Upper',
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        y=[row['UPPERBAND'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
+    trace_lowerband = go.Scatter(
+        name='Bollinger Lower',
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        y=[row['LOWERBAND'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
 
-    trace_results_buy = go.Scatter(
-        name='Buy Marker',
-        x=[utilities.to_datetime(row['time']) for index, row in data.iterrows() if row['used'] == 1],
-        y=[row['price'] for index, row in data.iterrows() if row['used'] == 1],
-        mode='markers',
-        marker=dict(size=9, color=['blue' for index, row in data.iterrows() if row['used'] == 1]),
-        text=[utilities.to_datetime(row['time']) for index, row in data.iterrows() if row['used'] == 1])
+    logger.info('Tracing RSI Data...')
+    trace_rsi = go.Scatter(
+        name='RSI',
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        y=[row['RSI'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
+    trace_rsi_70 = go.Scatter(
+        name='RSI-70',
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        y=[70.0 for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
+    trace_rsi_20 = go.Scatter(
+        name='RSI-20',
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        y=[20.0 for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
 
-    trace_results_sell = go.Scatter(
-        name='Sell Marker',
-        x=[utilities.to_datetime(row['end']) for index, row in data.iterrows() if row['used'] == 1],
-        y=[row['current'] for index, row in data.iterrows() if row['used'] == 1],
-        mode='markers',
-        marker=dict(size=9, color=['purple' for index, row in data.iterrows() if row['used'] == 1]),
-        text=[utilities.to_datetime(row['end']) for index, row in data.iterrows() if row['used'] == 1])
+    logger.info('Tracing MACD_DIFF Data...')
+    trace_macd_diff = go.Scatter(
+        name='MACD_DIFF',
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        y=[row['MACD_DIFF'] for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
+    trace_macd_diff_0 = go.Scatter(
+        name='MACD_DIFF-0',
+        x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE],
+        y=[0.0 for index, row in data.iterrows() if row['OPEN_TIME'] > utilities.BACKTEST_START_DATE])
 
-    trace_results_buy_other = go.Scatter(
-        name='Other Buy Marker',
-        x=[utilities.to_datetime(row['time']) for index, row in data.iterrows() if row['used'] == 0],
-        y=[row['price'] for index, row in data.iterrows() if row['used'] == 0],
-        mode='markers',
-        marker=dict(size=9, color=['green' for index, row in data.iterrows() if row['used'] == 0]),
-        text=[utilities.to_datetime(row['time']) for index, row in data.iterrows() if row['used'] == 0])
-
-    trace_results_sell_other = go.Scatter(
-        name='Other Sell Marker',
-        x=[utilities.to_datetime(row['end']) for index, row in data.iterrows() if row['used'] == 0],
-        y=[row['current'] for index, row in data.iterrows() if row['used'] == 0],
-        mode='markers',
-        marker=dict(size=9, color=['orange' for index, row in data.iterrows() if row['used'] == 0]),
-        text=[utilities.to_datetime(row['end']) for index, row in data.iterrows() if row['used'] == 0])
-
-    results = []
-    for index, row in data.iterrows():
-        if row['used'] == 0: continue
-        if len(results) == 0: results.append(row['current'] / row['price'])
-        else: results.append(results[-1] * row['current'] / row['price'])
-    trace_total = go.Scatter(name='Total Value', x=[utilities.to_datetime(row['end']) for index, row in data.iterrows()], y=[val for val in results])
-
-    updatemenus = list([
-        dict(
-            active=0,
-            buttons=list([
-                dict(label='All Markers', method='update', args=[{
-                    'visible': [True, True, True, True, True]
-                }, {
-                    'title': 'All Markers for Coinpair \'' + args.coinpair[0] + '\''
-                }]),
-                dict(label='Used Markers', method='update', args=[{
-                    'visible': [True, True, True, False, False]
-                }, {
-                    'title': 'Used Markers for Coinpair \'' + args.coinpair[0] + '\''
-                }]),
-                dict(label='Other Markers', method='update', args=[{
-                    'visible': [True, False, False, True, True]
-                }, {
-                    'title': 'Other Markers for Coinpair \'' + args.coinpair[0] + '\''
-                }])
-            ]),
-        )
-    ])
-
-    fig = tools.make_subplots(rows=2, cols=1, specs=[[{}], [{}]], shared_xaxes=True, shared_yaxes=True, vertical_spacing=0.001)
+    logger.info('Creating Figure...')
+    fig = tools.make_subplots(rows=3, cols=1, specs=[[{}], [{}], [{}]], shared_xaxes=True, shared_yaxes=True, vertical_spacing=0.001)
 
     fig.append_trace(trace_candlestick, 1, 1)
-    fig.append_trace(trace_results_buy, 1, 1)
-    fig.append_trace(trace_results_sell, 1, 1)
-    fig.append_trace(trace_results_buy_other, 1, 1)
-    fig.append_trace(trace_results_sell_other, 1, 1)
+    fig.append_trace(trace_upperband, 1, 1)
+    fig.append_trace(trace_lowerband, 1, 1)
 
-    fig.append_trace(trace_total, 2, 1)
+    fig.append_trace(trace_rsi, 2, 1)
+    fig.append_trace(trace_rsi_70, 2, 1)
+    fig.append_trace(trace_rsi_20, 2, 1)
 
-    fig['layout'].update(title='Backtesting Results for Coinpair \'' + args.coinpair[0] + '\'', updatemenus=updatemenus, showlegend=False, xaxis=dict(title='Date', rangeslider=dict(visible=False)))
-    py.plot(fig, filename='data/plots/' + args.coinpair[0] + '.html')
+    fig.append_trace(trace_macd_diff, 3, 1)
+    fig.append_trace(trace_macd_diff_0, 3, 1)
+
+    fig['layout'].update(title='Plot for \'' + args['extra']['coinpair'] + '\'', showlegend=False, xaxis=dict(title='Date', rangeslider=dict(visible=False)))
+    py.plot(fig, filename=os.path.dirname(__file__) + '/../data/plots/' + args['extra']['coinpair'] + '.html')
+
+    return 0
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Used for Plotting Data')
+    parser.add_argument('-c', '--coinpair', help='coinpair to plot', type=str, dest='coinpair', required=False)
+    args = parser.parse_args()
+
+    helpers.main_function(logger, 'Plotting Data', fun, extra={'coinpair': args.coinpair})
