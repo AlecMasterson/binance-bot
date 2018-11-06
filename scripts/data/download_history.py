@@ -1,6 +1,6 @@
 import sys, os, argparse, pandas, glob
 sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
-sys.path.append(os.path.join(os.path.join(os.getcwd(), 'binance-bot'), 'scripts'))
+sys.path.append(os.path.join(os.getcwd(), 'binance-bot', 'scripts'))
 import utilities, helpers, helpers_binance, helpers_db
 
 logger = helpers.create_logger('download_history')
