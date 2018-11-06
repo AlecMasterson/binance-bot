@@ -58,7 +58,7 @@ def to_file(file, data):
 
 
 def read_file(file):
-    return pandas.read_csv(os.path.dirname(__file__) + '/../' + file)
+    return pandas.read_csv(os.path.join(os.path.dirname(__file__), '..', file))
 
 
 def safe_to_file(logger, file, data):
