@@ -14,6 +14,8 @@ class Position:
 
     def test_sell(self, time_sell, cur_price):
         result = cur_price / self.data['PRICE_BUY']
+        self.data['TOTAL_REWARD'] = result
+
         if not self.data['ARMED'] and result > utilities.POSITION_ARM:
             self.data['ARMED'] = True
             self.data['ARMED_PRICE'] = cur_price

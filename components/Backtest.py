@@ -1,7 +1,5 @@
 from datetime import datetime
 from datetime import timedelta
-from collections import deque
-
 import sys, os
 sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
 sys.path.append(os.path.join(os.getcwd(), 'binance-bot', 'components'))
@@ -24,31 +22,39 @@ class Backtest:
     def backtest(self, data):
         open_positions = []
 
+        for key, coinpair in data.items():
+            data[key]['DATA'] = data[key]['DATA'][data[key]['DATA']['OPEN_TIME'] >= utilities.BACKTEST_START_DATE.timestamp() * 1000.0]
+
         cur_datetime = utilities.BACKTEST_START_DATE
         while cur_datetime <= utilities.BACKTEST_END_DATE:
 
             for position in open_positions:
-                for coinpair in data:
-                    if coinpair['COINPAIR'] != position.data['COINPAIR']: continue
+                for key, coinpair in data.items():
+                    if key != position.data['COINPAIR']: continue
 
-                    state = coinpair['DATA'][:1].to_dict(orient='records')[0]
-                    if position.test_sell(state['OPEN_TIME'], state['OPEN']):
+                    candle = data[key]['DATA'][:1].to_dict(orient='records')[0]
+                    if position.test_sell(candle['OPEN_TIME'], candle['OPEN']):
                         self.balance += position.data['BTC'] * position.data['TOTAL_REWARD']
                         open_positions = [x for x in open_positions if not x is position]
                         self.final_positions.append(position)
+                    break
 
-            for coinpair in data:
+            for key, coinpair in data.items():
                 if len(open_positions) >= utilities.MAX_POSITIONS or self.balance <= 0.0: continue
-                state = coinpair['DATA'][:1].to_dict(orient='records')[0]
+                candle = data[key]['DATA'][:1].to_dict(orient='records')[0]
 
-                if state['OPEN_TIME'] == cur_datetime.timestamp():
-                    coinpair['DATA'] = coinpair['DATA'][1:]
+                #print('{}\t{}\t{}'.format(key, datetime.utcfromtimestamp(candle['OPEN_TIME'] / 1000), cur_datetime))
+                if candle['OPEN_TIME'] == cur_datetime.timestamp() * 1000.0:
+                    data[key]['DATA'] = data[key]['DATA'][1:]
 
-                    if self.action_function(state):
-                        new_position = Position(coinpair['COINPAIR'], self.balance / (utilities.MAX_POSITIONS - len(open_positions)), state['OPEN_TIME'], state['OPEN'])
+                    if self.action_function({'COINPAIR': key, 'CANDLE': candle}):
+                        new_position = Position(key, self.balance / (utilities.MAX_POSITIONS - len(open_positions)), candle['OPEN_TIME'], candle['OPEN'])
                         self.balance -= new_position.data['BTC']
                         open_positions.append(new_position)
 
             cur_datetime += timedelta(minutes=utilities.BACKTEST_CANDLE_INTERVAL)
+
+        for position in open_positions:
+            self.balance += position.data['BTC'] * position.data['TOTAL_REWARD']
 
         return self.balance
