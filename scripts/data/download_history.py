@@ -35,7 +35,7 @@ def fun(**args):
     for coinpair in args['extra']['coinpairs']:
         data = download(args['client'], coinpair)
         if data is None: return 1
-        if not upload(args['db'], coinpair, data): return 1
+        if args['extra']['upload'] and not upload(args['db'], coinpair, data): return 1
 
     return 0
 
