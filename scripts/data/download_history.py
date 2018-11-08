@@ -55,7 +55,7 @@ if __name__ == '__main__':
             if input('Are you sure you want to reset all history in the DB? (y) ') != 'y': sys.exit(1)
             if input('Are you absolutely sure you want to reset ALL history in the DB? (y) ') != 'y': sys.exit(1)
         else:
-            if input('Are you sure you want to reset all \'' + args.coinpairs + '\' history in the DB? (y) ') != 'y': sys.exit(1)
+            if input('Are you sure you want to reset all [' + ', '.join(coinpairs) + '] history in the DB? (y) ') != 'y': sys.exit(1)
 
-    message = 'Downloading {} History'.format('ALL' if args.coinpairs is None else '[' + ', '.join(coinpairs)+ ']')
+    message = 'Downloading {} History'.format('ALL' if args.coinpairs is None else '[' + ', '.join(coinpairs) + ']')
     helpers.main_function(logger, message, fun, client=True, db=db, extra={'coinpairs': coinpairs, 'upload': args.upload})
