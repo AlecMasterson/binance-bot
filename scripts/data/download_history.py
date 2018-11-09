@@ -42,22 +42,20 @@ def fun(**args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Downloading History from Binance')
-    parser.add_argument('-c', '--coinpair', help='a specific coinpair to download', type=str, dest='coinpair', required=False)
+    parser.add_argument('-c', '--coinpairs', help='a list of coinpairs to download', type=str, nargs='+', dest='coinpairs', required=False)
     parser.add_argument('-u', '--upload', help='upload to the DB', action='store_true', required=False)
     args = parser.parse_args()
 
-    coinpairs = []
-    if args.coinpair is None: coinpairs = utilities.COINPAIRS
-    else: coinpairs.append(args.coinpair)
+    coinpairs = args.coinpairs if args.coinpairs is not None else utilities.COINPAIRS
 
     db = False
     if args.upload:
         db = True
-        if args.coinpair is None:
+        if args.coinpairs is None:
             if input('Are you sure you want to reset all history in the DB? (y) ') != 'y': sys.exit(1)
             if input('Are you absolutely sure you want to reset ALL history in the DB? (y) ') != 'y': sys.exit(1)
         else:
-            if input('Are you sure you want to reset all \'' + args.coinpair + '\' history in the DB? (y) ') != 'y': sys.exit(1)
+            if input('Are you sure you want to reset all [' + ', '.join(coinpairs) + '] history in the DB? (y) ') != 'y': sys.exit(1)
 
-    message = 'Downloading {} History'.format('ALL' if args.coinpair is None else '\'' + args.coinpair + '\'')
+    message = 'Downloading {} History'.format('ALL' if args.coinpairs is None else '[' + ', '.join(coinpairs) + ']')
     helpers.main_function(logger, message, fun, client=True, db=db, extra={'coinpairs': coinpairs, 'upload': args.upload})
