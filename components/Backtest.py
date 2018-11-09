@@ -46,8 +46,7 @@ class Backtest:
 
                 if candle['OPEN_TIME'] == cur_datetime.timestamp() * 1000.0:
                     data[key] = data[key][1:]
-
-                epoch[key] = candle
+                    epoch[key] = candle
 
             actions = self.action_function(epoch)
             for a in [actions[k] for k in actions if actions[k] == True]:
