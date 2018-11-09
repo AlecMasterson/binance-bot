@@ -26,13 +26,11 @@ class Agent:
         print(self.backtest.backtest(self.data))
 
     def add_candle(self, data):
-        print(data)
-        1/0
-        # self.windows[data['COINPAIR']].append(data['CANDLE'])
+        self.windows[data['COINPAIR']].append(data['CANDLE'])
 
-        # if signals.rsi(self.windows[data['COINPAIR']]) and signals.lowerband(self.windows[data['COINPAIR']]): return True
+        if signals.rsi(self.windows[data['COINPAIR']]) and signals.lowerband(self.windows[data['COINPAIR']]): return True
 
-        # return False
+        return False
 
 
 if __name__ == '__main__':
