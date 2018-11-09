@@ -49,7 +49,8 @@ class Backtest:
 
                 epoch[key] = candle
 
-            if self.action_function(epoch):
+            actions = self.action_function(epoch)
+            for [actions[k] for k in actions if actions[k] == True]:
                 new_position = Position(key, self.balance / (utilities.MAX_POSITIONS - len(open_positions)), candle['OPEN_TIME'], candle['OPEN'])
                 self.balance -= new_position.data['BTC']
                 open_positions.append(new_position)
