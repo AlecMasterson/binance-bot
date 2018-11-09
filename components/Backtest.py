@@ -39,17 +39,20 @@ class Backtest:
                         self.final_positions.append(position)
                     break
 
+            epoch = {}
             for key, coinpair in data.items():
                 if len(open_positions) >= utilities.MAX_POSITIONS or self.balance <= 0.0: continue
                 candle = data[key][:1].to_dict(orient='records')[0]
 
                 if candle['OPEN_TIME'] == cur_datetime.timestamp() * 1000.0:
                     data[key] = data[key][1:]
+                    epoch[key] = candle
 
-                    if self.action_function({'COINPAIR': key, 'CANDLE': candle}):
-                        new_position = Position(key, self.balance / (utilities.MAX_POSITIONS - len(open_positions)), candle['OPEN_TIME'], candle['OPEN'])
-                        self.balance -= new_position.data['BTC']
-                        open_positions.append(new_position)
+            actions = self.action_function(epoch)
+            for key in [k for k in actions if actions[k] == True]:
+                new_position = Position(key, self.balance / (utilities.MAX_POSITIONS - len(open_positions)), epoch[key]['OPEN_TIME'], epoch[key]['OPEN'])
+                self.balance -= new_position.data['BTC']
+                open_positions.append(new_position)
 
             cur_datetime += timedelta(minutes=utilities.BACKTEST_CANDLE_INTERVAL)
 
