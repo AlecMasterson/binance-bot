@@ -47,7 +47,7 @@ BACKTEST_END_DATE = datetime(2018, 10, 1)        # End date, in milliseconds, th
 # Backtesting Constants
 BACKTEST_CANDLE_INTERVAL = 30        # Used to increment the datetime object.
 BACKTEST_CANDLE_INTERVAL_STRING = '30m'        # Used to filter the candle data.
-STARTING_BALANCE = 0.5        # The starting BTC in wallet.
+STARTING_BALANCE = 1.0        # The starting BTC in wallet.
 WINDOW_SIZE = 24        # Sliding window size for coinpair candle history.
 
 # Position Arming Concept

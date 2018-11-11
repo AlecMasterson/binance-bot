@@ -19,8 +19,10 @@ class Agent:
     saved_data = {}
     windows = {}
     i = 0
+    window_length = 10
     coinpairs = []
-    balance = 0
+    balance = utilities.STARTING_BALANCE
+    a_counts = []
 
     def __init__(self, coinpairs):
         self.coinpairs = coinpairs
@@ -29,40 +31,37 @@ class Agent:
             if temp_data is None: return 1
 
             self.data[coinpair] = temp_data[temp_data['INTERVAL'] == utilities.BACKTEST_CANDLE_INTERVAL_STRING].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
-            self.windows[coinpair] = deque(maxlen=1)
+            self.windows[coinpair] = deque(maxlen=self.window_length)
 
         self.backtest = Backtest(self.step, self.data)
         self.i = 0
+        self.a_counts = [0 for c in range(len(self.coinpairs) + 1)]
 
-        with open('binance-bot/agents/tf_configs/dqn_relu_network.json', 'r') as fp:
+        with open('binance-bot/agents/tf_configs/ppo.json', 'r') as fp:
             agent_config = json.load(fp=fp)
         with open('binance-bot/agents/tf_configs/dqn_relu_network.json', 'r') as fp:
             network_spec = json.load(fp=fp)
-        # self.brain = tf_agent.from_spec(
-        #     spec=agent_config, kwargs={
-        #         'states': {
-        #             'type': 'float',
-        #             'shape': (len(self.coinpairs) * 18,)
-        #         },
-        #         'actions': {
-        #             'type': 'int',
-        #             'num_actions': len(self.coinpairs) + 1
-        #         },
-        #         'network': network_spec
-        #     }
-        # )
-        # self.brain = tf_agent.from_spec(spec=agent_config, kwargs=dict(states=np.array(len(self.coinpairs) * 18,), actions=np.array(len(self.coinpairs) + 1,), network=network_spec))
-        self.brain = DQNAgent(
-            states=dict(type='float', shape=(len(self.coinpairs) * 18,)),
-            actions=dict(type='int', num_actions=len(self.coinpairs) + 1),
-            network=[dict(type='dense', size=64), dict(type='dense', size=64)]
+        self.brain = tf_agent.from_spec(
+            spec=agent_config,
+            kwargs={
+                'states': {
+                    'type': 'float',
+                    'shape': (len(self.coinpairs) * self.window_length * 18,)
+                },
+                'actions': {
+                    'type': 'int',
+                    'num_actions': len(self.coinpairs) + 1
+                },
+                'network': network_spec
+            }
         )
 
     def reset(self):
         self.i = 0
         for coinpair in self.coinpairs:
-            self.windows[coinpair] = deque(maxlen=1)
+            self.windows[coinpair] = deque(maxlen=self.window_length)
         self.backtest.reset()
+        self.a_counts = [0 for c in range(len(self.coinpairs) + 1)]
 
     def run(self):
         return self.backtest.backtest()
@@ -70,21 +69,32 @@ class Agent:
     def step(self, data):
         self.i += 1
         self.remember(data)
+        # print(len(self.consider()), self.consider())
+        # if self.i == 1:
+        #     print(data)
+        #     print(self.windows)
         action = self.brain.act(self.consider())
         actions = [False] * len(self.coinpairs)
         try:
             actions[action] = True
         except:
             pass
+        self.a_counts[action] += 1
         actions = self.map_actions(actions)
-        # reward = (data['BALANCE'] - self.balance)/10.0
-        # self.balance = data['BALANCE']
-        # print(self.balance, reward)
+        reward = data['BALANCE'] - self.balance
+        # print('old balance: {:>10.3} | new balance: {:>10.3} | reward: {:>10.3}'.format(self.balance, data['BALANCE'], reward))
+        self.balance = data['BALANCE']
         if self.i <= 1440:
-            self.brain.observe(reward=0, terminal=False)
+            self.brain.observe(reward=reward, terminal=False)
         return actions
 
     def remember(self, data):
+        if self.i == 1:
+            # print("fine dining and breathing")
+            for _ in range(self.window_length+1):
+                for k in data:
+                    if k != 'BALANCE':
+                        self.windows[k].append(data[k])
         for k in data:
             if k != 'BALANCE':
                 self.windows[k].append(data[k])
@@ -101,8 +111,9 @@ class Agent:
 
 if __name__ == '__main__':
     agent = Agent(['ADABTC'])
-    for x in range(10):
+    for x in range(1, 1000 + 1):
         result = agent.run()
-        print(x, result)
-        agent.brain.observe(reward=(result - utilities.STARTING_BALANCE), terminal=True)
+        reward = (result - utilities.STARTING_BALANCE) * 10
+        print('epoch:{:>5} | balance: {:>10.3} | reward: {:>10.3} | actions: {}'.format(x, result, reward, agent.a_counts))
+        agent.brain.observe(reward=reward, terminal=True)
         agent.reset()
