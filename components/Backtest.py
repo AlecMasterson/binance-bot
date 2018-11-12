@@ -10,17 +10,25 @@ class Backtest:
     def __init__(self, original_data):
         self.original_data = original_data.copy()
 
-    def reset(self):
-        self.data = self.original_data.copy()
-
+    def set_data(self):
+        required_candles = (utilities.BACKTEST_END_DATE - utilities.BACKTEST_START_DATE).days * 24 * 60 / utilities.BACKTEST_CANDLE_INTERVAL + 1
         for key in self.data:
             self.data[key] = self.data[key][self.data[key]['OPEN_TIME'] >= utilities.BACKTEST_START_DATE.timestamp() * 1000.0]
+            self.data[key] = self.data[key][self.data[key]['OPEN_TIME'] <= utilities.BACKTEST_END_DATE.timestamp() * 1000.0]
             self.data[key] = self.data[key].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
+            if len(self.data[key]) != required_candles:
+                print('Incorrect Num Candles for Coinpair \'{}\': {} Instead of {}'.format(key, len(self.data[key]), required_candles))
+                return False
+        return True
+
+    def reset(self):
+        self.data = self.original_data.copy()
+        if not self.set_data(): return False
 
         self.final_positions, self.open_positions = [], []
         self.reward, self.info = {'BALANCE': utilities.STARTING_BALANCE}, {}
         self.cur_datetime = utilities.BACKTEST_START_DATE
-        return self.current_state()
+        return True
 
     def current_state(self):
         self.epoch = {}
