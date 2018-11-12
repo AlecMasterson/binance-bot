@@ -18,7 +18,7 @@ class Backtest:
             self.data[key] = self.data[key].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
 
         self.final_positions, self.open_positions = [], []
-        self.balance = utilities.STARTING_BALANCE
+        self.reward, self.info = {'BALANCE': utilities.STARTING_BALANCE}, {}
         self.cur_datetime = utilities.BACKTEST_START_DATE
         return self.current_state()
 
@@ -31,25 +31,25 @@ class Backtest:
         isDone = False
         if self.cur_datetime == utilities.BACKTEST_END_DATE:
             for position in self.open_positions:
-                self.balance += position.data['BTC'] * position.data['TOTAL_REWARD']
+                self.reward['BALANCE'] += position.data['BTC'] * position.data['TOTAL_REWARD']
             isDone = True
 
-        return self.epoch, {'BALANCE': self.balance}, isDone, {}
+        return self.epoch, self.reward, isDone, self.info
 
     def step(self, action):
         for position in self.open_positions:
             candle = self.data[position.data['COINPAIR']][:1].to_dict(orient='records')[0]
             if position.test_sell(candle['OPEN_TIME'], candle['OPEN']):
-                self.balance += position.data['BTC'] * position.data['TOTAL_REWARD']
+                self.reward['BALANCE'] += position.data['BTC'] * position.data['TOTAL_REWARD']
                 self.open_positions = [x for x in self.open_positions if not x is position]
                 self.final_positions.append(position)
 
         for key in [k for k in action if action[k] == True]:
-            if len(self.open_positions) >= utilities.MAX_POSITIONS or self.balance <= 0.0: continue
+            if len(self.open_positions) >= utilities.MAX_POSITIONS or self.reward['BALANCE'] <= 0.0: continue
 
             candle = self.data[key][:1].to_dict(orient='records')[0]
-            new_position = Position(key, self.balance / (utilities.MAX_POSITIONS - len(self.open_positions)), candle['OPEN_TIME'], candle['OPEN'])
-            self.balance -= new_position.data['BTC']
+            new_position = Position(key, self.reward['BALANCE'] / (utilities.MAX_POSITIONS - len(self.open_positions)), candle['OPEN_TIME'], candle['OPEN'])
+            self.reward['BALANCE'] -= new_position.data['BTC']
             self.open_positions.append(new_position)
 
         self.cur_datetime += datetime.timedelta(minutes=utilities.BACKTEST_CANDLE_INTERVAL)
