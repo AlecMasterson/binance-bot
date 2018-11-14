@@ -9,19 +9,21 @@ class Agent:
 
     data, windows = {}, {}
 
-    def __init__(self, coinpairs):
-        for coinpair in coinpairs:
+    def __init__(self):
+        self.backtest = Backtest.Backtest()
+
+    def set_data(self, coinpairs):
+        self.coinpairs = coinpairs
+        for coinpair in self.coinpairs:
             temp_data = helpers.read_file('data/history/' + coinpair + '.csv')
             temp_data = Backtest.format_data(temp_data, utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL)
-
-            if temp_data is None:
-                print('Failed to Initialize Coinpair \'{}\'. Continuing Anyway...'.format(coinpair))
-                continue
+            if temp_data is None: return False
 
             self.data[coinpair] = temp_data
             self.windows[coinpair] = deque(maxlen=utilities.WINDOW_SIZE)
 
-        self.backtest = Backtest.Backtest(self.data)
+        self.backtest.set_data(self.data)
+        return True
 
     def run(self):
         state, reward, isDone, info = self.backtest.reset(utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.STARTING_BALANCE, utilities.BACKTEST_CANDLE_INTERVAL, utilities.MAX_POSITIONS)
@@ -41,5 +43,5 @@ class Agent:
 
 
 if __name__ == '__main__':
-    agent = Agent(['ADABTC', 'BNBBTC'])
-    agent.run()
+    agent = Agent()
+    if agent.set_data(['ADABTC', 'BNBBTC']): agent.run()

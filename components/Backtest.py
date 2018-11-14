@@ -15,8 +15,8 @@ def format_data(data_to_format, start_date, end_date, candle_minutes):
 
 class Backtest:
 
-    def __init__(self, original_data):
-        self.original_data = original_data.copy()
+    def __init__(self, original_data=None):
+        if not original_data is None: self.original_data = original_data.copy()
 
     def set_data(self, original_data):
         self.original_data = original_data.copy()
