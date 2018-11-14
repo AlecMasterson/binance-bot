@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.path.join(os.getcwd(), 'binance-bot'))
+sys.path.append(os.getcwd())
 import utilities
 
 
@@ -12,21 +12,19 @@ class Position:
         self.data['TIME_BUY'] = time_buy
         self.data['PRICE_BUY'] = price_buy
 
-    def test_sell(self, time_sell, cur_price):
-        result = cur_price / self.data['PRICE_BUY']
+    def test_sell(self, time_sell, price_sell):
+        result = price_sell / self.data['PRICE_BUY']
         self.data['TOTAL_REWARD'] = result
 
         if not self.data['ARMED'] and result > utilities.POSITION_ARM:
             self.data['ARMED'] = True
-            self.data['ARMED_PRICE'] = cur_price
+            self.data['ARMED_PRICE'] = price_sell
         elif not self.data['ARMED'] and result < utilities.POSITION_DROP:
-            self.sell(time_sell, cur_price)
-            return True
+            return self.sell(time_sell, price_sell)
         elif self.data['ARMED']:
-            self.data['ARMED_PRICE'] = max(self.data['ARMED_PRICE'], cur_price)
-            if cur_price / self.data['ARMED_PRICE'] < utilities.STOP_LOSS:
-                self.sell(time_sell, cur_price)
-                return True
+            self.data['ARMED_PRICE'] = max(self.data['ARMED_PRICE'], price_sell)
+            if price_sell / self.data['ARMED_PRICE'] < utilities.STOP_LOSS:
+                return self.sell(time_sell, price_sell)
         return False
 
     def sell(self, time_sell, price_sell):
@@ -34,3 +32,4 @@ class Position:
         self.data['TIME_SELL'] = time_sell
         self.data['PRICE_SELL'] = price_sell
         self.data['TOTAL_REWARD'] = self.data['PRICE_SELL'] / self.data['PRICE_BUY']
+        return True
