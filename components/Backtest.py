@@ -5,21 +5,22 @@ import utilities
 from Position import Position
 
 
+def format_data(self, format_data):
+    data = format_data.copy()
+    required_candles = (utilities.BACKTEST_END_DATE - utilities.BACKTEST_START_DATE).days * 24 * 60 / utilities.BACKTEST_CANDLE_INTERVAL + 1
+
+    data = data[data['OPEN_TIME'] >= utilities.BACKTEST_START_DATE.timestamp() * 1000.0]
+    data = data[data['OPEN_TIME'] <= utilities.BACKTEST_END_DATE.timestamp() * 1000.0]
+    data = data.sort_values(by=['OPEN_TIME']).reset_index(drop=True)
+    if len(self.data[key]) != required_candles: return None
+
+    return data
+
+
 class Backtest:
 
     def __init__(self, original_data):
         self.original_data = original_data.copy()
-
-    def set_data(self):
-        required_candles = (utilities.BACKTEST_END_DATE - utilities.BACKTEST_START_DATE).days * 24 * 60 / utilities.BACKTEST_CANDLE_INTERVAL + 1
-        for key in self.data:
-            self.data[key] = self.data[key][self.data[key]['OPEN_TIME'] >= utilities.BACKTEST_START_DATE.timestamp() * 1000.0]
-            self.data[key] = self.data[key][self.data[key]['OPEN_TIME'] <= utilities.BACKTEST_END_DATE.timestamp() * 1000.0]
-            self.data[key] = self.data[key].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
-            if len(self.data[key]) != required_candles:
-                print('Incorrect Num Candles for Coinpair \'{}\': {} Instead of {}'.format(key, len(self.data[key]), required_candles))
-                return False
-        return True
 
     def reset(self):
         self.data = self.original_data.copy()
