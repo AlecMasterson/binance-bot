@@ -1,14 +1,24 @@
-import sys, os, datetime, pandas
+import sys, os, datetime, pandas, collections
 sys.path.append(os.getcwd())
 import Position
 
 
-def format_data(data_to_format, start_date, end_date, candle_minutes):
+def add_future_potential(old_data, window_size):
+    data, window = old_data.copy(), collections.deque(maxlen=window_size)
+    for index, row in data.iterrows():
+        window.append(row['OPEN'])
+        if index >= window_size: data.at[index - window_size, 'FUTURE_POTENTIAL'] = max(window) / data.at[index - window_size, 'OPEN']
+    return data
+
+
+def format_data(data_to_format, start_date, end_date, candle_minutes, future_potential_window_size=None):
     data = data_to_format.copy()
     required_candles = (end_date - start_date).days * 24 * 60 / candle_minutes + 1
     interval_string = '{}h'.format(candle_minutes / 60) if candle_minutes > 30 else '{}m'.format(candle_minutes)
 
-    data = data[(data['INTERVAL'] == interval_string) & (data['OPEN_TIME'] >= start_date.timestamp() * 1000.0) & (data['OPEN_TIME'] <= end_date.timestamp() * 1000.0)].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
+    data = data[(data['INTERVAL'] == interval_string) & (data['OPEN_TIME'] >= start_date.timestamp() * 1000.0)].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
+    if not future_potential_window_size is None: data = add_future_potential(data, future_potential_window_size)
+    data = data[data['OPEN_TIME'] <= end_date.timestamp() * 1000.0].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
     if len(data) != required_candles: return None
     return data
 

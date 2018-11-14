@@ -1,8 +1,7 @@
-import sys, os
+import sys, os, collections
 sys.path.append(os.getcwd())
 sys.path.append(os.path.join(os.getcwd(), 'scripts'))
 import utilities, helpers, signals, Backtest
-from collections import deque
 
 
 class Agent:
@@ -16,11 +15,11 @@ class Agent:
         self.coinpairs = coinpairs
         for coinpair in self.coinpairs:
             temp_data = helpers.read_file('data/history/' + coinpair + '.csv')
-            temp_data = Backtest.format_data(temp_data, utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL)
+            temp_data = Backtest.format_data(temp_data, utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL, 24)
             if temp_data is None: return False
 
             self.data[coinpair] = temp_data
-            self.windows[coinpair] = deque(maxlen=utilities.WINDOW_SIZE)
+            self.windows[coinpair] = collections.deque(maxlen=utilities.WINDOW_SIZE)
 
         self.backtest.set_data(self.data)
         return True
