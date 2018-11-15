@@ -1,4 +1,4 @@
-import sys, os, collections
+import sys, os, collections, pandas
 sys.path.append(os.getcwd())
 sys.path.append(os.path.join(os.getcwd(), 'scripts'))
 import utilities, helpers, signals, Backtest
@@ -8,7 +8,8 @@ class Agent:
 
     data, windows = {}, {}
 
-    def __init__(self):
+    def __init__(self, export=False):
+        self.export = export
         self.backtest = Backtest.Backtest()
 
     def set_data(self, coinpairs):
@@ -29,7 +30,13 @@ class Agent:
         while not isDone:
             action = self.add_candle(state)
             state, reward, isDone, info = self.backtest.step(action)
-        print('Final Balance: {}\n'.format(reward['BALANCE']))
+        print('Final Balance: {}\nPotential Reward: {}\n'.format(reward['BALANCE'], reward['POTENTIAL']))
+
+        if self.export:
+            final_positions = pandas.DataFrame(columns=['OPEN', 'COINPAIR', 'BTC', 'TIME_BUY', 'PRICE_BUY', 'TIME_SELL', 'PRICE_SELL', 'HIGH', 'TOTAL_REWARD'])
+            for position in self.backtest.final_positions:
+                final_positions = final_positions.append(position.data, ignore_index=True)
+            final_positions.to_csv('data/plots/backtest_results.csv')
 
     def add_candle(self, state):
         action = {}
@@ -42,5 +49,5 @@ class Agent:
 
 
 if __name__ == '__main__':
-    agent = Agent()
+    agent = Agent(export=True)
     if agent.set_data(['ADABTC', 'BNBBTC']): agent.run()
