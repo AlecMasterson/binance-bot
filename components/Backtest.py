@@ -38,7 +38,7 @@ class Backtest:
         self.final_positions, self.all_positions = [], []
         self.candle_minutes, self.max_positions = candle_minutes, max_positions
 
-        self.reward, self.info = {'BALANCE': starting_balance}, {}
+        self.reward, self.info = {'BALANCE': starting_balance, 'POTENTIAL': 0.0}, {}
         return self.current_state()
 
     def current_state(self):
@@ -56,19 +56,23 @@ class Backtest:
         return self.epoch, self.reward, isDone, self.info
 
     def step(self, action):
+        candles = {}
+        for key in self.data:
+            candles[key] = self.data[key][:1].to_dict(orient='records')[0]
+
         for position in [all_position for all_position in self.all_positions if all_position.data['OPEN']]:
-            candle = self.data[position.data['COINPAIR']][:1].to_dict(orient='records')[0]
-            if position.test_sell(candle['OPEN_TIME'], candle['OPEN']):
+            if position.test_sell(candles[position.data['COINPAIR']]['OPEN_TIME'], candles[position.data['COINPAIR']]['OPEN']):
                 self.reward['BALANCE'] += position.data['BTC'] * position.data['TOTAL_REWARD']
                 self.final_positions.append(position)
 
-        for key in [k for k in action if action[k] == True]:
-            if len(self.all_positions) >= self.max_positions or self.reward['BALANCE'] <= 0.0: continue
+        for key in action:
+            if not action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] -= candles[key]['FUTURE_POTENTIAL']
+            if action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] += candles[key]['FUTURE_POTENTIAL']
 
-            candle = self.data[key][:1].to_dict(orient='records')[0]
-            new_position = Position.Position(key, self.reward['BALANCE'] / (self.max_positions - len(self.all_positions)), candle['OPEN_TIME'], candle['OPEN'])
-            self.reward['BALANCE'] -= new_position.data['BTC']
-            self.all_positions.append(new_position)
+            if action[key] and len(self.all_positions) < self.max_positions and self.reward['BALANCE'] > 0.0:
+                new_position = Position.Position(key, self.reward['BALANCE'] / (self.max_positions - len(self.all_positions)), candles[key]['OPEN_TIME'], candles[key]['OPEN'])
+                self.reward['BALANCE'] -= new_position.data['BTC']
+                self.all_positions.append(new_position)
 
         self.cur_datetime += datetime.timedelta(minutes=self.candle_minutes)
         return self.current_state()
