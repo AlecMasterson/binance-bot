@@ -51,10 +51,10 @@ STARTING_BALANCE = 0.5        # The starting BTC in wallet.
 WINDOW_SIZE = 24        # Sliding window size for coinpair candle history.
 
 # Position Arming Concept
-MAX_POSITIONS = 4        # Max number of open positions to hold.
-POSITION_ARM = 1.02        # Percent gain where Position is armed to sell.
-STOP_LOSS = 0.995        # If armed, percent drop from the max price.
-POSITION_DROP = 0.99        # Percent drop from buy price.
+MAX_POSITIONS = 3        # Max number of open positions allowed to hold.
+MIN_GAIN = 1.01        # Minimum percent profit before allowing to sell.
+STOP_LOSS = 0.995        # Once MIN_GAIN reached, smallest percent loss allowed before forcing a sell.
+POSITION_DROP = 0.97        # Smallest percent loss allowed before forcing a sell.
 
 ORDER_TIME_LIMIT = 11        # How long a Binance order should be live before manually cancelling.
 

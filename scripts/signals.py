@@ -7,6 +7,17 @@ def rsi(data):
     return False
 
 
+def rsi_2(data):
+    smallest_rsi = min([row['RSI'] for row in data])
+    if smallest_rsi < 28.0 and data[-1]['RSI'] > 30.0: return True
+    return False
+
+
+def cheating(data):
+    if data[-1]['FUTURE_POTENTIAL'] > 1.02: return True
+    return False
+
+
 def lowerband(data):
     if float(data[-1]['CLOSE']) < float(data[-1]['LOWERBAND']): return True
     return False
