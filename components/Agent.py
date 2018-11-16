@@ -35,10 +35,12 @@ class Agent:
         if self.plot:
             for key in self.data:
                 plotting = Plot.Plot(self.data[key])
-                plotting.add_figure_rsi()
+                plotting.add_figure_future_potential()
+
                 for position in info['FINAL_POSITIONS']:
                     plotting.add_position(position.data)
                 plotting.add_figure_positions()
+
                 plotting.plot()
 
     def add_candle(self, state):
