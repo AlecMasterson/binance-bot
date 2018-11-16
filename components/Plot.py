@@ -5,8 +5,8 @@ import plotly.offline as py
 
 class Plot:
 
-    def __init__(self, data=None):
-        self.figures, self.positions = [], []
+    def __init__(self, name, data=None):
+        self.name, self.figures, self.positions = name, [], []
         if not data is None: self.set_data(data)
 
     def set_data(self, data):
@@ -48,4 +48,4 @@ class Plot:
             fig.append_trace(figure['fig'], figure['row'], 1)
 
         fig['layout'].update(title='Plot', showlegend=False, xaxis=dict(title='Date', rangeslider=dict(visible=False)))
-        py.plot(fig, filename=os.getcwd() + '/data/plots/plot.html')
+        py.plot(fig, filename=os.getcwd() + '/data/plots/' + self.name + '.html')

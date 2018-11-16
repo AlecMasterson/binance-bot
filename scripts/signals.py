@@ -13,6 +13,11 @@ def rsi_2(data):
     return False
 
 
+def cheating(data):
+    if data[-1]['FUTURE_POTENTIAL'] > 1.02: return True
+    return False
+
+
 def lowerband(data):
     if float(data[-1]['CLOSE']) < float(data[-1]['LOWERBAND']): return True
     return False

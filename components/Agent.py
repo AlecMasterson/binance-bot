@@ -1,4 +1,4 @@
-import sys, os, collections, pandas
+import sys, os, collections, pandas, argparse
 sys.path.append(os.getcwd())
 sys.path.append(os.path.join(os.getcwd(), 'scripts'))
 import utilities, helpers, signals, Backtest, Plot
@@ -28,31 +28,41 @@ class Agent:
     def run(self):
         state, reward, isDone, info = self.backtest.reset(utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.STARTING_BALANCE, utilities.BACKTEST_CANDLE_INTERVAL, utilities.MAX_POSITIONS)
         while not isDone:
-            action = self.add_candle(state)
+            action = self.act(state)
             state, reward, isDone, info = self.backtest.step(action)
         print('Final Balance: {}\nPotential Reward: {}\n'.format(reward['BALANCE'], reward['POTENTIAL']))
 
-        if self.plot:
-            for key in self.data:
-                plotting = Plot.Plot(self.data[key])
-                plotting.add_figure_future_potential()
+        if self.plot: self.plotting(info)
 
-                for position in info['FINAL_POSITIONS']:
-                    plotting.add_position(position.data)
-                plotting.add_figure_positions()
-
-                plotting.plot()
-
-    def add_candle(self, state):
+    def act(self, state):
         action = {}
         for key in state:
             self.windows[key].append(state[key])
             if len(self.windows[key]) != utilities.WINDOW_SIZE: action[key] = False
-            elif signals.rsi_2(self.windows[key]): action[key] = True
+            elif self.brain(self.windows[key]): action[key] = True
             else: action[key] = False
         return action
 
+    def brain(self, data):
+        return signals.cheating(data)
+
+    def plotting(self, info):
+        for key in self.data:
+            plotting = Plot.Plot(key, self.data[key])
+            plotting.add_figure_future_potential()
+
+            for position in [position for position in info['FINAL_POSITIONS'] if position.data['COINPAIR'] == key]:
+                plotting.add_position(position.data)
+            plotting.add_figure_positions()
+
+            plotting.plot()
+
 
 if __name__ == '__main__':
-    agent = Agent(plot=True)
-    if agent.set_data(['BNBBTC']): agent.run()
+    parser = argparse.ArgumentParser(description='Used for Testing an Agent')
+    parser.add_argument('-c', '--coinpairs', help='a list of coinpairs to backtest', type=str, nargs='+', dest='coinpairs', required=True)
+    parser.add_argument('-p', '--plot', help='used if you want to plot the results', action='store_true', required=False)
+    args = parser.parse_args()
+
+    agent = Agent(plot=args.plot)
+    if agent.set_data(args.coinpairs): agent.run()
