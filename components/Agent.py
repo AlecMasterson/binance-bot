@@ -1,15 +1,15 @@
 import sys, os, collections, pandas
 sys.path.append(os.getcwd())
 sys.path.append(os.path.join(os.getcwd(), 'scripts'))
-import utilities, helpers, signals, Backtest
+import utilities, helpers, signals, Backtest, Plot
 
 
 class Agent:
 
     data, windows = {}, {}
 
-    def __init__(self, export=False):
-        self.export = export
+    def __init__(self, plot=False):
+        self.plot = plot
         self.backtest = Backtest.Backtest()
 
     def set_data(self, coinpairs):
@@ -32,22 +32,25 @@ class Agent:
             state, reward, isDone, info = self.backtest.step(action)
         print('Final Balance: {}\nPotential Reward: {}\n'.format(reward['BALANCE'], reward['POTENTIAL']))
 
-        if self.export:
-            final_positions = pandas.DataFrame(columns=['OPEN', 'COINPAIR', 'BTC', 'TIME_BUY', 'PRICE_BUY', 'TIME_SELL', 'PRICE_SELL', 'HIGH', 'TOTAL_REWARD'])
-            for position in self.backtest.final_positions:
-                final_positions = final_positions.append(position.data, ignore_index=True)
-            final_positions.to_csv('data/plots/backtest_results.csv')
+        if self.plot:
+            for key in self.data:
+                plotting = Plot.Plot(self.data[key])
+                plotting.add_figure_rsi()
+                for position in info['FINAL_POSITIONS']:
+                    plotting.add_position(position.data)
+                plotting.add_figure_positions()
+                plotting.plot()
 
     def add_candle(self, state):
         action = {}
         for key in state:
             self.windows[key].append(state[key])
             if len(self.windows[key]) != utilities.WINDOW_SIZE: action[key] = False
-            elif signals.rsi(self.windows[key]): action[key] = True
+            elif signals.rsi_2(self.windows[key]): action[key] = True
             else: action[key] = False
         return action
 
 
 if __name__ == '__main__':
-    agent = Agent(export=True)
-    if agent.set_data(['ADABTC', 'BNBBTC']): agent.run()
+    agent = Agent(plot=True)
+    if agent.set_data(['BNBBTC']): agent.run()

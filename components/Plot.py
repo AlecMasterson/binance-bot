@@ -33,8 +33,8 @@ class Plot:
         self.positions.append(position)
 
     def add_figure_positions(self):
-        self.figures.append({'row': 1, 'fig': go.Scatter(name='Buy Marker', mode='markers', marker=dict(size=8), x=[pandas.to_datetime(position['TIME_BUY'], unit='ms') for position in self.positions], y=[position['PRICE_BUY'] for position in self.positions])})
-        self.figures.append({'row': 1, 'fig': go.Scatter(name='Sell Marker', mode='markers', marker=dict(size=8), x=[pandas.to_datetime(position['TIME_SELL'], unit='ms') for position in self.positions], y=[position['PRICE_SELL'] for position in self.positions])})
+        self.figures.append({'row': 1, 'fig': go.Scatter(name='Buy Marker', mode='markers', marker=dict(size=9), x=[pandas.to_datetime(position['TIME_BUY'], unit='ms') for position in self.positions], y=[position['PRICE_BUY'] for position in self.positions])})
+        self.figures.append({'row': 1, 'fig': go.Scatter(name='Sell Marker', mode='markers', marker=dict(size=9), x=[pandas.to_datetime(position['TIME_SELL'], unit='ms') for position in self.positions], y=[position['PRICE_SELL'] for position in self.positions])})
 
     def plot(self):
         num_rows = max(figure['row'] for figure in self.figures)
