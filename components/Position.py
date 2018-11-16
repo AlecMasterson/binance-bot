@@ -12,7 +12,7 @@ class Position:
         self.data['HIGH'] = max(self.data['HIGH'], price_sell)
         self.data['TOTAL_REWARD'] = price_sell / self.data['PRICE_BUY']
 
-        if self.data['TOTAL_REWARD'] < utilities.POSITION_DROP or price_sell / self.data['HIGH'] < utilities.STOP_LOSS:
+        if self.data['TOTAL_REWARD'] < utilities.POSITION_DROP or (self.data['HIGH'] / self.data['PRICE_BUY'] > utilities.MIN_GAIN and price_sell / self.data['HIGH'] < utilities.STOP_LOSS):
             self.sell(time_sell, price_sell)
             return True
         return False
