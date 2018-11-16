@@ -70,9 +70,8 @@ class Backtest:
             if action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] += candles[key]['FUTURE_POTENTIAL']
 
             if action[key] and len(self.info['OPEN_POSITIONS']) < self.max_positions and self.reward['BALANCE'] > 0.0:
-                new_position = Position.Position(key, self.reward['BALANCE'] / (self.max_positions - len(self.info['OPEN_POSITIONS'])), candles[key]['OPEN_TIME'], candles[key]['OPEN'])
-                self.reward['BALANCE'] -= new_position.data['BTC']
-                self.info['OPEN_POSITIONS'].append(new_position)
+                self.info['OPEN_POSITIONS'].append(Position.Position(key, self.reward['BALANCE'] / (self.max_positions - len(self.info['OPEN_POSITIONS'])), candles[key]['OPEN_TIME'], candles[key]['OPEN']))
+                self.reward['BALANCE'] -= self.info['OPEN_POSITIONS'][-1].data['BTC']
 
         self.cur_datetime += datetime.timedelta(minutes=self.candle_minutes)
         return self.current_state()
