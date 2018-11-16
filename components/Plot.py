@@ -29,6 +29,11 @@ class Plot:
         self.figures.append({'row': num_rows + 1, 'fig': go.Scatter(name='RSI-80', x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in self.data.iterrows()], y=[80.0 for index, row in self.data.iterrows()])})
         self.figures.append({'row': num_rows + 1, 'fig': go.Scatter(name='RSI-20', x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in self.data.iterrows()], y=[20.0 for index, row in self.data.iterrows()])})
 
+    def add_figure_future_potential(self):
+        num_rows = max(figure['row'] for figure in self.figures)
+        self.figures.append({'row': num_rows + 1, 'fig': go.Scatter(name='Future-Potential', x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in self.data.iterrows()], y=[row['FUTURE_POTENTIAL'] for index, row in self.data.iterrows()])})
+        self.figures.append({'row': num_rows + 1, 'fig': go.Scatter(name='Future-Potential-1.0', x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in self.data.iterrows()], y=[1.0 for index, row in self.data.iterrows()])})
+
     def add_position(self, position):
         self.positions.append(position)
 
