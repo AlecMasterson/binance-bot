@@ -1,6 +1,4 @@
-import sys, os, datetime, pandas, collections
-sys.path.append(os.getcwd())
-import Position
+import datetime, pandas, collections, Position
 
 
 def add_future_potential(old_data, window_size):
@@ -35,10 +33,9 @@ class Backtest:
         self.data = self.original_data.copy()
 
         self.cur_datetime, self.end_datetime = start_date, end_date
-        self.final_positions, self.all_positions = [], []
         self.candle_minutes, self.max_positions = candle_minutes, max_positions
 
-        self.reward, self.info = {'BALANCE': starting_balance, 'POTENTIAL': 0.0}, {}
+        self.reward, self.info = {'BALANCE': starting_balance, 'POTENTIAL': 0.0}, {'OPEN_POSITIONS': [], 'FINAL_POSITIONS': []}
         return self.current_state()
 
     def current_state(self):
@@ -49,8 +46,10 @@ class Backtest:
 
         isDone = False
         if self.cur_datetime == self.end_datetime:
-            for position in self.all_positions:
+            for position in [position for position in self.info['OPEN_POSITIONS']]:
                 self.reward['BALANCE'] += position.data['BTC'] * position.data['TOTAL_REWARD']
+                self.info['FINAL_POSITIONS'].append(position)
+                self.info['OPEN_POSITIONS'] = [i for i in self.info['OPEN_POSITIONS'] if not position is i]
             isDone = True
 
         return self.epoch, self.reward, isDone, self.info
@@ -60,19 +59,20 @@ class Backtest:
         for key in self.data:
             candles[key] = self.data[key][:1].to_dict(orient='records')[0]
 
-        for position in [all_position for all_position in self.all_positions if all_position.data['OPEN']]:
+        for position in [position for position in self.info['OPEN_POSITIONS']]:
             if position.test_sell(candles[position.data['COINPAIR']]['OPEN_TIME'], candles[position.data['COINPAIR']]['OPEN']):
                 self.reward['BALANCE'] += position.data['BTC'] * position.data['TOTAL_REWARD']
-                self.final_positions.append(position)
+                self.info['FINAL_POSITIONS'].append(position)
+                self.info['OPEN_POSITIONS'] = [i for i in self.info['OPEN_POSITIONS'] if not position is i]
 
         for key in action:
             if not action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] -= candles[key]['FUTURE_POTENTIAL']
             if action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] += candles[key]['FUTURE_POTENTIAL']
 
-            if action[key] and len(self.all_positions) < self.max_positions and self.reward['BALANCE'] > 0.0:
-                new_position = Position.Position(key, self.reward['BALANCE'] / (self.max_positions - len(self.all_positions)), candles[key]['OPEN_TIME'], candles[key]['OPEN'])
+            if action[key] and len(self.info['OPEN_POSITIONS']) < self.max_positions and self.reward['BALANCE'] > 0.0:
+                new_position = Position.Position(key, self.reward['BALANCE'] / (self.max_positions - len(self.info['OPEN_POSITIONS'])), candles[key]['OPEN_TIME'], candles[key]['OPEN'])
                 self.reward['BALANCE'] -= new_position.data['BTC']
-                self.all_positions.append(new_position)
+                self.info['OPEN_POSITIONS'].append(new_position)
 
         self.cur_datetime += datetime.timedelta(minutes=self.candle_minutes)
         return self.current_state()
