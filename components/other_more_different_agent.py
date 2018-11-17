@@ -15,21 +15,27 @@ from tensorforce.agents import DQNAgent
 class Agent:
 
     windows = {}
-    i = 0
     window_length = 10
     coinpairs = []
-    balance = utilities.STARTING_BALANCE
     a_counts = []
-    caw = []
 
     def __init__(self, coinpairs):
+        """Initializes Agent brain
+        
+        Args:
+            coinpairs ([string]): coinpair strings
+        """
+
         self.coinpairs = coinpairs
         self.reset()
 
+        # Loads brain settings and network config from files
         with open('binance-bot/agents/tf_configs/ppo.json', 'r') as fp:
             agent_config = json.load(fp=fp)
         with open('binance-bot/agents/tf_configs/dqn_relu_network.json', 'r') as fp:
             network_spec = json.load(fp=fp)
+
+        # Creates brain from loaded configs and specifies I/O as state/actions
         self.brain = tf_agent.from_spec(
             spec=agent_config,
             kwargs={
@@ -46,14 +52,21 @@ class Agent:
         )
 
     def reset(self):
-        self.i = 0
+        """Resets the agent for a new episode... basically just forgets the windows right now
+        """
+
         for coinpair in self.coinpairs:
             self.windows[coinpair] = deque(maxlen=self.window_length)
         self.a_counts = [0 for c in range(len(self.coinpairs) + 1)]
-        self.caw = [0 for c in range(len(self.coinpairs) + 1)]
 
     def remember(self, data):
-        if self.i == 1:        #fine dining and breathing
+        """Takes the data for the new epoch and stores it
+        
+        Args:
+            data ({dataframes}): candle info
+        """
+
+        if len(self.windows[self.coinpairs[0]]) == 0:        #fine dining and breathing
             for _ in range(self.window_length + 1):
                 for k in data:
                     if k != 'BALANCE':
@@ -63,31 +76,68 @@ class Agent:
                 self.windows[k].append(data[k])
 
     def consider(self):
+        """Transforms the windows into data that would fit into the brain's expected state format
+        
+        Returns:
+            [floats]: all the more number-y values in the candles (raw for now)
+        """
+
         return [d[n] for k in self.windows for d in self.windows[k] for n in d if n not in ('INTERVAL', 'OPEN_TIME', 'IGNORE')]
 
     def act(self, state):
-        self.i += 1
+        """ Given a state, return an action
+        
+        Args:
+            state (dict{dataframes}): candle info
+        
+        Returns:
+            {bool}: A dict with {coinpair: bool} for whether to buy
+        """
+
         self.remember(state)
         # print(self.consider(), len(self.consider()))
         action = self.brain.act(self.consider())
+        self.a_counts[action] += 1
         actions = [False] * len(self.coinpairs)
-        try:
+        try:        # if the action maps to one of the coinpairs' index then mark it as true, else hold
             actions[action] = True
         except:
             pass
         actions = self.map_actions(actions)
-        self.a_counts[action] += 1
-        # print('old balance: {:>10.3} | new balance: {:>10.3} | reward: {:>10.3}'.format(self.balance, data['BALANCE'], reward))
         return actions
 
     def act_random(self):
-        return np.random.choice([True, False], 3, p=[0.001, 0.999]).tolist()
+        """Like the brain.act but does so randomly with a 1/1000 chance of buying
+        
+        Returns:
+            [bool]: action bools
+        """
+
+        return np.random.choice([True, False], len(self.coinpairs), p=[0.001, 0.999]).tolist()
 
     def map_actions(self, actions):
-        return dict(zip([k for k in self.windows], actions))
+        """Combines the coinpairs to the actions the agent has creates by index resulting in {self.coinpairs[0]: actions[0], and so on}
+        
+        Args:
+            actions ([bools]): list of actions from brain or random
+        
+        Returns:
+            {coinpair: action}: the zipped together coinpairs and their actions
+        """
+
+        return dict(zip(self.coinpairs, actions))
 
 
 def prep_data(coinpairs):
+    """loads data from files... basically helper magic
+    
+    Args:
+        coinpairs ([str]): coinpairs
+    
+    Returns:
+        {dataframe}: dict of dataframes for coinpairs
+    """
+
     data = {}
     for coinpair in coinpairs:
         temp_data = helpers.read_file('data/history/' + coinpair + '.csv')
@@ -97,35 +147,48 @@ def prep_data(coinpairs):
 
 
 if __name__ == '__main__':
-    reward_history = deque([0] * 10000, maxlen=10000)
 
+    ### Agent/Env initialization ###
     coinpairs = ['ADABTC']
     data = prep_data(coinpairs)
     print(list(data['ADABTC'].columns.values))
     env = Backtest.Backtest(data, utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL, utilities.STARTING_BALANCE, utilities.MAX_POSITIONS, 24)
     agent = Agent(coinpairs)
 
-    for x in range(1, 1000 + 1):
+    ### Training metrics ###
+    ## global metrics ##
+    episode_history = deque(maxlen=100)
+    steps = 0
+    ## episode metrics ##
+    g_rewards = []
+    g_actions = []
+    g_balances = []
 
+    ### Training loop ###
+    for x in range(1, 10000 + 1):
+
+        ## reset ##
         done = False
         state, response, done, _ = env.reset()
         agent.reset()
-        i = 0
+        ep_rewards = []
+
+        ## episode loop ##
         while not done:
-            i += 1
-            # print(x, i, response)
+            steps += 1
             actions = agent.act(state)
             state, response, done, _ = env.step(actions)
             reward = response['POTENTIAL']
+            ep_rewards += [reward]
             if not done:
                 agent.brain.observe(reward=reward, terminal=False)
-
         agent.brain.observe(reward=reward, terminal=True)
-        reward_history.append(reward)
-        print(
-            'epoch:{:>5} | balance: {:>10.5} | reward: {:>10.5} | avgn reward: {:>10.5} | actions: {}'.format(
-                x, response['BALANCE'], reward,
-                sum(reward_history) / reward_history.maxlen, agent.a_counts
-            )
-        )
-        
+
+        g_rewards += [np.sum(ep_rewards)]
+        g_actions += [agent.a_counts]
+        g_balances += [response['BALANCE']]
+
+        print('episode report #:{:>5} | balance:{:>10.5} | reward:{:>20.5} | actions:{}'.format(x, g_balances[-1], g_rewards[-1], g_actions[-1]))
+
+        if x % 10 == 0:
+            print('training report | steps:{:>10} | avgn balance:{:>10.5} | avgn reward:{:>20.5}'.format(steps, np.mean(g_balances[-10:]), np.mean(g_rewards[-10:])))
