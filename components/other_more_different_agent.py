@@ -12,8 +12,6 @@ from tensorforce.agents import Agent as tf_agent
 from tensorforce.agents import DQNAgent
 
 
-weird_data_prep_args = (utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL, 24)
-
 class Agent:
 
     windows = {}
@@ -37,7 +35,7 @@ class Agent:
             kwargs={
                 'states': {
                     'type': 'float',
-                    'shape': (len(self.coinpairs) * self.window_length * 19,)
+                    'shape': (len(self.coinpairs) * self.window_length * 17,)
                 },
                 'actions': {
                     'type': 'int',
@@ -65,7 +63,7 @@ class Agent:
                 self.windows[k].append(data[k])
 
     def consider(self):
-        return [d[n] for k in self.windows for d in self.windows[k] for n in d if n != 'INTERVAL']
+        return [d[n] for k in self.windows for d in self.windows[k] for n in d if n not in ('INTERVAL', 'OPEN_TIME', 'IGNORE')]
 
     def act(self, state):
         self.i += 1
@@ -93,35 +91,36 @@ def prep_data(coinpairs):
     data = {}
     for coinpair in coinpairs:
         temp_data = helpers.read_file('data/history/' + coinpair + '.csv')
-        temp_data = Backtest.format_data(temp_data, *weird_data_prep_args)
         if temp_data is None: return False
         data[coinpair] = temp_data
     return data
 
 
 if __name__ == '__main__':
-    reward_history = deque([0] * 10, maxlen=10)
+    reward_history = deque([0] * 10000, maxlen=10000)
 
     coinpairs = ['ADABTC']
-
-    env = Backtest.Backtest(prep_data(coinpairs))
+    data = prep_data(coinpairs)
+    print(list(data['ADABTC'].columns.values))
+    env = Backtest.Backtest(data, utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL, utilities.STARTING_BALANCE, utilities.MAX_POSITIONS, 24)
     agent = Agent(coinpairs)
 
     for x in range(1, 1000 + 1):
 
         done = False
-        state, response, done, _ = env.reset(*weird_data_prep_args, utilities.MAX_POSITIONS)
+        state, response, done, _ = env.reset()
         agent.reset()
         i = 0
         while not done:
-            i+=1
-            print(x, i)
+            i += 1
+            # print(x, i, response)
             actions = agent.act(state)
             state, response, done, _ = env.step(actions)
+            reward = response['POTENTIAL']
             if not done:
-                agent.brain.observe(reward=0, terminal=False)
+                agent.brain.observe(reward=reward, terminal=False)
 
-        reward = (response['BALANCE'] - utilities.STARTING_BALANCE)
+        agent.brain.observe(reward=reward, terminal=True)
         reward_history.append(reward)
         print(
             'epoch:{:>5} | balance: {:>10.5} | reward: {:>10.5} | avgn reward: {:>10.5} | actions: {}'.format(
@@ -129,4 +128,4 @@ if __name__ == '__main__':
                 sum(reward_history) / reward_history.maxlen, agent.a_counts
             )
         )
-        agent.brain.observe(reward=reward, terminal=True)
+        
