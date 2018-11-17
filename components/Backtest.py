@@ -14,6 +14,7 @@ def format_data(data_to_format, start_date, end_date, candle_minutes, future_pot
     required_candles = (end_date - start_date).days * 24 * 60 / candle_minutes + 1
     interval_string = '{}h'.format(candle_minutes / 60) if candle_minutes > 30 else '{}m'.format(candle_minutes)
 
+    data.drop(columns=['QUOTE_ASSET_VOLUME', 'NUMBER_TRADES', 'TAKER_BASE_ASSET_VOLUME', 'TAKER_QUOTE_ASSET_VOLUME', 'IGNORE'])
     data = data[(data['INTERVAL'] == interval_string) & (data['OPEN_TIME'] >= start_date.timestamp() * 1000.0)].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
     if not future_potential_window_size is None: data = add_future_potential(data, future_potential_window_size)
     data = data[data['OPEN_TIME'] <= end_date.timestamp() * 1000.0].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
@@ -66,10 +67,10 @@ class Backtest:
                 self.info['OPEN_POSITIONS'] = [i for i in self.info['OPEN_POSITIONS'] if not position is i]
 
         for key in action:
-            if not action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] -= candles[key]['FUTURE_POTENTIAL']
-            if action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] += candles[key]['FUTURE_POTENTIAL']
-
             if action[key] and len(self.info['OPEN_POSITIONS']) < self.max_positions and self.reward['BALANCE'] > 0.0:
+                if not action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] -= candles[key]['FUTURE_POTENTIAL']
+                if action[key] and 'FUTURE_POTENTIAL' in candles[key]: self.reward['POTENTIAL'] += candles[key]['FUTURE_POTENTIAL']
+
                 self.info['OPEN_POSITIONS'].append(Position.Position(key, self.reward['BALANCE'] / (self.max_positions - len(self.info['OPEN_POSITIONS'])), candles[key]['OPEN_TIME'], candles[key]['OPEN']))
                 self.reward['BALANCE'] -= self.info['OPEN_POSITIONS'][-1].data['BTC']
 
