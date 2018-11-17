@@ -8,25 +8,17 @@ class Agent:
 
     data, windows = {}, {}
 
-    def __init__(self, plot=False):
-        self.plot = plot
-        self.backtest = Backtest.Backtest()
+    def __init__(self, coinpairs, plot):
+        self.coinpairs, self.plot = coinpairs, plot
 
-    def set_data(self, coinpairs):
-        self.coinpairs = coinpairs
         for coinpair in self.coinpairs:
-            temp_data = helpers.read_file('data/history/' + coinpair + '.csv')
-            temp_data = Backtest.format_data(temp_data, utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL, 24)
-            if temp_data is None: return False
-
-            self.data[coinpair] = temp_data
+            self.data[coinpair] = helpers.read_file('data/history/' + coinpair + '.csv')
             self.windows[coinpair] = collections.deque(maxlen=utilities.WINDOW_SIZE)
 
-        self.backtest.set_data(self.data)
-        return True
+        self.backtest = Backtest.Backtest(self.data, utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.BACKTEST_CANDLE_INTERVAL, utilities.STARTING_BALANCE, utilities.MAX_POSITIONS, 24)
 
     def run(self):
-        state, reward, isDone, info = self.backtest.reset(utilities.BACKTEST_START_DATE, utilities.BACKTEST_END_DATE, utilities.STARTING_BALANCE, utilities.BACKTEST_CANDLE_INTERVAL, utilities.MAX_POSITIONS)
+        state, reward, isDone, info = self.backtest.reset()
         while not isDone:
             action = self.act(state)
             state, reward, isDone, info = self.backtest.step(action)
@@ -50,6 +42,8 @@ class Agent:
         for key in self.data:
             plotting = Plot.Plot(key, self.data[key])
             plotting.add_figure_future_potential()
+            plotting.add_figure_rsi()
+            plotting.add_figure_macd_diff()
 
             for position in [position for position in info['FINAL_POSITIONS'] if position.data['COINPAIR'] == key]:
                 plotting.add_position(position.data)
@@ -64,5 +58,5 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--plot', help='used if you want to plot the results', action='store_true', required=False)
     args = parser.parse_args()
 
-    agent = Agent(plot=args.plot)
-    if agent.set_data(args.coinpairs): agent.run()
+    agent = Agent(args.coinpairs, args.plot)
+    agent.run()
