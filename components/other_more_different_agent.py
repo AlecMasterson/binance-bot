@@ -7,6 +7,7 @@ sys.path.append(os.path.join(os.getcwd(), 'binance-bot', 'components'))
 sys.path.append(os.path.join(os.getcwd(), 'binance-bot', 'agents'))
 import utilities, helpers, signals, Backtest, Plot
 
+from termcolor import colored
 import numpy as np
 from tensorforce.agents import Agent as tf_agent
 from tensorforce.agents import DQNAgent
@@ -188,7 +189,9 @@ if __name__ == '__main__':
         g_actions += [agent.a_counts]
         g_balances += [response['BALANCE']]
 
-        print('episode report #:{:>5} | balance:{:>10.5} | reward:{:>20.5} | actions:{}'.format(x, g_balances[-1], g_rewards[-1], g_actions[-1]))
+        color = 'green' if g_balances[-1] > 1 else 'red'
+        print(colored('episode report #:{:>10} | balance:{:>10.5} | reward:{:>15.10} | actions: {}'.format(x, g_balances[-1], g_rewards[-1], g_actions[-1]), color))
 
         if x % 10 == 0:
-            print('training report | steps:{:>10} | avgn balance:{:>10.5} | avgn reward:{:>20.5}'.format(steps, np.mean(g_balances[-10:]), np.mean(g_rewards[-10:])))
+            color = 'green' if np.mean(g_balances[-10:]) > 1 else 'red'
+            print(colored('training report | steps:{:>15} | avgn balance:{:>10.5} | avgn reward:{:>15.10}'.format(steps, np.mean(g_balances[-10:]), np.mean(g_rewards[-10:])), color))
