@@ -33,13 +33,14 @@ class Plot:
         num_rows = max(figure['row'] for figure in self.figures)
         self.figures.append({'row': num_rows + 1, 'fig': go.Scatter(name='Future-Potential', x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in self.data.iterrows()], y=[row['FUTURE_POTENTIAL'] for index, row in self.data.iterrows()])})
         self.figures.append({'row': num_rows + 1, 'fig': go.Scatter(name='Future-Potential-1.0', x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in self.data.iterrows()], y=[1.0 for index, row in self.data.iterrows()])})
+        self.figures.append({'row': num_rows + 1, 'fig': go.Scatter(name='Future-Potential-1.01', x=[pandas.to_datetime(row['OPEN_TIME'], unit='ms') for index, row in self.data.iterrows()], y=[1.01 for index, row in self.data.iterrows()])})
 
     def add_position(self, position):
         self.positions.append(position)
 
     def add_figure_positions(self):
-        self.figures.append({'row': 1, 'fig': go.Scatter(name='Buy Marker', mode='markers', marker=dict(size=9), x=[pandas.to_datetime(position['TIME_BUY'], unit='ms') for position in self.positions], y=[position['PRICE_BUY'] for position in self.positions])})
-        self.figures.append({'row': 1, 'fig': go.Scatter(name='Sell Marker', mode='markers', marker=dict(size=9), x=[pandas.to_datetime(position['TIME_SELL'], unit='ms') for position in self.positions], y=[position['PRICE_SELL'] for position in self.positions])})
+        self.figures.append({'row': 1, 'fig': go.Scatter(name='Buy Marker', mode='markers', marker=dict(size=9, color='orange'), x=[pandas.to_datetime(position['TIME_BUY'], unit='ms') for position in self.positions], y=[position['PRICE_BUY'] for position in self.positions])})
+        self.figures.append({'row': 1, 'fig': go.Scatter(name='Sell Marker', mode='markers', marker=dict(size=9, color='blue'), x=[pandas.to_datetime(position['TIME_SELL'], unit='ms') for position in self.positions], y=[position['PRICE_SELL'] for position in self.positions])})
 
     def plot(self):
         num_rows = max(figure['row'] for figure in self.figures)
