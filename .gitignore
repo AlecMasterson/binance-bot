@@ -3,7 +3,6 @@
 *.csv
 *.log
 *.html
-*.json
 app/dist/
 app/**/node_modules/
 !app/**/*.html
@@ -13,3 +12,4 @@ TBlogs/
 .sync
 .ipynb_checkpoints
 __pycache__
+.vscode
