@@ -9,34 +9,36 @@ def add_future_potential(old_data, window_size):
     return data
 
 
-def format_data(data_to_format, start_date, end_date, candle_minutes, future_potential_window_size=None):
+def format_data(data_to_format, start_date, end_date, candle_minutes, future_window_size):
     data = data_to_format.copy()
     required_candles = (end_date - start_date).days * 24 * 60 / candle_minutes + 1
     interval_string = '{}h'.format(candle_minutes / 60) if candle_minutes > 30 else '{}m'.format(candle_minutes)
 
     data.drop(columns=['QUOTE_ASSET_VOLUME', 'NUMBER_TRADES', 'TAKER_BASE_ASSET_VOLUME', 'TAKER_QUOTE_ASSET_VOLUME', 'IGNORE'])
     data = data[(data['INTERVAL'] == interval_string) & (data['OPEN_TIME'] >= start_date.timestamp() * 1000.0)].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
-    if not future_potential_window_size is None: data = add_future_potential(data, future_potential_window_size)
+    data = add_future_potential(data, future_window_size)
     data = data[data['OPEN_TIME'] <= end_date.timestamp() * 1000.0].sort_values(by=['OPEN_TIME']).reset_index(drop=True)
+
     if len(data) != required_candles: return None
     return data
 
 
 class Backtest:
 
-    def __init__(self, original_data=None):
-        if not original_data is None: self.original_data = original_data.copy()
+    def __init__(self, original_data, start_date, end_date, candle_minutes, starting_balance, max_positions, future_window_size):
+        self.start_date, self.end_date, self.candle_minutes, self.starting_balance = start_date, end_date, candle_minutes, starting_balance
+        self.max_positions, self.future_window_size = max_positions, future_window_size
+        self.set_data(original_data)
 
     def set_data(self, original_data):
-        self.original_data = original_data.copy()
+        self.original_data, self.data = original_data.copy(), {}
+        for coinpair in self.original_data:
+            self.data[coinpair] = format_data(self.original_data[coinpair], self.start_date, self.end_date, self.candle_minutes, self.future_window_size)
 
-    def reset(self, start_date, end_date, starting_balance, candle_minutes, max_positions):
-        self.data = self.original_data.copy()
-
-        self.cur_datetime, self.end_datetime = start_date, end_date
-        self.candle_minutes, self.max_positions = candle_minutes, max_positions
-
-        self.reward, self.info = {'BALANCE': starting_balance, 'POTENTIAL': 0.0}, {'OPEN_POSITIONS': [], 'FINAL_POSITIONS': []}
+    def reset(self):
+        self.set_data(self.original_data)
+        self.cur_datetime = self.start_date
+        self.reward, self.info = {'BALANCE': self.starting_balance, 'POTENTIAL': 0.0}, {'OPEN_POSITIONS': [], 'FINAL_POSITIONS': []}
         return self.current_state()
 
     def current_state(self):
@@ -46,7 +48,7 @@ class Backtest:
             self.data[key] = self.data[key][1:]
 
         isDone = False
-        if self.cur_datetime == self.end_datetime:
+        if self.cur_datetime == self.end_date:
             for position in [position for position in self.info['OPEN_POSITIONS']]:
                 self.reward['BALANCE'] += position.data['BTC'] * position.data['TOTAL_REWARD']
                 self.info['FINAL_POSITIONS'].append(position)
