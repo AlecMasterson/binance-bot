@@ -1,0 +1,29 @@
+body {
+    background-color: #202124;
+    color: #9ba0a5;
+}
+
+nav {
+    background-color: #2d2e31;
+}
+
+.nav-item {
+    cursor: pointer;
+}
+
+h3 {
+    color: #b3cbf6;
+}
+
+.card {
+    background-color: #28292c;
+    border-color: #606367;
+}
+
+.card-collapse {
+    cursor: pointer;
+}
+
+.border-collapse {
+    border: 1px solid #606367;
+}

@@ -17,17 +17,17 @@
         "learning_rate": 1e-3
     },
     "subsampling_fraction": 0.1,
-    "optimization_steps": 40,
+    "optimization_steps": 30,
 
-    "discount": 0.99,
+    "discount": 0.9999,
     "entropy_regularization": 0.01,
     "gae_lambda": null,
-    "likelihood_ratio_clipping": 0.2,
+    "likelihood_ratio_clipping": 0.05,
 
     "baseline_mode": "states",
     "baseline": {
         "type": "mlp",
-        "sizes": [2048, 512, 64]
+        "sizes": [128, 32, 32]
     },
     "baseline_optimizer": {
         "type": "multi_step",
@@ -35,6 +35,6 @@
             "type": "adam",
             "learning_rate": 1e-3
         },
-        "num_steps": 10
+        "num_steps": 200
     }
 }
