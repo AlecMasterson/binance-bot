@@ -82,6 +82,28 @@ CREATE TABLE `history` (
   PRIMARY KEY (`symbol`,`width`,`open_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `positions`
+--
+
+DROP TABLE IF EXISTS `positions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `positions` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user` varchar(20) NOT NULL,
+  `symbol` varchar(20) NOT NULL,
+  `open` tinyint(1) NOT NULL,
+  `buyTime` datetime NOT NULL,
+  `buyPrice` decimal(32,16) NOT NULL,
+  `sellTime` datetime DEFAULT NULL,
+  `sellPrice` decimal(32,16) DEFAULT NULL,
+  `amount` decimal(16,8) DEFAULT NULL,
+  `roi` decimal(8,4) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -92,4 +114,4 @@ CREATE TABLE `history` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-12-20  2:12:55
+-- Dump completed on 2019-12-23 18:59:21
