@@ -1,0 +1,54 @@
+[
+    [
+        {
+            "type": "input",
+            "names": ["state"]
+        },
+        {
+            "type": "linear",
+            "size": 64
+        },
+        {
+            "type": "dense",
+            "size": 64
+        },
+        {
+            "type": "output",
+            "name": "state_output"
+        }
+    ],
+    [
+        {
+            "type": "input",
+            "names": ["action"]
+        },
+        {
+            "type": "dense",
+            "size": 64
+        },
+        {
+            "type": "output",
+            "name": "action_output"
+        }
+    ],
+    [
+        {
+            "type": "input",
+            "names": ["state_output", "action_output"],
+            "aggregation_type": "concat"
+        },
+        {
+            "type": "linear",
+            "size": 64
+        },
+        {
+            "type": "dense",
+            "size": 64
+        },
+        {
+            "type": "dense",
+            "activation": "tanh",
+            "size": 1
+        }
+    ]
+]
