@@ -1,0 +1,47 @@
+{
+    "type": "dqn_agent",
+
+    "update_mode": {
+        "unit": "timesteps",
+        "batch_size": 256,
+        "frequency": 16
+    },
+    "memory": {
+        "type": "replay",
+        "capacity": 10000,
+        "include_next_states": true
+    },
+
+    "optimizer": {
+        "type": "clipped_step",
+        "clipping_value": 0.1,
+        "optimizer": {
+            "type": "adam",
+            "learning_rate": 1e-3
+        }
+    },
+
+    "discount": 0.9999,
+    "entropy_regularization": null,
+    "double_q_model": true,
+
+    "target_sync_frequency": 100,
+    "target_update_weight": 0.2,
+
+    "actions_exploration": {
+        "type": "epsilon_anneal",
+        "initial_epsilon": 1.0,
+        "final_epsilon": 0.0,
+        "timesteps": 14000
+    },
+
+    "saver": {
+        "directory": null,
+        "seconds": 600
+    },
+    "execution": {
+        "type": "single",
+        "session_config": null,
+        "distributed_spec": null
+    }
+}

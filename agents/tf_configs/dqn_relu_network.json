@@ -1,0 +1,24 @@
+[{
+        "type": "dense",
+        "size": 2048,
+        "activation": "relu"
+    },
+    {
+        "type": "dense",
+        "size": 1024,
+        "activation": "relu"
+    }, {
+        "type": "dense",
+        "size": 512,
+        "activation": "relu"
+    }, {
+        "type": "dense",
+        "size": 128,
+        "activation": "relu"
+    },
+    {
+        "type": "dense",
+        "size": 32,
+        "activation": "relu"
+    }
+]

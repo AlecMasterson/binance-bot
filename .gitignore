@@ -1,0 +1,15 @@
+*.pyc
+.DS_Store
+*.csv
+*.log
+*.html
+app/dist/
+app/**/node_modules/
+!app/**/*.html
+!app/**/*.json
+
+TBlogs/
+.sync
+.ipynb_checkpoints
+__pycache__
+.vscode
