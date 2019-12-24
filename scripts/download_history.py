@@ -62,7 +62,7 @@ def run(symbols, upload, logger, config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Downloading Historical Data from the Binance Exchange')
     parser.add_argument('-s', '--symbols', help='a list of symbols to download', type=str, nargs='+', dest='SYMBOLS', required=True)
-    parser.add_argument('-u', '--upload', help='include if uploading data to the DB', type=bool, dest='UPLOAD', required=False)
+    parser.add_argument('-u', '--upload', help='include if uploading data to the DB', action='store_true', dest='UPLOAD', required=False)
     args = parser.parse_args()
 
     run(args.SYMBOLS, args.UPLOAD)
