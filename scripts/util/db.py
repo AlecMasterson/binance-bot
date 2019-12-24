@@ -16,29 +16,34 @@ def db_connect(*, logger):
     """
 
     logger.info('Connecting to the DB...')
-    db = sqlalchemy.create_engine('mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(
-        os.environ['DB_TEST_USER'],
-        os.environ['DB_TEST_PASS'],
-        os.environ['DB_TEST_HOST'],
-        os.environ['DB_TEST_PORT'],
-        os.environ['DB_TEST_NAME']
-    ))
-    logger.info('Connect to the DB')
 
+    env = os.environ['CUR_ENV']
+    db = sqlalchemy.create_engine('mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(
+        os.environ['DB_{}_USER'.format(env)],
+        os.environ['DB_{}_PASS'.format(env)],
+        os.environ['DB_{}_HOST'.format(env)],
+        os.environ['DB_{}_PORT'.format(env)],
+        os.environ['DB_{}_NAME'.format(env)]
+    ))
+
+    logger.info('Connected to the DB')
     return db
 
 
 @retry
-def insert_data(*, db, tableName, qualifier, data):
+def insert_data(*, logger, db, tableName, qualifier, data):
     """
     Insert data into the DB and ignore duplicate rows.
 
     Parameters:
+        logger (logging.Logger): An open logging object.
         db (sqlalchemy.engine.base.Engine): An open connected client to the DB.
         tableName (str): Name of the table the data is being inserted into.
-        qualifier (str): A special unique qualifier for this data.
-        data (pandas.core.frame.DataFrame): The actual data being inserted.
+        qualifier (str): Unique qualifier for the data.
+        data (pandas.core.frame.DataFrame): Data being inserted.
     """
+
+    logger.info('Inserting Data into Table \'{}\' with Qualifier = {}'.format(tableName, qualifier))
 
     tempTableName = 'temp_{}_{}'.format(tableName, qualifier)
 
@@ -49,9 +54,11 @@ def insert_data(*, db, tableName, qualifier, data):
         index=False
     )
 
-    connect = db.connect()
+    connection = db.connect()
     connection.execute("INSERT IGNORE INTO " + tableName + " SELECT * FROM " + tempTableName + ";")
     connection.close()
+
+    logger.info('Inserted Data into Table \'{}\' with Qualifier = {}'.format(tableName, qualifier))
 
 
 def organize_table_history(*, data):
@@ -91,4 +98,24 @@ def organize_table_history(*, data):
         'volatility_kcc',
         'volatility_kch', 'volatility_kchi',
         'volatility_kcl', 'volatility_kcli'
+    ]]
+
+
+def organize_table_positions(*, data):
+    """
+    Organize position data in a specific order for the DB.
+
+    Parameters:
+        data (pandas.core.frame.DataFrame): Position data.
+
+    Returns:
+        pandas.core.frame.DataFrame: Position data organized for the DB.
+    """
+
+    return data[[
+        'id',
+        'user', 'symbol', 'open',
+        'buyTime', 'buyPrice',
+        'sellTime', 'sellPrice',
+        'amount', 'roi'
     ]]
