@@ -33,7 +33,7 @@ def main(*, name):
 
                 fileHandler = logging.FileHandler(util.util.get_file_path(
                     create=True,
-                    directoryTree=(config['export_directories']['logs'], datetime.datetime.today().strftime('%Y-%m-%d')),
+                    directoryTree=('./logs/', datetime.datetime.today().strftime('%Y-%m-%d')),
                     fileName='{}.log'.format(name)
                 ))
                 streamHandler = logging.StreamHandler()

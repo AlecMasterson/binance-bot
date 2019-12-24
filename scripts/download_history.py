@@ -1,31 +1,33 @@
 from util.decor import main
-import util.util
+import util.binance
 import util.db
+import util.util
 import argparse
-import ta
+import tqdm
 
 
-def download(*, logger, config, client, db, symbol):
+def download(*, logger, config, client, db, symbol, upload):
     for width in config['symbol_data']['widths']:
         data = util.util.get_historical_data(
             logger=logger,
             client=client,
             symbol=symbol,
-            width=width,
-            startDate=config['symbol_data']['start_date']
+            interval=width
         )
 
-        util.db.insert_data(
-            db=db,
-            tableName=config['database_details']['tables']['history'],
-            qualifier='{}_{}'.format(symbol, width),
-            data=data
-        )
+        if upload:
+            util.db.insert_data(
+                logger=logger,
+                db=db,
+                tableName='history',
+                qualifier='{}_{}'.format(symbol, width),
+                data=data
+            )
 
         data.to_csv(
             util.util.get_file_path(
                 create=True,
-                directoryTree=(config['export_directories']['symbol_data'], symbol),
+                directoryTree=('./data/history/', symbol),
                 fileName='{}.csv'.format(width)
             ),
             index=False
@@ -33,17 +35,25 @@ def download(*, logger, config, client, db, symbol):
 
 
 @main(name='download_history')
-def run(symbols, logger, config):
-    client = util.util.binance_connect(logger=logger)
-    db = util.util.db_connect(logger=logger)
+def run(symbols, upload, logger, config):
+    client = util.binance.binance_connect(logger=logger)
+    db = util.db.db_connect(logger=logger)
 
     logger.info('Downloading {} Symbols...'.format(len(symbols)))
-    errors = util.util.track_errors(
-        f=download,
-        items=symbols,
-        keyName='symbol',
-        logger=logger, config=config, client=client, db=db
-    )
+
+    errors = []
+    for symbol in tqdm.tqdm(symbols):
+        try:
+            download(
+                logger=logger,
+                config=config,
+                client=client,
+                db=db,
+                symbol=symbol,
+                upload=upload
+            )
+        except Exception as e:
+            errors.append('{}: {}'.format(symbol, e))
 
     if len(errors) > 0:
         logger.error('Error(s) Downloading Historical Data for {} Symbol(s):\n{}'.format(len(errors), '\n'.join(errors)))
@@ -52,4 +62,7 @@ def run(symbols, logger, config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Used for Downloading Historical Data from the Binance Exchange')
     parser.add_argument('-s', '--symbols', help='a list of symbols to download', type=str, nargs='+', dest='SYMBOLS', required=True)
-    run(parser.parse_args().SYMBOLS)
+    parser.add_argument('-u', '--upload', help='include if uploading data to the DB', type=bool, dest='UPLOAD', required=False)
+    args = parser.parse_args()
+
+    run(args.SYMBOLS, args.UPLOAD)

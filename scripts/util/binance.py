@@ -35,7 +35,7 @@ def get_historical_data(*, client, symbol, interval):
     Parameters:
         client (binance.client.Client): An open connected client to the Binance Exchange API.
         symbol (str): A Crypto-Pair symbol.
-        interval (str): The OHLC candlestick width.
+        interval (str): An OHLC candlestick width.
 
     Returns:
         pandas.core.frame.DataFrame: Historical pricing data for the given symbol and interval.
