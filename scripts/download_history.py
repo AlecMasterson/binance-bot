@@ -4,6 +4,7 @@ import util.db
 import util.util
 import argparse
 import json
+import os
 import tqdm
 
 
@@ -28,7 +29,7 @@ def download(*, logger, config, client, db, symbol, upload):
         data.to_csv(
             util.util.get_file_path(
                 create=True,
-                directoryTree=('./data/history/', symbol),
+                directoryTree=('{}/data/history/'.format(os.environ['PROJECT_PATH']), symbol),
                 fileName='{}.csv'.format(width)
             ),
             index=False
@@ -39,7 +40,7 @@ def download(*, logger, config, client, db, symbol, upload):
 def run(symbols, upload, *, logger):
     client = util.binance.binance_connect(logger=logger)
     db = util.db.db_connect(logger=logger)
-    config = json.load(open('./scripts/config.json'))
+    config = json.load(open('{}/scripts/config.json'.format(os.environ['PROJECT_PATH'])))
 
     logger.info('Downloading {} Symbols...'.format(len(symbols)))
 
