@@ -1,5 +1,6 @@
 import util.binance
 import util.db
+import datetime
 import os
 import ta
 
@@ -50,3 +51,13 @@ def get_file_path(*, create, directoryTree, fileName):
     if create and (not os.path.exists(path) or not os.path.isdir(path)):
         os.makedirs(path)
     return os.path.join(path, fileName)
+
+
+def is_recent(*, data):
+    if len(data) == 0:
+        return False
+
+    interval = data['close_time'].iloc[-1] - data['open_time'].iloc[-1]
+    if datetime.datetime.now() > (data['close_time'].iloc[-1] + interval):
+        return False
+    return True

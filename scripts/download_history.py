@@ -3,6 +3,7 @@ import util.binance
 import util.db
 import util.util
 import argparse
+import json
 import tqdm
 
 
@@ -35,9 +36,10 @@ def download(*, logger, config, client, db, symbol, upload):
 
 
 @main(name='download_history')
-def run(symbols, upload, logger, config):
+def run(symbols, upload, *, logger):
     client = util.binance.binance_connect(logger=logger)
     db = util.db.db_connect(logger=logger)
+    config = json.load(open('./scripts/config.json'))
 
     logger.info('Downloading {} Symbols...'.format(len(symbols)))
 
