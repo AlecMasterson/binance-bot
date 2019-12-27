@@ -125,7 +125,7 @@ def organize_table_history(*, data):
         'symbol', 'width', 'open_time',
         'open', 'high', 'low', 'close', 'number_trades', 'volume',
         'close_time',
-        'momentum_ao', 'momentum_mfi', 'momentum_rsi',
+        'momentum_ao', 'momentum_kama', 'momentum_mfi', 'momentum_roc', 'momentum_rsi',
         'momentum_stoch', 'momentum_stoch_signal',
         'momentum_tsi', 'momentum_uo', 'momentum_wr',
         'trend_adx_neg', 'trend_adx_pos',
@@ -136,17 +136,21 @@ def organize_table_history(*, data):
         'trend_kst', 'trend_kst_diff', 'trend_kst_sig',
         'trend_macd', 'trend_macd_diff', 'trend_macd_signal',
         'trend_mass_index',
+        'trend_psar', 'trend_psar_up', 'trend_psar_down',
+        'trend_psar_up_indicator', 'trend_psar_down_indicator',
         'trend_trix',
         'trend_visual_ichimoku_a', 'trend_visual_ichimoku_b',
-        'trend_vortex_diff', 'trend_vortex_ind_neg', 'trend_vortex_ind_pos',
+        'volatility_atr',
         'volatility_bbh', 'volatility_bbhi',
         'volatility_bbl', 'volatility_bbli',
         'volatility_bbm',
+        'volatility_bbw',
         'volatility_dch', 'volatility_dchi',
         'volatility_dcl', 'volatility_dcli',
         'volatility_kcc',
         'volatility_kch', 'volatility_kchi',
-        'volatility_kcl', 'volatility_kcli'
+        'volatility_kcl', 'volatility_kcli',
+
     ]]
 
 
