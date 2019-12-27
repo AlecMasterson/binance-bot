@@ -59,7 +59,9 @@ def insert_data(*, logger, db, tableName, qualifier, data):
         index=False
     )
 
-    db.execute("INSERT IGNORE INTO " + tableName + " SELECT * FROM " + tempTableName + ";")
+    connection = db.get_bind().connect()
+    connection.execute("INSERT IGNORE INTO " + tableName + " SELECT * FROM " + tempTableName + ";")
+    connection.close()
 
     logger.info('Inserted Data into Table \'{}\' with Qualifier = {}'.format(tableName, qualifier))
 
