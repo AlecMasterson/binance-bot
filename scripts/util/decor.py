@@ -1,5 +1,6 @@
 import logging
 import datetime
+import os
 import time
 
 
@@ -30,7 +31,7 @@ def main(*, name):
 
                 fileHandler = logging.FileHandler(util.util.get_file_path(
                     create=True,
-                    directoryTree=('./logs/', datetime.datetime.today().strftime('%Y-%m-%d')),
+                    directoryTree=('{}/logs/'.format(os.environ['PROJECT_PATH']), datetime.datetime.today().strftime('%Y-%m-%d')),
                     fileName='{}.log'.format(name)
                 ))
                 streamHandler = logging.StreamHandler()
