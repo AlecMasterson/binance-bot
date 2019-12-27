@@ -1,6 +1,8 @@
+from sqlalchemy.orm import sessionmaker
 from util.decor import retry
 import sqlalchemy
 import os
+import pandas
 
 
 @retry
@@ -26,8 +28,11 @@ def db_connect(*, logger):
         os.environ['DB_{}_NAME'.format(env)]
     ))
 
+    Session = sessionmaker(bind=db)
+    session = Session()
+
     logger.info('Connected to the DB')
-    return db
+    return session
 
 
 @retry
@@ -48,28 +53,72 @@ def insert_data(*, logger, db, tableName, qualifier, data):
     tempTableName = 'temp_{}_{}'.format(tableName, qualifier)
 
     data.to_sql(
-        con=db,
+        con=db.get_bind(),
         name=tempTableName,
         if_exists='replace',
         index=False
     )
 
-    connection = db.connect()
-    connection.execute("INSERT IGNORE INTO " + tableName + " SELECT * FROM " + tempTableName + ";")
-    connection.close()
+    db.execute("INSERT IGNORE INTO " + tableName + " SELECT * FROM " + tempTableName + ";")
 
     logger.info('Inserted Data into Table \'{}\' with Qualifier = {}'.format(tableName, qualifier))
 
 
-def organize_table_history(*, data):
+@retry
+def get_data(*, logger, db, model, query):
+    results = db.query(model)
+    for key in query:
+        results = results.filter(getattr(model, key) == query[key])
+    return results.all()
+
+
+def organize_table_balance(*, data):
     """
-    Organize historical data in a specific order for the DB.
+    Organize Balance data in a specific order for the DB.
 
     Parameters:
-        data (pandas.core.frame.DataFrame): Historical pricing data.
+        data (pandas.core.frame.DataFrame): Balance data.
 
     Returns:
-        pandas.core.frame.DataFrame: Historical pricing data organized for the DB.
+        pandas.core.frame.DataFrame: Balance data organized for the DB.
+    """
+
+    return data[[
+        'user',
+        'asset',
+        'free',
+        'locked'
+    ]]
+
+
+def organize_table_decision(*, data):
+    """
+    Organize Decision data in a specific order for the DB.
+
+    Parameters:
+        data (pandas.core.frame.DataFrame): Decision data.
+
+    Returns:
+        pandas.core.frame.DataFrame: Decision data organized for the DB.
+    """
+
+    return data[[
+        'model',
+        'symbol',
+        'timestamp',
+        'choice'
+    ]]
+
+
+def organize_table_history(*, data):
+    """
+    Organize History data in a specific order for the DB.
+
+    Parameters:
+        data (pandas.core.frame.DataFrame): History data.
+
+    Returns:
+        pandas.core.frame.DataFrame: History data organized for the DB.
     """
 
     return data[[
@@ -101,9 +150,9 @@ def organize_table_history(*, data):
     ]]
 
 
-def organize_table_positions(*, data):
+def organize_table_position(*, data):
     """
-    Organize position data in a specific order for the DB.
+    Organize Position data in a specific order for the DB.
 
     Parameters:
         data (pandas.core.frame.DataFrame): Position data.

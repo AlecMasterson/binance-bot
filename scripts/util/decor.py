@@ -1,4 +1,3 @@
-import json
 import logging
 import datetime
 import time
@@ -6,27 +5,25 @@ import time
 
 def main(*, name):
     """
-    Setup a function for proper logging, config usage, and error handling.
+    Setup a function for proper logging and error handling.
 
     Function Requirements:
         logger (logging.Logger): An open logging object.
-        config (dict): The configuration file.
 
     Parameters:
         name (str): Name of the logger file that the function will use.
 
     Usage:
         @main(name=...)
-        def fun(..., *, logger, config, ...):
+        def fun(..., *, logger, ...):
     """
 
     def main_function(f):
         def wrapper(*args, **kwargs):
+            logger = None
+
             try:
                 import util.util
-
-                logger = None
-                config = json.load(open('./scripts/config.json'))
 
                 logger = logging.getLogger(name)
                 logger.setLevel(logging.DEBUG)
@@ -46,7 +43,6 @@ def main(*, name):
                 logger.addHandler(streamHandler)
 
                 kwargs['logger'] = logger
-                kwargs['config'] = config
 
                 logger.info('Starting Function \'{}\'...'.format(f.__name__))
                 f(*args, **kwargs)
