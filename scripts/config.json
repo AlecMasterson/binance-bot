@@ -1,18 +1,10 @@
 {
     "_label_": "JSON Config File to be Used by Scripts Only",
-    "database_details": {
-        "tables": {
-            "history": "history"
-        }
-    },
-    "export_directories": {
-        "logs": "./logs",
-        "symbol_data": "./data/history",
-        "backtest_data": "./data/backtest"
-    },
     "symbol_data": {
         "start_date": "2019-02-01 00:00:00",
         "widths": [
+            "1h",
+            "2h",
             "4h",
             "6h",
             "12h"

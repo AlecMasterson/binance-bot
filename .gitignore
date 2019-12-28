@@ -2,5 +2,6 @@ data
 logs
 
 __pycache__
+scripts/test.py
 
 node_modules

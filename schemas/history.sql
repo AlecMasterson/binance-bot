@@ -34,7 +34,9 @@ CREATE TABLE `history` (
   `volume` decimal(16,8) NOT NULL,
   `close_time` datetime NOT NULL,
   `momentum_ao` decimal(32,16) DEFAULT NULL,
+  `momentum_kama` decimal(32,16) DEFAULT NULL,
   `momentum_mfi` decimal(32,16) DEFAULT NULL,
+  `momentum_roc` decimal(32,16) DEFAULT NULL,
   `momentum_rsi` decimal(32,16) DEFAULT NULL,
   `momentum_stoch` decimal(32,16) DEFAULT NULL,
   `momentum_stoch_signal` decimal(32,16) DEFAULT NULL,
@@ -59,17 +61,21 @@ CREATE TABLE `history` (
   `trend_macd_diff` decimal(32,16) DEFAULT NULL,
   `trend_macd_signal` decimal(32,16) DEFAULT NULL,
   `trend_mass_index` decimal(32,16) DEFAULT NULL,
+  `trend_psar` decimal(32,16) DEFAULT NULL,
+  `trend_psar_up` decimal(32,16) DEFAULT NULL,
+  `trend_psar_down` decimal(32,16) DEFAULT NULL,
+  `trend_psar_up_indicator` decimal(32,16) DEFAULT NULL,
+  `trend_psar_down_indicator` decimal(32,16) DEFAULT NULL,
   `trend_trix` decimal(32,16) DEFAULT NULL,
   `trend_visual_ichimoku_a` decimal(32,16) DEFAULT NULL,
   `trend_visual_ichimoku_b` decimal(32,16) DEFAULT NULL,
-  `trend_vortex_diff` decimal(32,16) DEFAULT NULL,
-  `trend_vortex_ind_neg` decimal(32,16) DEFAULT NULL,
-  `trend_vortex_ind_pos` decimal(32,16) DEFAULT NULL,
+  `volatility_atr` decimal(32,16) DEFAULT NULL,
   `volatility_bbh` decimal(32,16) DEFAULT NULL,
   `volatility_bbhi` decimal(32,16) DEFAULT NULL,
   `volatility_bbl` decimal(32,16) DEFAULT NULL,
   `volatility_bbli` decimal(32,16) DEFAULT NULL,
   `volatility_bbm` decimal(32,16) DEFAULT NULL,
+  `volatility_bbw` decimal(32,16) DEFAULT NULL,
   `volatility_dch` decimal(32,16) DEFAULT NULL,
   `volatility_dchi` decimal(32,16) DEFAULT NULL,
   `volatility_dcl` decimal(32,16) DEFAULT NULL,
@@ -82,6 +88,15 @@ CREATE TABLE `history` (
   PRIMARY KEY (`symbol`,`width`,`open_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `history`
+--
+
+LOCK TABLES `history` WRITE;
+/*!40000 ALTER TABLE `history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `history` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -92,4 +107,4 @@ CREATE TABLE `history` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-12-20  2:12:55
+-- Dump completed on 2019-12-26 21:50:26

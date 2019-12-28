@@ -1,2 +1,5 @@
-def analyze(*, logger, config, data):
-    return False
+from models.Choice import Choice
+
+
+def analyze(*, config, data):
+    return Choice.HOLD

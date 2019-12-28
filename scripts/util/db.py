@@ -1,6 +1,8 @@
+from sqlalchemy.orm import sessionmaker
 from util.decor import retry
 import sqlalchemy
 import os
+import pandas
 
 
 @retry
@@ -16,60 +18,116 @@ def db_connect(*, logger):
     """
 
     logger.info('Connecting to the DB...')
-    db = sqlalchemy.create_engine('mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(
-        os.environ['DB_TEST_USER'],
-        os.environ['DB_TEST_PASS'],
-        os.environ['DB_TEST_HOST'],
-        os.environ['DB_TEST_PORT'],
-        os.environ['DB_TEST_NAME']
-    ))
-    logger.info('Connect to the DB')
 
-    return db
+    env = os.environ['CUR_ENV']
+    db = sqlalchemy.create_engine('mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(
+        os.environ['DB_{}_USER'.format(env)],
+        os.environ['DB_{}_PASS'.format(env)],
+        os.environ['DB_{}_HOST'.format(env)],
+        os.environ['DB_{}_PORT'.format(env)],
+        os.environ['DB_{}_NAME'.format(env)]
+    ))
+
+    Session = sessionmaker(bind=db)
+    session = Session()
+
+    logger.info('Connected to the DB')
+    return session
 
 
 @retry
-def insert_data(*, db, tableName, qualifier, data):
+def insert_data(*, logger, db, tableName, qualifier, data):
     """
     Insert data into the DB and ignore duplicate rows.
 
     Parameters:
+        logger (logging.Logger): An open logging object.
         db (sqlalchemy.engine.base.Engine): An open connected client to the DB.
         tableName (str): Name of the table the data is being inserted into.
-        qualifier (str): A special unique qualifier for this data.
-        data (pandas.core.frame.DataFrame): The actual data being inserted.
+        qualifier (str): Unique qualifier for the data.
+        data (pandas.core.frame.DataFrame): Data being inserted.
     """
+
+    logger.info('Inserting Data into Table \'{}\' with Qualifier = {}'.format(tableName, qualifier))
 
     tempTableName = 'temp_{}_{}'.format(tableName, qualifier)
 
     data.to_sql(
-        con=db,
+        con=db.get_bind(),
         name=tempTableName,
         if_exists='replace',
         index=False
     )
 
-    connect = db.connect()
+    connection = db.get_bind().connect()
     connection.execute("INSERT IGNORE INTO " + tableName + " SELECT * FROM " + tempTableName + ";")
     connection.close()
+
+    logger.info('Inserted Data into Table \'{}\' with Qualifier = {}'.format(tableName, qualifier))
+
+
+@retry
+def get_data(*, logger, db, model, query):
+    results = db.query(model)
+    for key in query:
+        results = results.filter(getattr(model, key) == query[key])
+    return results.all()
+
+
+def organize_table_balance(*, data):
+    """
+    Organize Balance data in a specific order for the DB.
+
+    Parameters:
+        data (pandas.core.frame.DataFrame): Balance data.
+
+    Returns:
+        pandas.core.frame.DataFrame: Balance data organized for the DB.
+    """
+
+    return data[[
+        'user',
+        'asset',
+        'free',
+        'locked'
+    ]]
+
+
+def organize_table_decision(*, data):
+    """
+    Organize Decision data in a specific order for the DB.
+
+    Parameters:
+        data (pandas.core.frame.DataFrame): Decision data.
+
+    Returns:
+        pandas.core.frame.DataFrame: Decision data organized for the DB.
+    """
+
+    return data[[
+        'model',
+        'symbol',
+        'timestamp',
+        'choice'
+    ]]
 
 
 def organize_table_history(*, data):
     """
-    Organize historical data in a specific order for the DB.
+    Organize History data in a specific order for the DB.
 
     Parameters:
-        data (pandas.core.frame.DataFrame): Historical pricing data.
+        data (pandas.core.frame.DataFrame): History data.
 
     Returns:
-        pandas.core.frame.DataFrame: Historical pricing data organized for the DB.
+        pandas.core.frame.DataFrame: History data organized for the DB.
     """
 
     return data[[
         'symbol', 'width', 'open_time',
         'open', 'high', 'low', 'close', 'number_trades', 'volume',
         'close_time',
-        'momentum_ao', 'momentum_mfi', 'momentum_rsi',
+        'momentum_ao', 'momentum_kama', 'momentum_mfi', 'momentum_roc', 'momentum_rsi',
         'momentum_stoch', 'momentum_stoch_signal',
         'momentum_tsi', 'momentum_uo', 'momentum_wr',
         'trend_adx_neg', 'trend_adx_pos',
@@ -80,15 +138,39 @@ def organize_table_history(*, data):
         'trend_kst', 'trend_kst_diff', 'trend_kst_sig',
         'trend_macd', 'trend_macd_diff', 'trend_macd_signal',
         'trend_mass_index',
+        'trend_psar', 'trend_psar_up', 'trend_psar_down',
+        'trend_psar_up_indicator', 'trend_psar_down_indicator',
         'trend_trix',
         'trend_visual_ichimoku_a', 'trend_visual_ichimoku_b',
-        'trend_vortex_diff', 'trend_vortex_ind_neg', 'trend_vortex_ind_pos',
+        'volatility_atr',
         'volatility_bbh', 'volatility_bbhi',
         'volatility_bbl', 'volatility_bbli',
         'volatility_bbm',
+        'volatility_bbw',
         'volatility_dch', 'volatility_dchi',
         'volatility_dcl', 'volatility_dcli',
         'volatility_kcc',
         'volatility_kch', 'volatility_kchi',
-        'volatility_kcl', 'volatility_kcli'
+        'volatility_kcl', 'volatility_kcli',
+
+    ]]
+
+
+def organize_table_position(*, data):
+    """
+    Organize Position data in a specific order for the DB.
+
+    Parameters:
+        data (pandas.core.frame.DataFrame): Position data.
+
+    Returns:
+        pandas.core.frame.DataFrame: Position data organized for the DB.
+    """
+
+    return data[[
+        'id',
+        'user', 'symbol', 'open',
+        'buyTime', 'buyPrice',
+        'sellTime', 'sellPrice',
+        'amount', 'roi'
     ]]
