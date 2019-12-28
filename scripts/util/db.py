@@ -71,7 +71,7 @@ def get_data(*, logger, db, model, query):
     results = db.query(model)
     for key in query:
         results = results.filter(getattr(model, key) == query[key])
-    return results.all()
+    return pandas.DataFrame([vars(result) for result in results.all()])
 
 
 def organize_table_balance(*, data):

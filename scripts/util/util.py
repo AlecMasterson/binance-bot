@@ -57,7 +57,16 @@ def is_recent(*, data):
     if len(data) == 0:
         return False
 
-    interval = data['close_time'].iloc[-1] - data['open_time'].iloc[-1]
-    if datetime.datetime.now() > (data['close_time'].iloc[-1] + interval):
-        return False
+    intervals = data['width'].unique()
+
+    for interval in intervals:
+        tempData = data[data['width'] == interval].sort_values(
+            by=['open_time']
+        ).reset_index(
+            drop=True
+        )
+
+        interval = tempData['close_time'].iloc[-1] - tempData['open_time'].iloc[-1]
+        if datetime.datetime.now() > (tempData['close_time'].iloc[-1] + interval):
+            return False
     return True
