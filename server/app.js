@@ -1,12 +1,13 @@
-var express = require('express');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
-var http = require('http');
-var analyze = require('./routes/analyze')
-var tradingModels = require('./routes/tradingModels')
+const mysql = require('mysql');
+const http = require('http');
+
+/* CREATE APP */
 
 var app = express();
 
@@ -17,10 +18,32 @@ app.use(bodyParser.json())
 app.use(cors())
 app.use(helmet())
 app.use(express.urlencoded({ extended: true }));
-
-app.use('/analyze', analyze);
-app.use('/tradingModels', tradingModels);
-
 app.set('port', 3000);
+
+/* ROUTER */
+
+var api = require('./routes/api');
+app.use('/api', api);
+
+/* DATABASE CONNECTION */
+
+var db = mysql.createConnection({
+    host: '',
+    user: '',
+    password: '',
+    database: ''
+});
+
+db.connect((error, res) => {
+    if (error) {
+        console.log('Failed to Connect to the DB');
+        next(error)
+    }
+    console.log('Successfully Connected to the DB');
+    global.db = db;
+});
+
+/* START SERVER */
+
 var server = http.createServer(app);
 server.listen(3000);
