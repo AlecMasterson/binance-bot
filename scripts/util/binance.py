@@ -28,7 +28,7 @@ def binance_connect(*, logger):
 
 
 @retry
-def get_historical_data(*, client, symbol, interval):
+def get_historical_data(*, client, symbol, interval, startDate):
     """
     Return historical pricing data from the Binance Exchange.
 
@@ -36,6 +36,7 @@ def get_historical_data(*, client, symbol, interval):
         client (binance.client.Client): An open connected client to the Binance Exchange API.
         symbol (str): A Crypto-Pair symbol.
         interval (str): An OHLC candlestick width.
+        startDate (str): Data will start from this datetime in UTC. Format: '%Y-%m-%d %H:%M:%S'
 
     Returns:
         pandas.core.frame.DataFrame: Historical pricing data for the given symbol and interval.
@@ -44,7 +45,7 @@ def get_historical_data(*, client, symbol, interval):
     raw = client.get_historical_klines(
         symbol=symbol,
         interval=interval,
-        start_str='2019-01-01 00:00:00'
+        start_str=startDate
     )
 
     df = pandas.DataFrame(

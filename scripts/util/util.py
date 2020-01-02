@@ -1,11 +1,34 @@
 import util.binance
 import util.db
 import datetime
+import json
 import os
 import ta
 
 
-def get_historical_data(*, logger, client, symbol, interval):
+def get_config(*, logger):
+    """
+    Return the JSON configuration file.
+
+    Parameters:
+        logger (logging.Logger): An open logging object.
+
+    Returns:
+        dict: JSON configuration file.
+    """
+
+    logger.info('Loading the Config File...')
+    config = json.load(open(get_file_path(
+        create=False,
+        directoryTree=(os.environ['PROJECT_PATH'], 'scripts'),
+        fileName='config.json'
+    )))
+    logger.info('Loaded the Config File...')
+
+    return config
+
+
+def get_historical_data(*, logger, client, symbol, interval, startDate):
     """
     Return historical pricing data from the Binance Exchange formatted for use.
 
@@ -14,6 +37,7 @@ def get_historical_data(*, logger, client, symbol, interval):
         client (binance.client.Client): An open connected client to the Binance Exchange API.
         symbol (str): A Crypto-Pair symbol.
         interval (str): An OHLC candlestick width.
+        startDate (str): Data will start from this datetime in UTC. Format: '%Y-%m-%d %H:%M:%S'
 
     Returns:
         pandas.core.frame.DataFrame: Historical pricing data for the given symbol and interval.
@@ -22,7 +46,8 @@ def get_historical_data(*, logger, client, symbol, interval):
     data = util.binance.get_historical_data(
         client=client,
         symbol=symbol,
-        interval=interval
+        interval=interval,
+        startDate=startDate
     )
 
     ta.add_momentum_ta(data, 'high', 'low', 'close', 'volume', fillna=True, colprefix='')

@@ -1,8 +1,8 @@
 {
     "_label_": "JSON Config File to be Used by Scripts Only",
     "symbol_data": {
-        "start_date": "2019-02-01 00:00:00",
-        "widths": [
+        "start_date": "2019-01-01 00:00:00",
+        "intervals": [
             "1h",
             "2h",
             "4h",
