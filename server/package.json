@@ -1,10 +1,11 @@
 {
-  "name": "server",
-  "version": "2.0.2",
+  "name": "binance-bot",
+  "version": "2.0.3",
   "private": true,
   "scripts": {
-    "start": "node ./app.js --trace-sync-io",
-    "debug": "nodemon ./app.js --trace-sync-io"
+    "start": "node -r dotenv/config ./src/app.js",
+    "dev": "nodemon -r dotenv/config ./src/app.js",
+    "test": "echo \"Error: No Test Framework Specified\" && exit 1"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
@@ -15,6 +16,11 @@
     "express": "~4.16.1",
     "helmet": "^3.21.2",
     "morgan": "~1.9.1",
-    "mysql": "^2.17.1"
+    "mysql": "^2.17.1",
+    "node-binance-api": "^0.10.0"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0",
+    "nodemon": "^2.0.2"
   }
 }
