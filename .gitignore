@@ -2,6 +2,7 @@ data
 logs
 
 __pycache__
-scripts/test.py
+scripts/test*.py
 
 node_modules
+*.env
