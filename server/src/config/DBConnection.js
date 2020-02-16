@@ -1,9 +1,10 @@
 const mysql = require('mysql');
 
-async function connect() {
-    try {
+exports.DBConnection = {
+    connect: async () => {
         const db = mysql.createConnection({
-            host: process.env.DB_HOST,
+            host: process.env.NODE_ENV !== 'production' ? process.env.DB_HOST : '',
+            socketPath: process.env.NODE_ENV !== 'production' ? '' : process.env.DB_SOCKET,
             user: process.env.DB_USER,
             password: process.env.DB_PASS,
             database: process.env.DB_NAME
@@ -17,20 +18,7 @@ async function connect() {
                 resolve();
             });
         });
-        console.log('Connected to the DB!');
 
         return db;
-    } catch (error) {
-        console.log(error);
-        process.exit(1);
     }
-}
-
-const setup = {
-    connect: connect().then((connection) => {
-        setup.db = connection;
-        delete setup.connect;
-    })
-}
-
-exports.DBConnection = setup;
+};

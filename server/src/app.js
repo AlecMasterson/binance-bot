@@ -1,20 +1,35 @@
-const { ExpressApp } = require('./config/SetupExpress');
+const { ExpressApp } = require('./config/ExpressApp');
 const { BinanceConnection } = require('./config/BinanceConnection');
 const { DBConnection } = require('./config/DBConnection');
-const startWebsockets = require('./services/websockets');
+const candlesticks = require('./streams/candlesticks');
+
+function handleError(error) {
+    console.log(error);
+    process.exit(1);
+}
 
 async function startServer() {
-    await BinanceConnection.connect;
-    await DBConnection.connect;
+    await ExpressApp.create()
+        .then((app) => ExpressApp.app = app)
+        .catch(handleError);
+    console.log('ExpressJS is Setup!');
 
-    startWebsockets();
+    await BinanceConnection.connect()
+        .then((connection) => BinanceConnection.binance = connection)
+        .catch(handleError);
+    console.log('Connected to the Binance Exchange API!');
 
-    ExpressApp.listen(process.env.PORT, () => {
+    await DBConnection.connect()
+        .then((connection) => DBConnection.db = connection)
+        .catch(handleError);
+    console.log('Connected to the DB!');
+
+    await candlesticks().catch(handleError);
+    console.log('Websocket Streams Started!')
+
+    ExpressApp.app.listen(process.env.PORT, () => {
         console.log(`Server has Started on Port ${process.env.PORT}!`);
-    }).on('error', (error) => {
-        console.log(error);
-        process.exit(1);
-    });
+    }).on('error', handleError);
 }
 
 startServer();
