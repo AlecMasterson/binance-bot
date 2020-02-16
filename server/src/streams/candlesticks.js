@@ -1,23 +1,17 @@
 const { BinanceConnection } = require('../config/BinanceConnection');
-const { DBConnection } = require('../config/DBConnection');
+const History = require('../services/History');
 
-const SQL_INSERT = 'INSERT IGNORE INTO history (symbol,width,openTime,openPrice,high,low,closePrice,volume,numberTrades,closeTime) VALUES (?)';
+module.exports = async () => {
+    const symbols = process.env.SYMBOLS.split(',');
+    const intervals = process.env.INTERVALS.split(',');
+    console.log(`Active Symbols: ${symbols}`);
+    console.log(`Active Intervals: ${intervals}`);
 
-module.exports = (symbols, interval) => {
-    return BinanceConnection.binance.websockets.candlesticks(symbols, interval, (kLine) => {
-        if (kLine.k.x) {
-            console.log(`New ${kLine.s}-${kLine.k.i} kLine: ${new Date(kLine.k.T)}`);
-
-            const values = [[
-                kLine.s, kLine.k.i, new Date(kLine.k.t), kLine.k.o,
-                kLine.k.h, kLine.k.l, kLine.k.c, kLine.k.v, kLine.k.n, new Date(kLine.k.T)
-            ]];
-
-            DBConnection.db.query(SQL_INSERT, values, (error) => {
-                if (error) {
-                    console.log(error);
-                }
-            });
-        }
-    });
+    for (const i in intervals) {
+        BinanceConnection.binance.websockets.candlesticks(symbols, intervals[i], (kLine) => {
+            if (kLine.k.x) {
+                History.insertKLine(kLine)
+            }
+        });
+    }
 }

@@ -1,3 +1,0 @@
-runtime: nodejs12
-manual_scaling:
-  instance: 1
