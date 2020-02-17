@@ -4,6 +4,7 @@ logs
 __pycache__
 scripts/test*.py
 
-node_modules
+node_modules/
 *.env
 *.log
+sql/
