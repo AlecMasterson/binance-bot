@@ -1,7 +1,6 @@
 import logging
 import datetime
 import os
-import time
 
 
 def main(*, name):
@@ -29,10 +28,11 @@ def main(*, name):
                 logger = logging.getLogger(name)
                 logger.setLevel(logging.DEBUG)
 
+                date = datetime.datetime.now()
                 fileHandler = logging.FileHandler(util.util.get_file_path(
                     create=True,
-                    directoryTree=('{}/logs/'.format(os.environ['PROJECT_PATH']), datetime.datetime.today().strftime('%Y-%m-%d')),
-                    fileName='{}.log'.format(name)
+                    directoryTree=(os.environ['PROJECT_PATH'], 'logs', date.strftime('%Y-%m-%d')),
+                    fileName='{}-{}.log'.format(name, date.strftime('%H-%M-%S'))
                 ))
                 streamHandler = logging.StreamHandler()
 
@@ -56,32 +56,3 @@ def main(*, name):
                     print(msg)
         return wrapper
     return main_function
-
-
-def retry(f):
-    """
-    Attempt a function up to 3 times. If an Exception is thrown, wait before retrying.
-
-    Function Requirements:
-        logger (logging.Logger): An open logging object.
-
-    Usage:
-        @retry
-        def fun(..., *, logger, ...):
-    """
-
-    def retry_function(*args, **kwargs):
-        attempt = 1
-        while attempt <= 3:
-            try:
-                if attempt > 1:
-                    kwargs['logger'].info('Sleeping for 5 Seconds...')
-                    time.sleep(5)
-                    kwargs['logger'].info('Function \'{}\' Attempt #{}...'.format(f.__name__, attempt))
-
-                return f(*args, **kwargs)
-            except Exception as e:
-                kwargs['logger'].exception('Unexpected Error Attempting Function \'{}\': {}'.format(f.__name__, e))
-            attempt += 1
-        raise Exception('Attempt Limit Reached for Function \'{}\''.format(f.__name__))
-    return retry_function

@@ -1,11 +1,11 @@
-from util.decor import retry
 import binance.client
+import collections
+import datetime
+import numpy
 import os
 import pandas
-import numpy
 
 
-@retry
 def binance_connect(*, logger):
     """
     Create an open connection to the Binance Exchange API.
@@ -17,22 +17,21 @@ def binance_connect(*, logger):
         binance.client.Client: An open connected client to the Binance Exchange API.
     """
 
-    logger.info('Connecting to the Binance Exchange API...')
     client = binance.client.Client(
         os.environ['BINANCE_KEY_PUBLIC'],
         os.environ['BINANCE_KEY_PRIVATE']
     )
-    logger.info('Connected to the Binance Exchange API')
 
+    logger.info('Connected to the Binance Exchange API')
     return client
 
 
-@retry
-def get_historical_data(*, client, symbol, interval, startDate):
+def get_historical_data(*, logger, client, symbol, interval, startDate):
     """
     Return historical pricing data from the Binance Exchange.
 
     Parameters:
+        logger (logging.Logger): An open logging object.
         client (binance.client.Client): An open connected client to the Binance Exchange API.
         symbol (str): A Crypto-Pair symbol.
         interval (str): An OHLC candlestick width.
@@ -62,23 +61,20 @@ def get_historical_data(*, client, symbol, interval, startDate):
         drop=True
     ).rename(
         {
-            'OPEN_TIME': 'open_time',
-            'OPEN': 'open',
+            'OPEN_TIME': 'openTime',
+            'OPEN': 'openPrice',
             'HIGH': 'high',
             'LOW': 'low',
-            'CLOSE': 'close',
-            'NUMBER_TRADES': 'number_trades',
+            'CLOSE': 'closePrice',
+            'NUMBER_TRADES': 'numberTrades',
             'VOLUME': 'volume',
-            'CLOSE_TIME': 'close_time'
+            'CLOSE_TIME': 'closeTime'
         },
         axis='columns'
     )
 
-    df['symbol'] = symbol
-    df['width'] = interval
-
-    df['open_time'] = pandas.to_datetime(df['open_time'], unit='ms')
-    df['close_time'] = pandas.to_datetime(df['close_time'], unit='ms')
+    df['openTime'] = pandas.to_datetime(df['openTime'], unit='ms')
+    df['closeTime'] = pandas.to_datetime(df['closeTime'], unit='ms')
 
     def format_hour(timestamp):
         timestamp = timestamp.replace(second=0, microsecond=0)
@@ -88,14 +84,38 @@ def get_historical_data(*, client, symbol, interval, startDate):
 
         return timestamp
 
-    df['open_time'] = df['open_time'].map(lambda x: format_hour(x))
-    df['close_time'] = df['close_time'].map(lambda x: format_hour(x))
+    df['openTime'] = df['openTime'].map(lambda x: format_hour(x))
+    df['closeTime'] = df['closeTime'].map(lambda x: format_hour(x))
 
-    df['open'] = df['open'].astype(float)
+    df['openPrice'] = df['openPrice'].astype(float)
     df['high'] = df['high'].astype(float)
     df['low'] = df['low'].astype(float)
-    df['close'] = df['close'].astype(float)
+    df['closePrice'] = df['closePrice'].astype(float)
     df['volume'] = df['volume'].astype(float)
-    df['number_trades'] = df['number_trades'].astype(float)
+    df['numberTrades'] = df['numberTrades'].astype(float)
+
+    intervalTimeDelta = datetime.timedelta(hours=int(interval.split('h')[0]))
+    expectedOpenTimes = numpy.arange(
+        datetime.datetime.strptime(startDate, '%Y-%m-%d %H:%M:%S'),
+        datetime.datetime.utcnow() - intervalTimeDelta,
+        intervalTimeDelta
+    ).astype(pandas.Timestamp)
+
+    if collections.Counter(df['openTime']) != collections.Counter(expectedOpenTimes):
+        logger.warning('(Symbol,Interval) - ({},{}) - Downloaded Data Missing Entries. Attempting to Fix...'.format(symbol, interval))
+
+        df = df.set_index('openTime').reindex(
+            pandas.Index(expectedOpenTimes, name='openTime')
+        ).reset_index().fillna(numpy.nan).interpolate(limit_direction='backward')
+        df['closeTime'].fillna(df['openTime'] + intervalTimeDelta, inplace=True)
+        df.dropna(inplace=True)
+
+    if collections.Counter(df['openTime']) != collections.Counter(expectedOpenTimes):
+        raise Exception('(Symbol,Interval) - ({},{}) - Downloaded Data Missing Entries'.format(symbol, interval))
+
+    df['symbol'] = symbol
+    df['width'] = interval
+
+    df = df.sort_values(by=['openTime']).reset_index(drop=True)
 
     return df

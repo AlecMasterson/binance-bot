@@ -9,6 +9,6 @@
             "6h",
             "12h"
         ],
-        "analyze_length": 16
+        "analyze_length": 64
     }
 }

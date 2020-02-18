@@ -1,62 +1,51 @@
-import util.binance
-import util.db
-import datetime
 import json
 import os
-import ta
+import pkgutil
+import trading_models
 
 
-def get_config(*, logger):
+def load_config(*, logger):
     """
-    Return the JSON configuration file.
+    Read the JSON configuration file.
 
     Parameters:
         logger (logging.Logger): An open logging object.
 
     Returns:
-        dict: JSON configuration file.
+        dict: The JSON configuration file.
     """
 
-    logger.info('Loading the Config File...')
     config = json.load(open(get_file_path(
         create=False,
         directoryTree=(os.environ['PROJECT_PATH'], 'scripts'),
         fileName='config.json'
     )))
-    logger.info('Loaded the Config File...')
 
+    logger.info('Loaded the Config File')
     return config
 
 
-def get_historical_data(*, logger, client, symbol, interval, startDate):
+def load_trading_models(*, logger):
     """
-    Return historical pricing data from the Binance Exchange formatted for use.
+    Load all Trading-Model modules.
 
     Parameters:
         logger (logging.Logger): An open logging object.
-        client (binance.client.Client): An open connected client to the Binance Exchange API.
-        symbol (str): A Crypto-Pair symbol.
-        interval (str): An OHLC candlestick width.
-        startDate (str): Data will start from this datetime in UTC. Format: '%Y-%m-%d %H:%M:%S'
 
     Returns:
-        pandas.core.frame.DataFrame: Historical pricing data for the given symbol and interval.
+        list: List of loaded Trading-Model modules.
     """
 
-    data = util.binance.get_historical_data(
-        client=client,
-        symbol=symbol,
-        interval=interval,
-        startDate=startDate
-    )
+    tradingModels = []
 
-    ta.add_momentum_ta(data, 'high', 'low', 'close', 'volume', fillna=True, colprefix='')
-    ta.add_trend_ta(data, 'high', 'low', 'close', fillna=True, colprefix='')
-    ta.add_volatility_ta(data, 'high', 'low', 'close', fillna=True, colprefix='')
+    for loader, name, is_pkg in pkgutil.walk_packages(trading_models.__path__):
+        tradingModels.append(loader.find_module(name).load_module(name))
 
-    data = util.db.organize_table_history(data=data)
+    if len(tradingModels) == 0:
+        raise Exception('No Trading-Models Found')
 
-    return data
+    logger.info('Loaded {} Trading-Models'.format(len(tradingModels)))
+    return tradingModels
 
 
 def get_file_path(*, create, directoryTree, fileName):
@@ -65,7 +54,7 @@ def get_file_path(*, create, directoryTree, fileName):
 
     Parameters:
         create (bool): True if the directory tree is allowed to be created.
-        directoryTree (tuple): An in-order tuple of sub-directories to reach the file.
+        directoryTree (tuple): An in-order tuple of directories to reach the file.
         fileName (str): Name of the file at the end of the OS path.
 
     Returns:
@@ -76,22 +65,3 @@ def get_file_path(*, create, directoryTree, fileName):
     if create and (not os.path.exists(path) or not os.path.isdir(path)):
         os.makedirs(path)
     return os.path.join(path, fileName)
-
-
-def is_recent(*, data):
-    if len(data) == 0:
-        return False
-
-    intervals = data['width'].unique()
-
-    for interval in intervals:
-        tempData = data[data['width'] == interval].sort_values(
-            by=['open_time']
-        ).reset_index(
-            drop=True
-        )
-
-        interval = tempData['close_time'].iloc[-1] - tempData['open_time'].iloc[-1]
-        if datetime.datetime.now() > (tempData['close_time'].iloc[-1] + interval):
-            return False
-    return True

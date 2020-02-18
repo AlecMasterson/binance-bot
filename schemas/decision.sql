@@ -25,9 +25,9 @@ DROP TABLE IF EXISTS `decision`;
 CREATE TABLE `decision` (
   `model` varchar(20) NOT NULL,
   `symbol` varchar(20) NOT NULL,
-  `timestamp` datetime NOT NULL,
+  `closeTime` datetime NOT NULL,
   `choice` varchar(10) NOT NULL,
-  PRIMARY KEY (`model`,`symbol`,`timestamp`)
+  UNIQUE KEY `decision` (`model`,`symbol`,`closeTime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -49,4 +49,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-12-26 21:53:25
+-- Dump completed on 2020-01-05 20:19:46
